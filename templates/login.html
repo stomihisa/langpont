@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>ログイン - Linguru</title>
+</head>
+<body>
+  <h2>🔐 Linguru 翻訳アプリ</h2>
+  <form method="POST">
+    <p>パスワードを入力してください：</p>
+    <input type="password" name="password" required>
+    <button type="submit">ログイン</button>
+    {% if error %}
+      <p style="color:red;">{{ error }}</p>
+    {% endif %}
+  </form>
+</body>
+</html>
