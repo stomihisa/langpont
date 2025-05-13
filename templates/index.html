@@ -1,449 +1,386 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">  <!-- ★これを追加 -->
-  <title>翻訳比較アプリ（ChatGPT vs Gemini）</title>
-  <style>
-    body {
-      /* 新記述（8行目） */
-      font-family: 'Meiryo', 'Yu Gothic', 'Hiragino Kaku Gothic ProN', sans-serif;
-      background-color: #f9f9f9;
-      padding: 40px;
-      line-height: 1.6;
-      margin: 0;
-    }
-    h1 {
-      text-align: center;
-      font-size: 26px;
-      margin-bottom: 30px;
-    }
-    form {
-      max-width: 900px;
-      margin: auto;
-    }
-    .card {
-      background-color: #fff;
-      padding: 20px;
-      margin-bottom: 20px;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-      position: relative;
-    }
-    label {
-      display: block;
-      font-weight: bold;
-      margin-bottom: 8px;
-    }
-    textarea {
-      width: 100%;
-      height: 120px;
-      font-size: 14px;
-      padding: 12px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      box-sizing: border-box;
-      resize: vertical;
-    }
-    pre {
-      background-color: #f3f3f3;
-      padding: 12px;
-      border-radius: 8px;
-      white-space: pre-wrap;
-      font-family: 'Meiryo', 'Consolas', 'Menlo', 'monospace';
-      font-size: 14px;
-    }
-    .translate-btn {
-      background-color: #007bff;
-      border: none;
-      padding: 10px 20px;
-      color: white;
-      border-radius: 6px;
-      margin-right: 10px;
-      cursor: pointer;
-      transition: background-color 0.2s ease;
-    }
-    .translate-btn:hover {
-      background-color: #0056b3;
-    }
-    .section-title {
-      font-size: 18px;
-      font-weight: bold;
-      border-left: 4px solid #007bff;
-      padding-left: 10px;
-      margin-bottom: 10px;
-      position: relative;
-    }
-    .copy-result-btn {
-      position: absolute;
-      top: 0;
-      right: 0;
-      width: 20px;
-      height: 20px;
-      background-color: transparent;
-      cursor: pointer;
-    }
-    .copy-btn, .delete-btn {
-      position: absolute;
-      top: 10px;
-      width: 20px;
-      height: 20px;
-      background-color: transparent;
-      cursor: pointer;
-    }
-    .copy-btn { right: 40px; }
-    .delete-btn { right: 10px; }
-    .toast {
-      position: absolute;
-      top: -30px;
-      right: 0;
-      background-color: #333;
-      color: #fff;
-      padding: 6px 12px;
-      border-radius: 4px;
-      font-size: 12px;
-      display: none;
-      z-index: 1000;
-    }
+{% extends "base.html" %}
 
-    .flex-row {
-      display: flex;
-      gap: 20px;
-      flex-direction: row;  /* ← 念のため追加して明示 これはPC用*/
-    }
+{% block title %}{{ labels["page_title"] }}{% endblock %}
 
-    @media (max-width: 768px) {
-    /* 🔹カードの余白を少しスリムに */
-      .card {
-        margin-bottom: 12px;
-        padding: 12px;
-      }
+{% block content %}
 
-    /* スマホでは、横並びを縦に変更 */
-      .flex-row {
-        flex-direction: column !important;
-      }
+{% include "header.html" %}
 
-    /* 🔹セクションタイトルのサイズ・余白を調整 */
-      .section-title {
-        font-size: 14px;
-        padding-left: 4px;
-        margin-bottom: 4px;
-      }
-
-      .translate-btn {
-        width: 100%;
-        margin-bottom: 8px;
-      }
-
-      textarea,
-      pre {
-        font-size: 13px;
-        padding: 8px;
-      }
-
-    /* 🔹「フランス語」「日本語訳」の見出しを少し小さく */
-      .flex-row > div > div:first-child {
-        font-size: 14px;
-        margin-bottom: 1px;
-      }
-    
-    /* スマホ時、ボタン全体を縦に並べ、中央揃え */
-      .card .button-group {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 10px;
-      }
-      .button-group .translate-btn,
-      .button-group .reset-btn {
-        width: 100%;
-        max-width: 320px;
-      }
-    }
-
-      .reset-btn {
-        background-color: #e0e0e0;
-        color: #333;
-        border: none;
-        padding: 10px 20px;
-        border-radius: 6px;
-        cursor: pointer;
-        transition: background-color 0.2s ease;
-      }
-
-      .reset-btn:hover {
-        background-color: #c5c5c5;
-      }
-
-      .toggle-btn {
-        background-color: #eee;
-        color: #333;
-        border: none;
-        padding: 8px 16px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 14px;
-      }
-
-      .toggle-btn:hover {
-        background-color: #ddd;
-      }
-
-      .spinner {
-        display: inline-block;
-        width: 20px;
-        height: 20px;
-        border: 3px solid #ccc;
-        border-top: 3px solid #007bff;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-        vertical-align: middle;
-        margin-right: 10px;
-      }
-
-      @keyframes spin {
-        0%   { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-      
-      .app-title {
-        text-align: center;
-        font-size: 28px;
-        font-weight: bold;
-        line-height: 1.4;
-        margin-bottom: 30px;
-      }
-
-      .subtitle {
-        font-size: 20px;
-        display: inline-block;
-        margin-top: 4px;
-      }
-
-      /* 🔽 スマホ用フォントサイズ調整 */
-      @media (max-width: 768px) {
-        .app-title {
-          font-size: 16px;
-        }
-
-        .subtitle {
-          font-size: 12px;
-        }
-      }
-
-  </style>
-</head>
-<body>
-  <h1 class="app-title">
-    翻訳比較アプリ<br class="mobile-break">
-    <span class="subtitle">(ChatGPT vs Gemini)</span>
-  </h1>
-  <form method="POST" onsubmit="showLoading()">
-
-  <!-- 🔽 ここに追加！ -->
+<form onsubmit="event.preventDefault(); showLoading();">
   <input type="hidden" id="gemini_ready" value="{% if gemini_translation %}1{% else %}0{% endif %}">
 
-
-    <div class="card">
-      <label for="japanese_text">{{ labels["input_label"] }}</label>
-      <textarea id="japanese_text" name="japanese_text" placeholder="ここに翻訳したい日本語を入力">{{ japanese_text }}</textarea>
-      <img src="{{ url_for('static', filename='copy-icon.png') }}" class="copy-btn" onclick="copyContent('japanese_text', 'toast-japanese')">
-      <img src="{{ url_for('static', filename='delete-icon.png') }}" class="delete-btn" onclick="clearContent('japanese_text')">
-      <div class="toast" id="toast-japanese">コピーしました！</div>
-    </div>
-
-    <!-- 🔽 折りたたみ開閉ボタン -->
-    <div class="card">
-      <button type="button" class="toggle-btn" onclick="toggleDetails()">▼ 詳細入力を表示</button>
-    </div>
-
-    <!-- 🔽 折りたたむセクション（初期状態：非表示）-->
-    <div id="detail-section" style="display: none;">
-      <div class="card">
-        <label for="partner_message" style="margin-left:30px; font-size:14px;">直前の会話のやり取り（任意）</label>
-        <textarea name="partner_message" style="margin-left:40px; width:calc(100% - 40px); height:50px;">{{ partner_message }}</textarea>
-      </div>
-
-      <div class="card">
-        <label for="context_info" style="margin-left:30px; font-size:14px;">背景情報</label>
-        <textarea name="context_info" placeholder="背景情報を入力してください" style="margin-left:40px; width:calc(100% - 40px); height:50px;">{{ context_info or "私はフランス人とビジネスをしていて、相手は私のお客様です。ただ、かなりフレンドリーな付き合いをしているので、あまり堅苦しくならないように、しかし失礼のないようなトーンで翻訳してください。" }}</textarea>
-      </div>
-    </div>
-
-    <input type="hidden" id="is-translated" value="{{ translated_text | length > 0 }}">
-
-    <div class="card button-group">
-      <button type="submit" class="translate-btn">{{ labels["translate_button"] }}</button>
-      <button type="submit" name="reset" value="true" class="reset-btn">{{ labels["reset_button"] }}</button>
-
-    </div>
-
-    <div id="loading" style="display: none; text-align: center; margin-top: 20px; font-weight: bold;">
-      <div class="spinner"></div>翻訳中です… 少々お待ちください。
-    </div>
-
-    {% for fr, jp, fr_id, jp_id, title in [
-      (translated_text, reverse_translated_text, "translated-text", "reverse-translated-text", "ChatGPTによる翻訳"),
-      (better_translation, reverse_better_text, "better-translation", "reverse-better-translation", "より良い翻訳提案（ChatGPT）"),
-      (gemini_translation, gemini_reverse_translation, "gemini-translation", "gemini-reverse-translation", "Geminiによる翻訳")
-    ] if fr and jp %}
-    
-    <div class="card">
-      <div class="section-title">{{ title }}</div>
-      <div class="flex-row">
-        <div style="flex: 1; position: relative;">
-          <div style="font-weight:bold; margin-bottom:4px;">フランス語</div>
-          <pre id="{{ fr_id }}">{{ fr }}</pre>
-          <img src="{{ url_for('static', filename='copy-icon.png') }}" class="copy-result-btn" style="top: 4px; right: 4px;" onclick="copyContent('{{ fr_id }}', 'toast-{{ fr_id }}')">
-          <div class="toast" id="toast-{{ fr_id }}">コピーしました！</div>
-        </div>
-        <div style="flex: 1; position: relative;">
-          <div style="font-weight:bold; margin-bottom:4px;">日本語訳</div>
-          <pre id="{{ jp_id }}">{{ jp }}</pre>
-          <img src="{{ url_for('static', filename='copy-icon.png') }}" class="copy-result-btn" style="top: 4px; right: 4px;" onclick="copyContent('{{ jp_id }}', 'toast-{{ jp_id }}')">
-          <div class="toast" id="toast-{{ jp_id }}">コピーしました！</div>
-        </div>
-      </div>
-    </div>
-    {% endfor %}    
-
-    <!-- Geminiニュアンス：非同期で取得 -->
-    <div class="card" id="gemini-nuance-card" style="display: none;">
-      <div class="section-title">
-        Geminiによる3文のニュアンス解析:
-        <img src="{{ url_for('static', filename='copy-icon.png') }}" class="copy-result-btn" onclick="copyContent('gemini-3way-analysis', 'toast-gemini-3way')">
-      </div>
-      <pre id="gemini-3way-analysis">🧠 ニュアンス分析を取得中...</pre>
-      <div class="toast" id="toast-gemini-3way">コピーしました！</div>
-    </div>
-
-    <!-- 🔽 Geminiニュアンス取得用ボタン（後からクリックで発動） -->
-    <div class="card" id="gemini-nuance-trigger" style="display: none; text-align: center;">
-      <button type="button" class="translate-btn" onclick="fetchGeminiNuance()">🧠 Geminiニュアンスを取得する</button>
-    </div>
-
-    {% if translated_text or nuance_answer or chat_history %}
-    <div class="card">
-      <label for="nuance_question">{{ labels["additional_question"] }}</label>
-      <textarea name="nuance_question" placeholder="さらに質問したい内容を入力してください">{{ nuance_question }}</textarea>
-      <button type="submit" class="translate-btn">質問を送信する</button>
-    </div>
-    {% endif %}
-
-    {% if nuance_answer %}
-    <div class="card">
-      <div class="section-title">ChatGPTの回答:</div>
-      <pre>{{ nuance_answer }}</pre>
-    </div>
-    {% endif %}
-
-    {% if chat_history %}
-    <div class="card">
-      <div class="section-title">質問と回答の履歴:</div>
-      {% for item in chat_history %}
-      <div style="margin-bottom: 10px">
-        <strong>Q:</strong> {{ item.question }}<br>
-        <strong>A:</strong> {{ item.answer }}
-      </div>
-      {% endfor %}
-    </div>
-    {% endif %}
-
-  </form>
-
-  <script>
-    function copyContent(id, toastId) {
-      const el = document.getElementById(id);
-      const text = el ? (el.value || el.innerText) : "";
-      navigator.clipboard.writeText(text);
-      showToast(toastId);
-    }
+  <div class="card" style="margin-bottom: 20px; position: relative;">
+    <label for="japanese_text">{{ labels["input_label"] }}</label>
+    <textarea id="japanese_text" name="japanese_text" placeholder="{{ labels['placeholder_input'] }}">{{ japanese_text }}</textarea>
   
-    function clearContent(name) {
-      const el = document.querySelector(`[name='${name}']`);
-      if (el) el.value = "";
-    }
+    <!-- ✅ コピー＆削除アイコンを右上に配置 -->
+    <img src="{{ url_for('static', filename='copy-icon.png') }}" class="copy-btn"
+         style="position: absolute; top: 18px; right: 36px; width: 20px; height: 20px;"
+         onclick="copyContent('japanese_text', 'toast-japanese')">
+    <img src="{{ url_for('static', filename='delete-icon.png') }}" class="delete-btn"
+         style="position: absolute; top: 18px; right: 10px; width: 20px; height: 20px;"
+         onclick="clearContent('japanese_text')">
   
-    function showToast(id) {
-      const el = document.getElementById(id);
-      if (el) {
-        el.style.display = "block";
-        setTimeout(() => { el.style.display = "none"; }, 1200);
-      }
-    }
+    <div class="toast" id="toast-japanese">{{ labels["toast_copied"] }}</div>
+  </div>
+
+  <div class="card" style="margin-bottom: 20px;">
+    <button type="button" class="toggle-btn" onclick="toggleDetails()">{{ labels["toggle_details_open"] }}</button>
+  </div>
+
+  <div id="detail-section" style="display: none;">
+    <div class="card" style="margin-bottom: 20px;">
+      <label for="partner_message" style="margin-left:20px; font-size:14px;">{{ labels["label_partner_message"] }}</label>
+      <textarea name="partner_message" style="margin-left:30px; width:calc(100% - 40px); height:50px;">{{ partner_message }}</textarea>
+    </div>
+
+    <div class="card" style="margin-bottom: 20px;">
+      <label for="context_info" style="margin-left:20px; font-size:14px;">{{ labels["label_context_info"] }}</label>
+      <textarea name="context_info"
+        placeholder="{{ labels['placeholder_context'] }}"
+        style="margin-left:30px; width:calc(100% - 40px); height:50px;">{{ context_info or labels["default_context"] }}</textarea>
+    </div>
+  </div>
+
+  <input type="hidden" id="is-translated" value="{{ translated_text | length > 0 }}">
+
+  <div class="card button-group" style="margin-bottom: 32px;">
+    <button type="button" class="translate-btn" onclick="runFastTranslation()">{{ labels["translate_button"] }}</button>
+    <button type="button" name="reset" value="true" class="reset-btn" onclick="resetForm()">{{ labels["reset_button"] }}</button>
+  </div>
+
+  <!-- ChatGPT翻訳 -->
+  <div class="card" id="chatgpt-result" style="display: none;">
+    <div class="section-title">ChatGPTによる翻訳</div>
+    <div class="translation-row">
+      <div class="translation-block">
+        <div class="label">フランス語</div>
+        <img src="{{ url_for('static', filename='copy-icon.png') }}" class="copy-btn" onclick="copyContent('translated-text', 'toast-translated')">
+        <pre id="translated-text" class="fr-text"></pre>
+        <div class="toast" id="toast-translated">コピーしました</div>
+      </div>
+      <div class="translation-block">
+        <div class="label">日本語訳</div>
+        <img src="{{ url_for('static', filename='copy-icon.png') }}" class="copy-btn" onclick="copyContent('reverse-translated-text', 'toast-reverse')">
+        <pre id="reverse-translated-text" class="jp-text"></pre>
+        <div class="toast" id="toast-reverse">コピーしました</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 改善翻訳 -->
+  <div class="card" id="better-translation-card" style="display: none;">
+    <div class="section-title">より良い翻訳提案（ChatGPT）</div>
+    <div class="translation-row">
+      <div class="translation-block">
+        <div class="label">フランス語</div>
+        <img src="{{ url_for('static', filename='copy-icon.png') }}" class="copy-btn" onclick="copyContent('better-translation', 'toast-better')">
+        <pre id="better-translation" class="fr-text"></pre>
+        <div class="toast" id="toast-better">コピーしました</div>
+      </div>
+      <div class="translation-block">
+        <div class="label">日本語訳</div>
+        <img src="{{ url_for('static', filename='copy-icon.png') }}" class="copy-btn" onclick="copyContent('reverse-better-translation', 'toast-better-rev')">
+        <pre id="reverse-better-translation" class="jp-text"></pre>
+        <div class="toast" id="toast-better-rev">コピーしました</div>
+      </div>
+    </div>
+  </div>
   
-    function toggleDetails() {
-      const section = document.getElementById("detail-section");
-      const button = document.querySelector(".toggle-btn");
-      const isVisible = section.style.display === "block";
-      section.style.display = isVisible ? "none" : "block";
-      button.textContent = isVisible ? "▼ 詳細入力を表示" : "▲ 詳細入力を閉じる";
+  <!-- Geminiによる翻訳 -->
+  <div class="card" id="gemini-result" style="display: none;">
+    <div class="section-title">Geminiによる翻訳</div>
+    <div class="translation-row">
+      <div class="translation-block">
+        <div class="label">フランス語</div>
+        <pre id="gemini-translation"></pre>
+        <img src="/static/copy-icon.png" class="copy-btn" onclick="copyContent('gemini-translation', 'toast-gemini-translated')">
+        <div class="toast" id="toast-gemini-translated">コピーしました！</div>
+      </div>
+      <div class="translation-block">
+        <div class="label">日本語訳</div>
+        <pre id="gemini-reverse-translation"></pre>
+        <img src="/static/copy-icon.png" class="copy-btn" onclick="copyContent('gemini-reverse-translation', 'toast-gemini-reverse')">
+        <div class="toast" id="toast-gemini-reverse">コピーしました！</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="loading" style="display: none; text-align: center; margin-top: 20px; font-weight: bold;">
+    <div class="spinner"></div>{{ labels["loading_message"] }}
+  </div>
+
+  {% for fr, jp, fr_id, jp_id, title in [
+    (translated_text, reverse_translated_text, "translated-text", "reverse-translated-text", labels["section_chatgpt"]),
+    (better_translation, reverse_better_text, "better-translation", "reverse-better-translation", labels["section_better"]),
+    (gemini_translation, gemini_reverse_translation, "gemini-translation", "gemini-reverse-translation", labels["section_gemini"])
+  ] if fr and jp %}  
+  
+    {% set fr_text = fr %}
+    {% set jp_text = jp %}
+    {% set fr_id = fr_id %}
+    {% set jp_id = jp_id %}
+    {% set title = title %}
+  
+    {% include "translation_card.html" %}
+  
+  {% endfor %}
+
+  <div class="card" id="gemini-nuance-card" style="display: none;">
+    <div class="section-title" style="position: relative;">
+      {{ labels["gemini_nuance_title"] }}
+      <img src="{{ url_for('static', filename='copy-icon.png') }}" class="copy-result-btn" style="position: absolute; top: 8px; right: 8px; width: 20px; height: 20px;" onclick="copyContent('gemini-3way-analysis', 'toast-gemini-3way')">
+    </div>
+    <pre id="gemini-3way-analysis">{{ labels["gemini_loading"] }}</pre>
+    <div class="toast" id="toast-gemini-3way">{{ labels["toast_copied"] }}</div>
+  </div>
+
+  <div class="card" id="gemini-nuance-trigger" style="display: none; text-align: center;">
+    <button type="button" class="translate-btn" onclick="fetchGeminiNuance()">{{ labels["button_gemini"] }}</button>
+  </div>
+
+  {% if translated_text or nuance_answer or chat_history %}
+  <div class="card">
+    <label for="nuance_question">{{ labels["additional_question"] }}</label>
+    <textarea name="nuance_question" placeholder="{{ labels['placeholder_followup'] }}">{{ nuance_question }}</textarea>
+    <button type="submit" class="translate-btn">{{ labels["button_submit_question"] }}</button>
+  </div>
+  {% endif %}
+
+  {% if nuance_answer %}
+  <div class="card">
+    <div class="section-title">{{ labels["answer_title"] }}</div>
+    <pre>{{ nuance_answer }}</pre>
+  </div>
+  {% endif %}
+
+  {% if chat_history %}
+  <div class="card">
+    <div class="section-title">{{ labels["history_title"] }}</div>
+    {% for item in chat_history %}
+    <div style="margin-bottom: 10px">
+      <strong>Q:</strong> {{ item.question }}<br>
+      <strong>A:</strong> {{ item.answer }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</form>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function copyContent(id, toastId) {
+    const el = document.getElementById(id);
+    const text = el ? (el.value || el.innerText) : "";
+    navigator.clipboard.writeText(text);
+    showToast(toastId);
+  }
+
+  function clearContent(name) {
+    const el = document.querySelector(`[name='${name}']`);
+    if (el) el.value = "";
+  }
+
+  function showToast(id) {
+    const el = document.getElementById(id);
+    if (el) {
+      el.style.display = "block";
+      setTimeout(() => { el.style.display = "none"; }, 1200);
     }
+  }
 
-    function showLoading() {
-      const loading = document.getElementById("loading");
-      if (loading) loading.style.display = "block";
-    }
+  function toggleDetails() {
+    const section = document.getElementById("detail-section");
+    const button = document.querySelector(".toggle-btn");
+    const isVisible = section.style.display === "block";
+    section.style.display = isVisible ? "none" : "block";
+    button.textContent = isVisible
+      ? "{{ labels['toggle_details_open'] }}"
+      : "{{ labels['toggle_details_close'] }}";
+  }
 
-    window.addEventListener("DOMContentLoaded", () => {
-      console.log("✅ DOMContentLoaded 発火");
+  function showLoading() {
+    const loading = document.getElementById("loading");
+    if (loading) loading.style.display = "block";
+  }
 
-      const trigger = document.getElementById("gemini-nuance-trigger");
-      const isReady = document.getElementById("gemini_ready")?.value === "1";
+  function hideLoading() {
+    const loading = document.getElementById("loading");
+    if (loading) loading.style.display = "none";
+  }
 
-      console.log("✅ gemini_ready 値: ", isReady);
+  async function runFastTranslation() {
+    showLoading();
 
-      if (isReady && trigger) {
-        trigger.style.display = "block";  // 🎯 ボタンを表示するだけ
-        console.log("✅ Gemini翻訳済み → ボタン表示OK");
-      } else {
-        console.log("⏸ Gemini翻訳が未完了、ボタン非表示");
-      }
+    const startTime = performance.now(); // ⏱ 翻訳開始時間
+
+    const japaneseText = document.getElementById("japanese_text").value;
+    const partnerMessage = document.querySelector("[name='partner_message']").value;
+    const contextInfo = document.querySelector("[name='context_info']").value;
+
+    const response = await fetch("/translate_chatgpt", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        japanese_text: japaneseText,
+        partner_message: partnerMessage,
+        context_info: contextInfo
+      })
     });
 
-    function fetchGeminiNuance() {
-      const el = document.getElementById("gemini-3way-analysis");
-      const card = document.getElementById("gemini-nuance-card");
-      if (!card || !el) return;
+    const data = await response.json();
+    if (data.success) {
+      document.getElementById("translated-text").innerText = data.translated_text;
+      
+      // ChatGPT翻訳結果セクションを表示
+      document.getElementById("chatgpt-result").style.display = "block";
+      console.log("⏱ ChatGPT翻訳完了まで:", Math.round(performance.now() - startTime), "ms");
+      
+      // Gemini翻訳セクションを表示
+      document.getElementById("gemini-translation").innerText = data.gemini_translation || "";
+      document.getElementById("gemini-result").style.display = "block";
 
-          card.style.display = "block";
-          el.textContent = "🧠 ニュアンス分析を取得中...";
+      // ChatGPT翻訳成功後に、再翻訳（仏→日）を非同期で取得
+      fetch("/reverse_translate_chatgpt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          french_text: data.translated_text
+        })
+      })
+      .then(res => res.json())
+      .then(resData => {
+        if (resData.success) {
+          document.getElementById("reverse-translated-text").innerText = resData.reversed_text;
+          console.log("⏱ 再翻訳表示まで:", Math.round(performance.now() - startTime), "ms");
+        } else {
+          document.getElementById("reverse-translated-text").innerText = "[再翻訳に失敗]";
+        }
+      });
 
-          fetch("/get_nuance", {
+      // Gemini翻訳の和訳を取得
+      fetch("/reverse_gemini_translation", {
+        method: "POST",
+        credentials: "include"
+      })
+      .then(res => res.json())
+      .then(revData => {
+        if (revData.reversed_text) {
+          document.getElementById("gemini-reverse-translation").innerText = revData.reversed_text;
+        } else {
+          document.getElementById("gemini-reverse-translation").innerText = "[和訳に失敗]";
+        }
+      });
+
+      // ChatGPT改善翻訳（より自然な仏語）を取得
+      fetch("/improve_translation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          french_text: data.translated_text
+        })
+      })
+      .then(res => res.json())
+      .then(resData => {
+        if (resData.success) {
+          document.getElementById("better-translation").innerText = resData.improved_text;
+          console.log("⏱ 改善翻訳表示まで:", Math.round(performance.now() - startTime), "ms");
+          document.getElementById("better-translation-card").style.display = "block";
+          
+          // 改善翻訳の和訳を取得（仏→日）
+          fetch("/reverse_better_translation", {
             method: "POST",
-            credentials: "include"
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              french_text: resData.improved_text
+            })
           })
-          .then(response => response.json())
-          .then(data => {
-            if (data.nuance) {
-              el.textContent = data.nuance;
-              showToast("toast-gemini-3way");
-
-                  // ✅ ここを追加！
-              const trigger = document.getElementById("gemini-nuance-trigger");
-              if (trigger) trigger.style.display = "none";
+          .then(res => res.json())
+          .then(revData => {
+            if (revData.success) {
+              document.getElementById("reverse-better-translation").innerText = revData.reversed_text;
+              console.log("⏱ 改善翻訳の和訳表示まで:", Math.round(performance.now() - startTime), "ms");
+            } else {
+              document.getElementById("reverse-better-translation").innerText = "[改善翻訳の和訳に失敗]";
             }
-          })
-          .catch(() => {
-            el.textContent = "⚠️ Gemini分析に失敗しました";
           });
-      }
+        } else {
+          document.getElementById("better-translation").innerText = "[改善翻訳に失敗]";
+        }
+      });
 
-  </script>
+      // Gemini分析ボタンを表示
+      document.getElementById("gemini-nuance-trigger").style.display = "block";
+      hideLoading();  // 翻訳成功時にローディングを消す
+
+    } else {
+      hideLoading();  // 翻訳失敗時にも消す
+      alert("翻訳に失敗しました: " + data.error);
+    }
+  }
+
+  window.addEventListener("DOMContentLoaded", () => {
+    const trigger = document.getElementById("gemini-nuance-trigger");
+    const isReady = document.getElementById("gemini_ready")?.value === "1";
+    if (isReady && trigger) {
+      trigger.style.display = "block";
+    }
+  });
+
+  function fetchGeminiNuance() {
+    const el = document.getElementById("gemini-3way-analysis");
+    const card = document.getElementById("gemini-nuance-card");
+    if (!card || !el) return;
+
+    card.style.display = "block";
+    el.textContent = "{{ labels['gemini_loading'] }}";
+
+    const startTimeGemini = performance.now();  // ⏱ 開始時刻記録
+
+    fetch("/get_nuance", {
+      method: "POST",
+      credentials: "include"
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.nuance) {
+          el.textContent = data.nuance;
+          showToast("toast-gemini-3way");
+          const trigger = document.getElementById("gemini-nuance-trigger");
+          if (trigger) trigger.style.display = "none";
+
+          // ⏱ 経過時間表示
+          console.log("⏱ Gemini分析表示まで:", Math.round(performance.now() - startTimeGemini), "ms");
+        }
+      })
+      .catch(() => {
+        el.textContent = "{{ labels['gemini_failed'] }}";
+      });
+  }
   
-</body>
+  function resetForm() {
+    // フォームのデータをクリア
+    document.getElementById("japanese_text").value = "";
+    document.querySelector("[name='partner_message']").value = "";
+    document.querySelector("[name='context_info']").value = "";
+    
+    // 翻訳結果表示エリアを非表示にする (オプション)
+    document.getElementById("chatgpt-result").style.display = "none";
+    document.getElementById("gemini-result").style.display = "none";
+    document.getElementById("better-translation-card").style.display = "none";
+    document.getElementById("gemini-nuance-card").style.display = "none";
+    document.getElementById("gemini-nuance-trigger").style.display = "none";
 
-  <div style="text-align: right; margin-bottom: 10px;">
-    🌐 {{ labels["lang_switch"] }}：
-    <a href="/set_language/en">EN</a> |
-    <a href="/set_language/jp">JP</a> |
-    <a href="/set_language/fr">FR</a>
-  </div>
-
-  <div style="text-align: right; margin-bottom: 10px;">
-    <a href="/logout">🔓 {{ labels["logout"] }}</a>
-  </div>
-
-</html>
-
+    // フォームを送信
+    const form = document.querySelector("form");
+    const hiddenInput = document.createElement("input");
+    hiddenInput.type = "hidden";
+    hiddenInput.name = "reset";
+    hiddenInput.value = "true";
+    form.appendChild(hiddenInput);
+    form.submit();
+  }
+</script>
+{% endblock %}

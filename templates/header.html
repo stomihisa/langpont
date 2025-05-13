@@ -1,0 +1,19 @@
+<div class="app-title">
+    {{ labels["title"] }}
+    <div class="subtitle">(ChatGPT vs Gemini)</div>
+</div>
+  
+<!-- 🌐 言語切替とログアウトを右上に固定 -->
+<div style="position: absolute; top: 16px; right: 20px; display: flex; gap: 12px; font-size: 16px; z-index: 10;">
+    <div>
+      🌐 {{ labels["lang_switch"] }}：
+      <a href="/set_language/en">EN</a> |
+      <a href="/set_language/jp">JP</a> |
+      <a href="/set_language/fr">FR</a>
+    </div>
+    <div>
+      🔓 <a href="/logout">{{ labels["logout"] }}</a>
+    </div>
+  </div>
+  
+  

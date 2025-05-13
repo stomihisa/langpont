@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}LangPont{% endblock %}</title>
+
+  <!-- 共通CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+  {% block content %}
+  <!-- 各ページの中身がここに入ります -->
+  {% endblock %}
+
+  {% block scripts %}
+  <!-- JSなど -->
+  {% endblock %}
+
+</body>
+</html>

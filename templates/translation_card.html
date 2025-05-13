@@ -1,0 +1,17 @@
+<div class="card" style="margin-bottom: 16px;">
+  <div class="section-title">{{ title }}</div>
+  <div class="flex-row">
+    <div style="flex: 1; position: relative;">
+      <div style="font-weight:bold; margin-bottom:4px;">{{ labels["label_french"] }}</div>
+      <pre id="{{ fr_id }}">{{ fr_text }}</pre>
+      <img src="{{ url_for('static', filename='copy-icon.png') }}" class="copy-result-btn" style="top: 4px; right: 4px;" onclick="copyContent('{{ fr_id }}', 'toast-{{ fr_id }}')">
+      <div class="toast" id="toast-{{ fr_id }}">{{ labels["toast_copied"] }}</div>
+    </div>
+    <div style="flex: 1; position: relative;">
+      <div style="font-weight:bold; margin-bottom:4px;">{{ labels["label_japanese"] }}</div>
+      <pre id="{{ jp_id }}">{{ jp_text }}</pre>
+      <img src="{{ url_for('static', filename='copy-icon.png') }}" class="copy-result-btn" style="top: 4px; right: 4px;" onclick="copyContent('{{ jp_id }}', 'toast-{{ jp_id }}')">
+      <div class="toast" id="toast-{{ jp_id }}">{{ labels["toast_copied"] }}</div>
+    </div>
+  </div>
+</div>

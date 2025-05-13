@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, session, redirect, url_for
 from openai import OpenAI
 from textwrap import dedent
+from concurrent.futures import ThreadPoolExecutor
 import os
 import sys
 import time
@@ -168,6 +169,117 @@ def f_gemini_3way_analysis(translated_text, better_translation, gemini_translati
     except requests.exceptions.Timeout:
         return "⚠️ Gemini APIがタイムアウトしました（30秒以内に応答がありませんでした）"
 
+# スピードアップ用改修
+@app.route("/translate_chatgpt", methods=["POST"])
+def translate_chatgpt_only():
+    data = request.get_json()
+    japanese_text = data.get("japanese_text", "")
+    partner_message = data.get("partner_message", "")
+    context_info = data.get("context_info", "")
+
+    try:
+        translated = f_translate_to_french(japanese_text, partner_message, context_info)
+        reverse = f_reverse_translation(translated)
+
+        # ✅ 翻訳結果ログ表示
+        print("🔵 翻訳対象（日本語）:", japanese_text)
+        print("🔵 翻訳結果（仏語）:", translated)
+        print("🟢 和訳:", reverse)
+
+        # ✅ Gemini翻訳をここで取得・保存
+        gemini = f_translate_with_gemini(japanese_text)
+        session["translated_text"] = translated
+        session["gemini_translation"] = gemini
+
+        return {
+            "success": True,
+            "translated_text": translated,
+            "reverse_translated_text": reverse,
+            "gemini_translation": gemini
+        }
+    
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.route("/reverse_translate_chatgpt", methods=["POST"])
+def reverse_translate_chatgpt():
+    data = request.get_json()
+    french_text = data.get("french_text", "")
+
+    try:
+        reversed_text = f_reverse_translation(french_text)
+        print("🔁 再翻訳対象（仏語）:", french_text)
+        print("🟢 再翻訳結果（和訳）:", reversed_text)  # ←✅ これを追加
+        return {
+            "success": True,
+            "reversed_text": reversed_text
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.route("/improve_translation", methods=["POST"])
+def improve_translation():
+    data = request.get_json()
+    french_text = data.get("french_text", "")
+
+    try:
+        improved = f_better_translation(french_text)
+        print("✨ 改善対象（仏語）:", french_text)
+        print("✨ 改善翻訳結果:", improved)
+
+        # ✅ Gemini翻訳を仏語から取得（簡易的に直接使う）
+        gemini_translation = f_translate_with_gemini(french_text)
+        print("🔷 Gemini翻訳:", gemini_translation)
+
+        # ✅ セッションに保存（必要！）
+        session["better_translation"] = improved
+        # session["gemini_translation"] = gemini_translation  # ✅ ←これがないと /get_nuance が動かない
+
+        return {
+            "success": True,
+            "improved_text": improved
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.route("/reverse_better_translation", methods=["POST"])
+def reverse_better_translation():
+    data = request.get_json()
+    french_text = data.get("french_text", "")
+
+    try:
+        reversed_text = f_reverse_better_translation(french_text)
+        print("🔁 改善翻訳の和訳対象:", french_text)
+        print("🟢 改善翻訳の和訳結果:", reversed_text)
+        return {
+            "success": True,
+            "reversed_text": reversed_text
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.route("/reverse_gemini_translation", methods=["POST"])
+def reverse_gemini_translation():
+    gemini_text = session.get("gemini_translation", "")
+    reversed_text = f_reverse_translation(gemini_text)
+    print("🔁 Gemini翻訳の和訳対象:", gemini_text)
+    print("🟢 Gemini翻訳の和訳結果:", reversed_text)
+    return {
+        "success": True,
+        "reversed_text": reversed_text
+    }
 
 # ====== ルーティング ======
 
@@ -192,14 +304,19 @@ def get_nuance():
     better_translation = session.get("better_translation", "")
     gemini_translation = session.get("gemini_translation", "")
 
-#    print("🧠 /get_nuance にアクセスが来ました")
-#    print("🧾 セッション情報:", {
-#        "translated_text": translated_text,
-#        "better_translation": better_translation,
-#        "gemini_translation": gemini_translation
-#    })
+    print("🧠 /get_nuance にアクセスが来ました")
+    print("🧾 セッション情報:", {
+        "translated_text": translated_text,
+        "better_translation": better_translation,
+        "gemini_translation": gemini_translation
+    })
 
-    if not (translated_text and better_translation and gemini_translation):
+    # ✅ ② 文字数で空かチェック（.strip()含む）
+    if not (
+        len(translated_text.strip()) > 0 and
+        len(better_translation.strip()) > 0 and
+        len(gemini_translation.strip()) > 0
+    ):
         return {"error": "必要な翻訳データが不足しています"}, 400
 
     result = f_gemini_3way_analysis(translated_text, better_translation, gemini_translation)
@@ -226,53 +343,65 @@ def index():
     chat_history = session.get("chat_history", [])
 
     if request.method == "POST":
+
         if request.form.get("reset") == "true":
-            session.clear()
+            keys_to_clear = [
+                "chat_history", "translated_text", "better_translation", "gemini_translation",
+                "partner_message", "context_info", "gemini_3way_analysis",
+                "nuance_question", "nuance_answer"
+    ]
+            for key in keys_to_clear:
+                session.pop(key, None)
+
             japanese_text = ""
             partner_message = ""
             context_info = ""
             nuance_question = ""
+
         else:
-            japanese_text = request.form.get("japanese_text", "").strip()
-            partner_message = request.form.get("partner_message", "").strip()
-            context_info = request.form.get("context_info", "").strip()
-            nuance_question = request.form.get("nuance_question", "").strip()
+         japanese_text = request.form.get("japanese_text", "").strip()
+         partner_message = request.form.get("partner_message", "").strip()
+         context_info = request.form.get("context_info", "").strip()
+         nuance_question = request.form.get("nuance_question", "").strip()
 
-            if japanese_text:
-                with ThreadPoolExecutor() as executor:
-                    future_translated = executor.submit(f_translate_to_french, japanese_text, partner_message, context_info)
-                    future_gemini_translation = executor.submit(f_translate_with_gemini, japanese_text, partner_message, context_info)
+         if japanese_text:
+             with ThreadPoolExecutor() as executor:
+                 # 翻訳処理を並列実行
+                 future_translated = executor.submit(f_translate_to_french, japanese_text, partner_message, context_info)
+                 future_gemini_translation = executor.submit(f_translate_with_gemini, japanese_text, partner_message, context_info)
 
-                    translated_text = future_translated.result()
-                    reverse_translated_future = executor.submit(f_reverse_translation, translated_text)
-                    better_translation_future = executor.submit(f_better_translation, translated_text)
+                 # 翻訳結果を取得
+                 translated_text = future_translated.result()
+                 gemini_translation = future_gemini_translation.result()
 
-                    better_translation = better_translation_future.result()
-                    reverse_better_text_future = executor.submit(f_reverse_better_translation, better_translation)
+             with ThreadPoolExecutor() as executor:
+                 future_reverse_translated = executor.submit(f_reverse_translation, translated_text)
+                 future_better_translation = executor.submit(f_better_translation, translated_text)
+                 future_gemini_reverse_translation = executor.submit(f_reverse_translation, gemini_translation)
 
-                    gemini_translation = future_gemini_translation.result()
-                    gemini_reverse_translation_future = executor.submit(f_reverse_translation, gemini_translation)
+                 reverse_translated_text = future_reverse_translated.result()
+                 better_translation = future_better_translation.result()
+                 gemini_reverse_translation = future_gemini_reverse_translation.result()
+                 
+                 future_reverse_better_translation = executor.submit(f_reverse_better_translation, better_translation)
+                 reverse_better_text = future_reverse_better_translation.result()
 
-                    reverse_translated_text = reverse_translated_future.result()
-                    reverse_better_text = reverse_better_text_future.result()
-                    gemini_reverse_translation = gemini_reverse_translation_future.result()
+             gemini_3way_analysis = f_gemini_3way_analysis(translated_text, better_translation, gemini_translation)
 
-                    gemini_3way_analysis = f_gemini_3way_analysis(translated_text, better_translation, gemini_translation)
+             session.update({
+                 "chat_history": chat_history,
+                 "partner_message": partner_message,
+                 "context_info": context_info,
+                 "translated_text": translated_text,
+                 "better_translation": better_translation,
+                 "gemini_translation": gemini_translation
+             })
 
-                session.update({
-                    "chat_history": chat_history,
-                    "partner_message": partner_message,
-                    "context_info": context_info,
-                    "translated_text": translated_text,
-                    "better_translation": better_translation,
-                    "gemini_translation": gemini_translation
-                })
-
-            if nuance_question:
-                nuance_answer = f_ask_about_nuance(nuance_question)
-                chat_history.append({"question": nuance_question, "answer": nuance_answer})
-                session["chat_history"] = chat_history
-                nuance_question = ""
+         if nuance_question:
+             nuance_answer = f_ask_about_nuance(nuance_question)
+             chat_history.append({"question": nuance_question, "answer": nuance_answer})
+             session["chat_history"] = chat_history
+             nuance_question = ""
 
     # ✅ どんな場合も return を通る（POST or GET）
     return render_template("index.html",
