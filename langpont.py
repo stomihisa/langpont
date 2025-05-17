@@ -1,19 +1,18 @@
+import os
+import sys
+from dotenv import load_dotenv
+
+# .env を読み込む（この1行で十分）
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
+
 from flask import Flask, render_template, request, session, redirect, url_for
 from openai import OpenAI
 from textwrap import dedent
 from concurrent.futures import ThreadPoolExecutor
-import os
-import sys
-import time
-from concurrent.futures import ThreadPoolExecutor
-from dotenv import load_dotenv
 from datetime import timedelta
 import requests
 import time
 from labels import labels
-
-# .env 読み込み
-load_dotenv()
 
 # APIキー
 api_key = os.getenv("OPENAI_API_KEY")
