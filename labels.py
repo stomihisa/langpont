@@ -3,8 +3,8 @@ labels = {
         "title": "LangPont 翻訳アプリ",
         "translate_button": "翻訳する",
         "reset_button": "リセット",
-        "input_label": "翻訳したい日本語",
-        "placeholder_input": "ここに翻訳したい日本語を入力",
+        "input_label": "翻訳したい文章",
+        "placeholder_input": "ここに翻訳したい文章を入力",
         "placeholder_context": "背景情報を入力してください",
         "default_context": "私はフランス人とビジネスをしていて、相手は私のお客様です。",
         "additional_question": "追加の質問を入力:",
@@ -29,14 +29,17 @@ labels = {
         "logout": "ログアウト",
         "lang_switch": "言語切替",
         "page_title": "LangPont 翻訳アプリ",
-        "loading_message": "翻訳中です… 少々お待ちください。"
+        "loading_message": "翻訳中です… 少々お待ちください。",
+        "label_ja": "日本語",
+        "label_fr": "フランス語",
+        "label_en": "英語"
     },
     "en": {
         "title": "LangPont Translator",
         "translate_button": "Translate",
         "reset_button": "Reset",
-        "input_label": "Enter Japanese text to translate",
-        "placeholder_input": "Enter Japanese text to translate",
+        "input_label": "Enter text to translate",
+        "placeholder_input": "Enter text to translate",
         "placeholder_context": "Enter background context if any",
         "default_context": "I am working with a French client. They are my customer.",
         "additional_question": "Enter a follow-up question:",
@@ -61,14 +64,17 @@ labels = {
         "logout": "Logout",
         "lang_switch": "Language",
         "page_title": "LangPont Translation App",
-        "loading_message": "Translating… Please wait."
+        "loading_message": "Translating… Please wait.",
+        "label_ja": "Japanese",
+        "label_fr": "French",
+        "label_en": "English"
     },
     "fr": {
         "title": "LangPont Traducteur",
         "translate_button": "Traduire",
         "reset_button": "Réinitialiser",
-        "input_label": "Entrez le texte japonais à traduire",
-        "placeholder_input": "Veuillez entrer le texte japonais que vous souhaitez traduire ici.",
+        "input_label": "Entrez le texte à traduire",
+        "placeholder_input": "Veuillez entrer le texte que vous souhaitez traduire ici.",
         "placeholder_context": "Entrez les informations contextuelles si nécessaire",
         "default_context": "Je travaille avec un client français. C’est mon client.",
         "additional_question": "Entrez une question complémentaire :",
@@ -93,6 +99,9 @@ labels = {
         "logout": "Déconnexion",
         "lang_switch": "Langue",
         "page_title": "LangPont Traduction App",
-        "loading_message": "Traduction en cours… Un instant, s'il vous plaît."
+        "loading_message": "Traduction en cours… Un instant, s'il vous plaît.",
+        "label_ja": "le japonais",
+        "label_fr": "le français",
+        "label_en": "l'anglais"
     }
 }

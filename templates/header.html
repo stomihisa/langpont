@@ -11,9 +11,11 @@
       <a href="/set_language/jp">JP</a> |
       <a href="/set_language/fr">FR</a>
     </div>
-    <div>
-      🔓 <a href="/logout">{{ labels["logout"] }}</a>
-    </div>
+    {% if session.get('logged_in') %}
+      <div>
+        🔓 <a href="/logout">{{ labels["logout"] }}</a>
+      </div>
+    {% endif %}
   </div>
   
   

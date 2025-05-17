@@ -2,14 +2,42 @@
   <div class="section-title">{{ title }}</div>
   <div class="flex-row">
     <div style="flex: 1; position: relative;">
-      <div style="font-weight:bold; margin-bottom:4px;">{{ labels["label_french"] }}</div>
-      <pre id="{{ fr_id }}">{{ fr_text }}</pre>
+      <!-- 左側のカラム -->
+      <div style="font-weight:bold; margin-bottom:4px;" id="label-{{ fr_id }}">
+        {% if fr_id == "translated-text" %}
+          <!-- ChatGPT翻訳の左側は target_lang (変換後の言語) -->
+          {{ labels["label_" + target_lang] }}
+        {% elif fr_id == "better-translation" %}
+          <!-- 改善翻訳の左側は target_lang (変換後の言語) -->
+          {{ labels["label_" + target_lang] }}
+        {% elif fr_id == "gemini-translation" %}
+          <!-- Gemini翻訳の左側は source_lang (元の言語) -->
+          {{ labels["label_" + source_lang] }}
+        {% else %}
+          {{ labels["label_" + source_lang] }}
+        {% endif %}
+      </div>
+      <pre id="{{ fr_id }}" class="trans-text">{{ fr_text }}</pre>
       <img src="{{ url_for('static', filename='copy-icon.png') }}" class="copy-result-btn" style="top: 4px; right: 4px;" onclick="copyContent('{{ fr_id }}', 'toast-{{ fr_id }}')">
       <div class="toast" id="toast-{{ fr_id }}">{{ labels["toast_copied"] }}</div>
     </div>
     <div style="flex: 1; position: relative;">
-      <div style="font-weight:bold; margin-bottom:4px;">{{ labels["label_japanese"] }}</div>
-      <pre id="{{ jp_id }}">{{ jp_text }}</pre>
+      <!-- 右側のカラム -->
+      <div style="font-weight:bold; margin-bottom:4px;" id="label-{{ jp_id }}">
+        {% if jp_id == "reverse-translated-text" %}
+          <!-- ChatGPT翻訳の右側は source_lang (元の言語) -->
+          {{ labels["label_" + source_lang] }}
+        {% elif jp_id == "reverse-better-translation" %}
+          <!-- 改善翻訳の右側は source_lang (元の言語) -->
+          {{ labels["label_" + source_lang] }}
+        {% elif jp_id == "gemini-reverse-translation" %}
+          <!-- Gemini翻訳の右側は target_lang (変換後の言語) -->
+          {{ labels["label_" + target_lang] }}
+        {% else %}
+          {{ labels["label_" + target_lang] }}
+        {% endif %}
+      </div>
+      <pre id="{{ jp_id }}" class="trans-text">{{ jp_text }}</pre>
       <img src="{{ url_for('static', filename='copy-icon.png') }}" class="copy-result-btn" style="top: 4px; right: 4px;" onclick="copyContent('{{ jp_id }}', 'toast-{{ jp_id }}')">
       <div class="toast" id="toast-{{ jp_id }}">{{ labels["toast_copied"] }}</div>
     </div>
