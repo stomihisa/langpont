@@ -110,23 +110,23 @@
   <div class="card" id="gemini-result" style="display: none;">
     <div class="section-title">{{ labels["section_gemini"] }}</div>
     <div class="translation-row">
+      <!-- 左：Geminiによる翻訳（target_lang） -->
       <div class="translation-block">
-        <!-- 左側は source_lang (元の言語) -->
-        <div class="label" id="gemini-source-label">{{ labels["label_" + source_lang] }}</div>
-        <pre id="gemini-translation" class="trans-text"></pre>
-        <img src="/static/copy-icon.png" class="copy-btn" 
-            onclick="copyContent('gemini-translation', 'toast-gemini-translated')">
+        <div class="label" id="label-gemini-target">{{ labels["label_" + target_lang] }}</div>
+        <pre id="gemini-translation"></pre>
+        <img src="/static/copy-icon.png" class="copy-btn" onclick="copyContent('gemini-translation', 'toast-gemini-translated')">
         <div class="toast" id="toast-gemini-translated">{{ labels["toast_copied"] }}</div>
       </div>
+
+      <!-- 右：Gemini翻訳の逆翻訳（source_lang） -->
       <div class="translation-block">
-        <!-- 右側は target_lang (翻訳先言語) -->
-        <div class="label" id="gemini-target-label">{{ labels["label_" + target_lang] }}</div>
-        <pre id="gemini-reverse-translation" class="trans-text"></pre>
-        <img src="/static/copy-icon.png" class="copy-btn" 
-            onclick="copyContent('gemini-reverse-translation', 'toast-gemini-reverse')">
+        <div class="label" id="label-gemini-source">{{ labels["label_" + source_lang] }}</div>
+        <pre id="gemini-reverse-translation"></pre>
+        <img src="/static/copy-icon.png" class="copy-btn" onclick="copyContent('gemini-reverse-translation', 'toast-gemini-reverse')">
         <div class="toast" id="toast-gemini-reverse">{{ labels["toast_copied"] }}</div>
       </div>
     </div>
+  </div>
 </div>
 
   <div id="loading" style="display: none; text-align: center; margin-top: 20px; font-weight: bold;">
@@ -266,14 +266,14 @@
       }
       
       // *** Gemini翻訳セクション ***
-      // 左側: 元の言語 (source)
-      const geminiSourceLabel = document.getElementById("gemini-source-label");
+      // 左側のラベル（翻訳元言語 - source_lang）
+      const geminiSourceLabel = document.getElementById("label-gemini-source");
       if (geminiSourceLabel) {
         geminiSourceLabel.textContent = labelMap[source] || source;
       }
-      
-      // 右側: 翻訳先言語 (target)
-      const geminiTargetLabel = document.getElementById("gemini-target-label");
+
+      // 右側のラベル（翻訳先言語 - target_lang）
+      const geminiTargetLabel = document.getElementById("label-gemini-target");
       if (geminiTargetLabel) {
         geminiTargetLabel.textContent = labelMap[target] || target;
       }
@@ -371,10 +371,12 @@
       if (geminiSource && geminiTarget && geminiResult) {
         // ★★★ 重要な修正: ここで元のテキストを設定 ★★★
         // 左側（source_lang）に元の入力テキストを設定
-        geminiSource.innerText = inputText;
+        // 修正: 左側（target_lang）にGemini翻訳結果を設定
+        geminiSource.innerText = data.gemini_translation || "(翻訳結果なし)";
         
         // 右側（target_lang）にGemini翻訳結果を設定
-        geminiTarget.innerText = data.gemini_translation || "(翻訳結果なし)";
+        // 修正: 右側（source_lang）に元の入力テキストを設定
+        geminiTarget.innerText = inputText;
         
         // Gemini翻訳カードを表示
         geminiResult.style.display = "block";

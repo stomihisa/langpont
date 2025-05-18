@@ -11,10 +11,10 @@
           <!-- 改善翻訳の左側は target_lang (変換後の言語) -->
           {{ labels["label_" + target_lang] }}
         {% elif fr_id == "gemini-translation" %}
-          <!-- Gemini翻訳の左側は source_lang (元の言語) -->
-          {{ labels["label_" + source_lang] }}
+          <!-- Gemini翻訳の左側は target (元の言語) -->
+          {{ labels["label_" + target_lang] }}
         {% else %}
-          {{ labels["label_" + source_lang] }}
+          {{ labels["label_" + target_lang] }}
         {% endif %}
       </div>
       <pre id="{{ fr_id }}" class="trans-text">{{ fr_text }}</pre>
@@ -31,10 +31,10 @@
           <!-- 改善翻訳の右側は source_lang (元の言語) -->
           {{ labels["label_" + source_lang] }}
         {% elif jp_id == "gemini-reverse-translation" %}
-          <!-- Gemini翻訳の右側は target_lang (変換後の言語) -->
-          {{ labels["label_" + target_lang] }}
+          <!-- Gemini翻訳の右側は source_lang (変換後の言語) -->
+          {{ labels["label_" + source_lang] }}
         {% else %}
-          {{ labels["label_" + target_lang] }}
+          {{ labels["label_" + source_lang] }}
         {% endif %}
       </div>
       <pre id="{{ jp_id }}" class="trans-text">{{ jp_text }}</pre>

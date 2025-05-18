@@ -44,8 +44,8 @@ def f_translate_to(input_text, source_lang, target_lang, partner_message="", con
     target_label = lang_map.get(target_lang, target_lang)
 
     # システムメッセージを言語ペアに応じて組み立てる
-    system_message = f"あなたは優秀な{source_label}→{target_label}の翻訳者です。"
-    system_message += f" 下記の直前のやりとりと背景情報を参考にし、自然で丁寧で失礼のない文章に{target_label}語で翻訳してください。"
+    system_message = f"あなたは{source_label}および{target_label}の優秀な翻訳者です。"
+    system_message += f" 下記の直前のやりとりと背景情報を参考にし、自然で丁寧で失礼のない文章に{target_label}で翻訳してください。"
 
     # コンテキスト情報の組み立て
     context = f"""
@@ -61,7 +61,7 @@ def f_translate_to(input_text, source_lang, target_lang, partner_message="", con
     以下のテキストを翻訳してください。
     - 元の言語: {source_label}
     - 翻訳後の言語: {target_label}
-    - 丁寧で自然、かつ失礼のない文体で{target_label}語に翻訳してください。
+    - 丁寧で自然、かつ失礼のない文体で{target_label}に翻訳してください。
 
     ▼翻訳対象テキスト：
     {input_text}
@@ -122,7 +122,7 @@ def f_translate_to_french(japanese_text, partner_message="", context_info=""):
     )
     return response.choices[0].message.content.strip()
 
-def f_reverse_translation(translated_text, source_lang, target_lang):
+def f_reverse_translation(translated_text, target_lang, source_lang):
     """翻訳されたテキストを元の言語に戻す関数"""
     if not translated_text:
         print("⚠️ f_reverse_translation: 空のテキストが渡されました")
@@ -142,14 +142,16 @@ def f_reverse_translation(translated_text, source_lang, target_lang):
     source_label = lang_map.get(source_lang, source_lang)
     target_label = lang_map.get(target_lang, target_lang)
 
-    system_message = f"あなたは優秀な{target_label}→{source_label}の翻訳者です。"
-    system_message += " 次の文章を元の言語に自然な形で正確に翻訳してください。"
+    system_message = (
+        f"あなたは優秀な{target_label}および{source_label}の翻訳者です。"
+        f" 次の文章を元の言語（{source_label}）に自然な形で正確に翻訳してください。"
+    )
 
     user_prompt = f"""
-以下の{target_label}の文を{source_label}に翻訳してください：
----
-{translated_text}
-""".strip()
+    以下の{target_label}の文を{source_label}に翻訳してください：
+    ---
+    {translated_text}
+    """.strip()
 
     print("📤 f_reverse_translation 呼び出し:")
     print(f" - システムメッセージ: {system_message}")
@@ -173,45 +175,73 @@ def f_reverse_translation(translated_text, source_lang, target_lang):
         print(traceback.format_exc())
         raise
 
-def f_better_translation(french_text, source_lang="fr", target_lang="en"):
+def f_better_translation(text_to_improve, source_lang="fr", target_lang="en"):
     """翻訳テキストをより自然に改善する関数"""
     lang_map = {
         "ja": "日本語",
         "fr": "フランス語",
         "en": "英語"
     }
-    
+
     source_label = lang_map.get(source_lang, source_lang)
     target_label = lang_map.get(target_lang, target_lang)
-    
+
     print(f"✨ f_better_translation 開始:")
-    print(f" - french_text: {french_text}")
+    print(f" - text_to_improve: {text_to_improve}")
     print(f" - source_lang: {source_lang} ({source_label})")
     print(f" - target_lang: {target_lang} ({target_label})")
-    
+
     system_message = f"{target_label}の翻訳をより自然に改善する専門家です。"
-    
+    user_prompt = f"この{target_label}をもっと自然な{target_label}の文章に改善してください：{text_to_improve}"
+
     response = client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[
             {"role": "system", "content": system_message},
-            {"role": "user", "content": f"この{target_label}をもっと自然な{target_label}の文章に改善してください：{french_text}"}
+            {"role": "user", "content": user_prompt}
         ]
     )
-    
+
     result = response.choices[0].message.content.strip()
     print(f"✅ 改善結果: {result}")
     return result
 
-def f_reverse_better_translation(french_text):
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": "フランス語から日本語に翻訳する専門家です。"},
-            {"role": "user", "content": f"このフランス語を日本語に訳してください：{french_text}"}
-        ]
-    )
-    return response.choices[0].message.content.strip()
+def f_reverse_better_translation(text_to_reverse, source_lang, target_lang):
+    """改善翻訳を元の言語に戻す関数"""
+    
+    lang_map = {
+        "ja": "日本語",
+        "fr": "フランス語",
+        "en": "英語"
+    }
+
+    source_label = lang_map.get(source_lang, source_lang)
+    target_label = lang_map.get(target_lang, target_lang)
+
+    system_message = f"{target_label}から{source_label}に翻訳する専門家です。"
+    user_prompt = f"この{target_label}を{source_label}に訳してください：{text_to_reverse}"
+
+    print("📤 f_reverse_better_translation 呼び出し:")
+    print(" - system:", system_message)
+    print(" - prompt:", user_prompt)
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": user_prompt}
+            ]
+        )
+        result = response.choices[0].message.content.strip()
+        print("📥 f_reverse_better_translation 結果:", result)
+        return result
+
+    except Exception as e:
+        import traceback
+        print("❌ f_reverse_better_translation エラー:", str(e))
+        print(traceback.format_exc())
+        return "(逆翻訳に失敗しました)"
 
 def f_ask_about_nuance(question):
     response = client.chat.completions.create(
@@ -257,24 +287,37 @@ def f_translate_with_gemini(text, source_lang, target_lang, partner_message="", 
         return f"Gemini API error: {response.status_code} - {response.text}"
 
 def f_gemini_3way_analysis(translated_text, better_translation, gemini_translation):
+    """3つの翻訳結果を比較分析する関数"""
+
+    # APIキー確認
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
     if not GEMINI_API_KEY:
         return "⚠️ Gemini APIキーがありません"
 
-    # 入力長すぎチェック（2000文字以上なら注意表示 ※解析は実行）
+    # 文字数チェック
     total_input = translated_text + better_translation + gemini_translation
-    if len(total_input) > 2000:
-        warning = "⚠️ 入力が長いため、分析結果は要約されています。\n\n"
-    else:
-        warning = ""
+    warning = "⚠️ 入力が長いため、分析結果は要約されています。\n\n" if len(total_input) > 2000 else ""
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key={GEMINI_API_KEY}"
+    # セッションから言語取得（デフォルトはja-fr）
+    source_lang = session.get("source_lang", "ja")
+    target_lang = session.get("target_lang", "fr")
 
+    lang_map = {
+        "ja": "日本語",
+        "fr": "フランス語",
+        "en": "英語"
+    }
+
+    source_label = lang_map.get(source_lang, source_lang)
+    target_label = lang_map.get(target_lang, target_lang)
+
+    # Geminiへのプロンプト
     prompt = f"""
-以下の3つのフランス語の文について、それぞれの表現のニュアンスの違いを日本語で比較して説明してください。
+以下の3つの{target_label}の文について、それぞれの表現のニュアンスの違いを{source_label}で比較して説明してください。
 あなたは翻訳表現の専門家です。
 比較は「丁寧さ」「口調」「トーン」「文構造」「ニュアンスの違い」を簡潔に言語化してください。
-出力は日本語で簡潔にまとめてください。重要なニュアンスや文体の違いが十分に伝わるようにしてください。必要なら500文字を超えても構いません。
+出力は{source_label}で簡潔にまとめてください。重要なニュアンスや文体の違いが十分に伝わるようにしてください。
+必要なら500文字を超えても構いません。
 
 【ChatGPTによる翻訳】
 {translated_text}
@@ -286,9 +329,10 @@ def f_gemini_3way_analysis(translated_text, better_translation, gemini_translati
 {gemini_translation}
 """.strip()
 
-    # print("【Geminiに送信するプロンプト】")
-    # print(prompt)
+    print("📤 Gemini 3way分析リクエスト:")
+    print(f" - prompt: {prompt[:300]}...")
 
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key={GEMINI_API_KEY}"
     headers = {"Content-Type": "application/json"}
     data = {"contents": [{"parts": [{"text": prompt}]}]}
 
@@ -296,11 +340,22 @@ def f_gemini_3way_analysis(translated_text, better_translation, gemini_translati
         response = requests.post(url, headers=headers, json=data, timeout=30)
         if response.status_code == 200:
             result_text = response.json()["candidates"][0]["content"]["parts"][0]["text"]
+            print("📥 Gemini 3way分析結果:", result_text[:100] + "...")
             return warning + result_text.strip()
         else:
-            return f"⚠️ Gemini API error: {response.status_code} - {response.text}"
+            error_msg = f"⚠️ Gemini API error: {response.status_code} - {response.text}"
+            print("❌", error_msg)
+            return error_msg
+
     except requests.exceptions.Timeout:
         return "⚠️ Gemini APIがタイムアウトしました（30秒以内に応答がありませんでした）"
+
+    except Exception as e:
+        import traceback
+        error_msg = f"⚠️ Gemini API呼び出しエラー: {str(e)}"
+        print(error_msg)
+        print(traceback.format_exc())
+        return error_msg
 
 # スピードアップ用改修
 @app.route("/translate_chatgpt", methods=["POST"])
