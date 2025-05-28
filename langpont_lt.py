@@ -30,6 +30,8 @@ if not api_key:
 
 # Flask
 app = Flask(__name__)
+app.config["TEMPLATES_AUTO_RELOAD"] = True
+
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "default_secret_key")
 app.permanent_session_lifetime = timedelta(hours=1)
 
