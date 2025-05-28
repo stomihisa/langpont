@@ -1,0 +1,764 @@
+{% extends "base.html" %}
+
+{% block title %}{{ labels["page_title"] }}{% endblock %}
+
+{% block content %}
+
+{% include "header.html" %}
+
+<!-- 🆕 軽量版識別バナー -->
+<div style="background: linear-gradient(90deg, #4CAF50, #45a049); color: white; padding: 8px 20px; margin-bottom: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+  <div style="display: flex; justify-content: space-between; align-items: center; font-size: 14px;">
+    <div>
+      <span style="font-weight: bold;">🚀 {{ version_info.version }}</span>
+      <span style="margin-left: 15px;">📁 {{ version_info.file_name }}</span>
+      <span style="margin-left: 15px;">📅 {{ version_info.created_date }}</span>
+    </div>
+    <div style="font-size: 12px; opacity: 0.9;">
+      ⚡ {{ version_info.optimization }}
+    </div>
+  </div>
+</div>
+
+<form onsubmit="event.preventDefault(); showLoading();">
+  <input type="hidden" id="gemini_ready" value="{% if gemini_translation %}1{% else %}0{% endif %}">
+
+  <div class="card" style="margin-bottom: 20px;">
+    <label for="language_pair">{{ labels["label_direction"] }}</label>
+    <select id="language_pair" name="language_pair" style="margin-left: 10px;">
+      <option value="ja-fr">日本語 → フランス語</option>
+      <option value="fr-ja">フランス語 → 日本語</option>
+      <option value="fr-en">フランス語 → 英語</option>
+      <option value="en-ja">英語 → 日本語</option>
+      <option value="ja-en">日本語 → 英語</option>
+    </select>
+  </div>
+
+  <div class="card" style="margin-bottom: 20px; position: relative;">
+    <label for="japanese_text">{{ labels["input_label"] }}</label>
+    <textarea id="japanese_text" name="japanese_text" placeholder="{{ labels['placeholder_input'] }}">{{ japanese_text }}</textarea>
+  
+    <!-- ✅ コピー＆削除アイコンを右上に配置 -->
+    <img src="{{ url_for('static', filename='copy-icon.png') }}" class="copy-btn"
+         style="position: absolute; top: 18px; right: 36px; width: 20px; height: 20px;"
+         onclick="copyContent('japanese_text', 'toast-japanese')">
+    <img src="{{ url_for('static', filename='delete-icon.png') }}" class="delete-btn"
+         style="position: absolute; top: 18px; right: 10px; width: 20px; height: 20px;"
+         onclick="clearContent('japanese_text')">
+  
+    <div class="toast" id="toast-japanese">{{ labels["toast_copied"] }}</div>
+  </div>
+
+  <div class="card" style="margin-bottom: 20px;">
+    <button type="button" class="toggle-btn" onclick="toggleDetails()">{{ labels["toggle_details_open"] }}</button>
+  </div>
+
+  <div id="detail-section" style="display: none;">
+    <div class="card" style="margin-bottom: 20px;">
+      <label for="partner_message" style="margin-left:20px; font-size:14px;">{{ labels["label_partner_message"] }}</label>
+      <textarea name="partner_message" style="margin-left:30px; width:calc(100% - 40px); height:50px;">{{ partner_message }}</textarea>
+    </div>
+
+    <div class="card" style="margin-bottom: 20px;">
+      <label for="context_info" style="margin-left:20px; font-size:14px;">{{ labels["label_context_info"] }}</label>
+      <textarea name="context_info"
+        placeholder="{{ labels['placeholder_context'] }}"
+        style="margin-left:30px; width:calc(100% - 40px); height:50px;">{{ context_info or labels["default_context"] }}</textarea>
+    </div>
+  </div>
+
+  <input type="hidden" id="is-translated" value="{{ translated_text | length > 0 }}">
+
+  <!-- 実験用コードが入っています。 -->
+  <!-- 実験用コードが入っています。 -->
+  <!-- 実験用コードが入っています。 -->
+  <div class="card button-group" style="margin-bottom: 32px;">
+    <button type="button" class="translate-btn" onclick="runFastTranslation()">{{ labels["translate_button"] }}</button>
+    <button type="button" name="reset" value="true" class="reset-btn" onclick="resetForm()">{{ labels["reset_button"] }}</button>
+    <button type="button" class="translate-btn" onclick="runExperiment()" style="background-color: #ff8c00; margin-left: 10px;">🧪 実験比較</button>
+  </div>
+
+  <!-- 🧪 実験結果表示エリア -->
+<div class="card" id="experiment-results" style="display: none; margin-bottom: 20px;">
+  <div class="section-title">🧪 実験比較結果</div>
+  
+  <!-- 速度比較 -->
+  <div style="margin-bottom: 20px; padding: 10px; background-color: #f5f5f5; border-radius: 5px;">
+    <h4>⏱️ 処理時間比較</h4>
+    <div id="speed-comparison"></div>
+  </div>
+  
+  <!-- 翻訳結果比較 -->
+  <div style="margin-bottom: 20px;">
+    <h4>📝 翻訳結果比較</h4>
+    
+    <!-- 日本語版結果 -->
+    <div style="margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+      <div style="font-weight: bold; color: #2196F3; margin-bottom: 5px;">🇯🇵 日本語プロンプト版</div>
+      <pre id="jp-result" style="background-color: #f9f9f9; padding: 8px; border-radius: 3px; margin: 0;"></pre>
+      <div style="font-size: 12px; color: #666; margin-top: 5px;">
+        トークン数: <span id="jp-tokens"></span> | 処理時間: <span id="jp-time"></span>秒
+      </div>
+    </div>
+    
+    <!-- 英語フル版結果 -->
+    <div style="margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+      <div style="font-weight: bold; color: #4CAF50; margin-bottom: 5px;">🇺🇸 英語プロンプト版（フル機能）</div>
+      <pre id="en-full-result" style="background-color: #f9f9f9; padding: 8px; border-radius: 3px; margin: 0;"></pre>
+      <div style="font-size: 12px; color: #666; margin-top: 5px;">
+        トークン数: <span id="en-full-tokens"></span> | 処理時間: <span id="en-full-time"></span>秒
+      </div>
+    </div>
+    
+    <!-- 英語最小版結果 -->
+    <div style="margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+      <div style="font-weight: bold; color: #FF9800; margin-bottom: 5px;">🚀 英語プロンプト版（最小限）</div>
+      <pre id="en-min-result" style="background-color: #f9f9f9; padding: 8px; border-radius: 3px; margin: 0;"></pre>
+      <div style="font-size: 12px; color: #666; margin-top: 5px;">
+        トークン数: <span id="en-min-tokens"></span> | 処理時間: <span id="en-min-time"></span>秒
+      </div>
+    </div>
+  </div>
+  
+  <!-- 推奨度 -->
+  <div style="padding: 10px; background-color: #e8f5e8; border-radius: 5px; border-left: 4px solid #4CAF50;">
+    <h4 style="margin: 0; color: #2E7D2E;">💡 推奨度</h4>
+    <div id="recommendation" style="margin-top: 8px;"></div>
+  </div>
+</div>
+
+  <!-- 実験用コードが入っています。（ここまで） -->
+  <!-- 実験用コードが入っています。（ここまで） -->
+  <!-- 実験用コードが入っています。（ここまで） -->
+
+  <!-- ChatGPT翻訳結果カード -->
+  <div class="card" id="chatgpt-result" style="display: none;">
+    <div class="section-title">{{ labels["section_chatgpt"] }}</div>
+    <div class="translation-row">
+      <div class="translation-block">
+        <!-- ★★★ 左側は常に target_lang (翻訳先言語) ★★★ -->
+        <div class="label" id="translated-label">{{ labels["label_" + target_lang] }}</div>
+        <img src="{{ url_for('static', filename='copy-icon.png') }}" class="copy-btn"
+            onclick="copyContent('translated-text', 'toast-translated')">
+        <pre id="translated-text" class="trans-text"></pre>
+        <div class="toast" id="toast-translated">{{ labels["toast_copied"] }}</div>
+      </div>
+      <div class="translation-block">
+        <!-- ★★★ 右側は常に source_lang (元の言語) ★★★ -->
+        <div class="label" id="reverse-translated-label">{{ labels["label_" + source_lang] }}</div>
+        <img src="{{ url_for('static', filename='copy-icon.png') }}" class="copy-btn"
+            onclick="copyContent('reverse-translated-text', 'toast-reverse')">
+        <pre id="reverse-translated-text" class="trans-text"></pre>
+        <div class="toast" id="toast-reverse">{{ labels["toast_copied"] }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 改善翻訳 -->
+  <div class="card" id="better-translation-card" style="display: none;">
+    <div class="section-title">{{ labels["section_better"] }}</div>
+    <div class="translation-row">
+      <div class="translation-block">
+        <!-- ★★★ 左側は常に target_lang (翻訳先言語) ★★★ -->
+        <div class="label" id="better-translation-label">{{ labels["label_" + target_lang] }}</div>
+        <img src="{{ url_for('static', filename='copy-icon.png') }}" class="copy-btn" 
+            onclick="copyContent('better-translation', 'toast-better')">
+        <pre id="better-translation" class="trans-text"></pre>
+        <div class="toast" id="toast-better">{{ labels["toast_copied"] }}</div>
+      </div>
+      <div class="translation-block">
+        <!-- ★★★ 右側は常に source_lang (元の言語) ★★★ -->
+        <div class="label" id="reverse-better-translation-label">{{ labels["label_" + source_lang] }}</div>
+        <img src="{{ url_for('static', filename='copy-icon.png') }}" class="copy-btn" 
+            onclick="copyContent('reverse-better-translation', 'toast-better-rev')">
+        <pre id="reverse-better-translation" class="trans-text"></pre>
+        <div class="toast" id="toast-better-rev">{{ labels["toast_copied"] }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Geminiによる翻訳 -->
+  <div class="card" id="gemini-result" style="display: none;">
+    <div class="section-title">{{ labels["section_gemini"] }}</div>
+    <div class="translation-row">
+      <!-- 左：Geminiによる翻訳（target_lang） -->
+      <div class="translation-block">
+        <div class="label" id="label-gemini-target">{{ labels["label_" + target_lang] }}</div>
+        <pre id="gemini-translation"></pre>
+        <img src="/static/copy-icon.png" class="copy-btn" onclick="copyContent('gemini-translation', 'toast-gemini-translated')">
+        <div class="toast" id="toast-gemini-translated">{{ labels["toast_copied"] }}</div>
+      </div>
+
+      <!-- 右：Gemini翻訳の逆翻訳（source_lang） -->
+      <div class="translation-block">
+        <div class="label" id="label-gemini-source">{{ labels["label_" + source_lang] }}</div>
+        <pre id="gemini-reverse-translation"></pre>
+        <img src="/static/copy-icon.png" class="copy-btn" onclick="copyContent('gemini-reverse-translation', 'toast-gemini-reverse')">
+        <div class="toast" id="toast-gemini-reverse">{{ labels["toast_copied"] }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <div id="loading" style="display: none; text-align: center; margin-top: 20px; font-weight: bold;">
+    <div class="spinner"></div>{{ labels["loading_message"] }}
+  </div>
+
+  <!-- {% for fr, jp, fr_id, jp_id, title in [
+    (translated_text, reverse_translated_text, "translated-text", "reverse-translated-text", labels["section_chatgpt"]),
+    (better_translation, reverse_better_text, "better-translation", "reverse-better-translation", labels["section_better"]),
+    (gemini_translation, gemini_reverse_translation, "gemini-translation", "gemini-reverse-translation", labels["section_gemini"])
+  ] if fr and jp %}  
+  
+    {% set fr_text = fr %}
+    {% set jp_text = jp %}
+    {% set fr_id = fr_id %}
+    {% set jp_id = jp_id %}
+    {% set title = title %}
+  
+    {% include "translation_card.html" %}
+  
+  {% endfor %} -->
+
+
+
+
+  <div class="card" id="gemini-nuance-card" style="display: none;">
+    <div class="section-title" style="position: relative;">
+      {{ labels["gemini_nuance_title"] }}
+      <img src="{{ url_for('static', filename='copy-icon.png') }}" class="copy-result-btn" style="position: absolute; top: 8px; right: 8px; width: 20px; height: 20px;" onclick="copyContent('gemini-3way-analysis', 'toast-gemini-3way')">
+    </div>
+    <pre id="gemini-3way-analysis">{{ labels["gemini_loading"] }}</pre>
+    <div class="toast" id="toast-gemini-3way">{{ labels["toast_copied"] }}</div>
+  </div>
+
+  <div class="card" id="gemini-nuance-trigger" style="display: none; text-align: center;">
+    <button type="button" class="translate-btn" onclick="fetchGeminiNuance()">{{ labels["button_gemini"] }}</button>
+  </div>
+
+  {% if translated_text or nuance_answer or chat_history %}
+  <div class="card">
+    <label for="nuance_question">{{ labels["additional_question"] }}</label>
+    <textarea name="nuance_question" placeholder="{{ labels['placeholder_followup'] }}">{{ nuance_question }}</textarea>
+    <button type="submit" class="translate-btn">{{ labels["button_submit_question"] }}</button>
+  </div>
+  {% endif %}
+
+  {% if nuance_answer %}
+  <div class="card">
+    <div class="section-title">{{ labels["answer_title"] }}</div>
+    <pre>{{ nuance_answer }}</pre>
+  </div>
+  {% endif %}
+
+  {% if chat_history %}
+  <div class="card">
+    <div class="section-title">{{ labels["history_title"] }}</div>
+    {% for item in chat_history %}
+    <div style="margin-bottom: 10px">
+      <strong>Q:</strong> {{ item.question }}<br>
+      <strong>A:</strong> {{ item.answer }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</form>
+
+{% endblock %}
+
+{% block scripts %}
+
+<!-- index_lt.html の <script> と </script> の間に入れる完全なコード -->
+
+<script>
+  function copyContent(id, toastId) {
+    const el = document.getElementById(id);
+    const text = el ? (el.value || el.innerText) : "";
+    navigator.clipboard.writeText(text);
+    showToast(toastId);
+  }
+
+  function clearContent(name) {
+    const el = document.querySelector(`[name='${name}']`);
+    if (el) el.value = "";
+  }
+
+  function showToast(id) {
+    const el = document.getElementById(id);
+    if (el) {
+      el.style.display = "block";
+      setTimeout(() => { el.style.display = "none"; }, 1200);
+    }
+  }
+
+  function toggleDetails() {
+    const section = document.getElementById("detail-section");
+    const button = document.querySelector(".toggle-btn");
+    const isVisible = section.style.display === "block";
+    section.style.display = isVisible ? "none" : "block";
+    button.textContent = isVisible
+      ? "{{ labels['toggle_details_open'] }}"
+      : "{{ labels['toggle_details_close'] }}";
+  }
+
+  // 🔤 言語ラベルを更新する関数
+  function updateLanguageLabels(languagePair) {
+    // 言語ペアから元の言語と翻訳先言語を取得
+    const [source, target] = languagePair.split("-");
+    
+    // 言語コードから表示用ラベルへのマッピング
+    const labelMap = {
+      "ja": "日本語",
+      "fr": "フランス語",
+      "en": "英語"
+    };
+
+    // *** ChatGPT翻訳セクション ***
+    // 左側: 翻訳先言語 (target)
+    const translatedLabel = document.getElementById("translated-label");
+    if (translatedLabel) {
+      translatedLabel.textContent = labelMap[target] || target;
+    }
+    
+    // 右側: 元の言語 (source)
+    const reverseLabel = document.getElementById("reverse-translated-label");
+    if (reverseLabel) {
+      reverseLabel.textContent = labelMap[source] || source;
+    }
+    
+    // *** 改善翻訳セクション ***
+    // 左側: 翻訳先言語 (target)
+    const betterTranslationLabel = document.getElementById("better-translation-label");
+    if (betterTranslationLabel) {
+      betterTranslationLabel.textContent = labelMap[target] || target;
+    }
+    
+    // 右側: 元の言語 (source)
+    const reverseBetterLabel = document.getElementById("reverse-better-translation-label");
+    if (reverseBetterLabel) {
+      reverseBetterLabel.textContent = labelMap[source] || source;
+    }
+    
+    // *** Gemini翻訳セクション ***
+    // 左側のラベル（翻訳元言語 - source_lang）
+    const geminiSourceLabel = document.getElementById("label-gemini-source");
+    if (geminiSourceLabel) {
+      geminiSourceLabel.textContent = labelMap[source] || source;
+    }
+
+    // 右側のラベル（翻訳先言語 - target_lang）
+    const geminiTargetLabel = document.getElementById("label-gemini-target");
+    if (geminiTargetLabel) {
+      geminiTargetLabel.textContent = labelMap[target] || target;
+    }
+    
+    console.log(`🔤 言語ラベル更新: ${source}(${labelMap[source]}) → ${target}(${labelMap[target]})`);
+  }
+
+  // ページ読み込み時にラベルを更新
+  document.addEventListener("DOMContentLoaded", function() {
+    const languagePair = document.getElementById("language_pair").value;
+    updateLanguageLabels(languagePair);
+    console.log("初期言語ラベル更新完了");
+  });
+
+  // 言語ペア選択時にラベルを更新
+  document.getElementById("language_pair").addEventListener("change", function() {
+    updateLanguageLabels(this.value);
+    console.log("言語ペア変更によるラベル更新完了");
+  });
+
+  function showLoading() {
+    const loading = document.getElementById("loading");
+    if (loading) loading.style.display = "block";
+  }
+
+  function hideLoading() {
+    const loading = document.getElementById("loading");
+    if (loading) loading.style.display = "none";
+  }
+
+  // 🚀 軽量版: 必要最小限のクリア（元の問題解決に必要な部分のみ）
+  function quickClearResults() {
+    // 重要な表示エリアのみクリア（DOM操作を最小化）
+    const criticalElements = ["translated-text", "reverse-translated-text"];
+    
+    criticalElements.forEach(id => {
+      const element = document.getElementById(id);
+      if (element && element.innerText !== "") {
+        element.innerText = "";
+      }
+    });
+    
+    console.log("🧹 軽量版: 重要エリアをクリアしました");
+  }
+
+  // 🚀 軽量版: 最小限の処理中表示
+  function setQuickProcessingState() {
+    const translatedText = document.getElementById("translated-text");
+    if (translatedText) {
+      translatedText.innerText = "翻訳中...";
+    }
+  }
+
+  // 🚀 軽量版: 高速表示（検証処理を最小化）
+  function displayChatGPTResultsFast(data) {
+    const translatedText = document.getElementById("translated-text");
+    const reverseTranslatedText = document.getElementById("reverse-translated-text");
+    const chatgptResult = document.getElementById("chatgpt-result");
+    
+    if (translatedText && reverseTranslatedText && chatgptResult) {
+      // 即座に表示（遅延なし）
+      translatedText.innerText = data.translated_text || "";
+      reverseTranslatedText.innerText = data.reverse_translated_text || "";
+      chatgptResult.style.display = "block";
+      console.log("ChatGPT翻訳表示完了（軽量版）");
+    }
+  }
+
+  // 🚀 軽量版: Gemini結果の高速表示
+  function displayGeminiResultsFast(data, inputText) {
+    const geminiSource = document.getElementById("gemini-translation");
+    const geminiTarget = document.getElementById("gemini-reverse-translation");
+    const geminiResult = document.getElementById("gemini-result");
+
+    if (geminiSource && geminiTarget && geminiResult) {
+      geminiSource.innerText = data.gemini_translation || "(翻訳結果なし)";
+      geminiTarget.innerText = inputText;
+      geminiResult.style.display = "block";
+      console.log("Gemini翻訳表示完了（軽量版）");
+    }
+  }
+
+  // 🚀 非同期版: 改善翻訳を背景で処理（UIをブロックしない）
+  async function processImprovedTranslationAsync(translatedText, languagePair) {
+    try {
+      console.log("改善翻訳を非同期で開始:", translatedText.substring(0, 30) + "...");
+      
+      // 改善翻訳を処理中表示に設定
+      const betterTranslationElement = document.getElementById("better-translation");
+      if (betterTranslationElement) {
+        betterTranslationElement.innerText = "改善翻訳を生成中...";
+      }
+
+      const improveResponse = await fetch("/improve_translation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          french_text: translatedText,
+          language_pair: languagePair
+        })
+      });
+
+      if (!improveResponse.ok) {
+        throw new Error(`改善翻訳エラー: ${improveResponse.status}`);
+      }
+
+      const improveData = await improveResponse.json();
+
+      if (improveData.success) {
+        betterTranslationElement.innerText = improveData.improved_text;
+
+        const betterCard = document.getElementById("better-translation-card");
+        if (betterCard) betterCard.style.display = "block";
+
+        // 改善翻訳の逆翻訳も非同期で処理
+        processReverseBetterTranslationAsync(improveData.improved_text, languagePair);
+
+      } else {
+        betterTranslationElement.innerText = `[改善翻訳エラー: ${improveData.error || "不明なエラー"}]`;
+      }
+    } catch (error) {
+      console.error("改善翻訳処理エラー:", error);
+      const betterTranslationElement = document.getElementById("better-translation");
+      if (betterTranslationElement) {
+        betterTranslationElement.innerText = `[エラー: ${error.message}]`;
+      }
+    }
+  }
+
+  // 🚀 非同期版: 改善翻訳の逆翻訳
+  async function processReverseBetterTranslationAsync(improvedText, languagePair) {
+    try {
+      const reverseBetterElement = document.getElementById("reverse-better-translation");
+      if (reverseBetterElement) {
+        reverseBetterElement.innerText = "逆翻訳中...";
+      }
+
+      const reverseBetterResponse = await fetch("/reverse_better_translation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          french_text: improvedText,
+          language_pair: languagePair
+        })
+      });
+
+      if (reverseBetterResponse.ok) {
+        const reverseBetterData = await reverseBetterResponse.json();
+        
+        if (reverseBetterData.success) {
+          reverseBetterElement.innerText = reverseBetterData.reversed_text || "";
+          console.log("改善翻訳の逆翻訳表示完了（軽量版）");
+        } else {
+          reverseBetterElement.innerText = `[逆翻訳エラー: ${reverseBetterData.error}]`;
+        }
+      } else {
+        reverseBetterElement.innerText = "[逆翻訳通信エラー]";
+      }
+    } catch (reverseErr) {
+      console.error("改善翻訳の逆翻訳エラー:", reverseErr);
+      const reverseBetterElement = document.getElementById("reverse-better-translation");
+      if (reverseBetterElement) {
+        reverseBetterElement.innerText = `[逆翻訳エラー: ${reverseErr.message}]`;
+      }
+    }
+  }
+
+  // 🚀 軽量版のメイン翻訳関数
+  async function runFastTranslation() {
+    try {
+      showLoading();
+      const startTime = performance.now();
+      
+      // 🔧 軽量版: 必要最小限のクリア（高速）
+      quickClearResults();
+      
+      // 入力データ取得
+      const inputText = document.getElementById("japanese_text").value;
+      if (!inputText.trim()) {
+        alert("翻訳するテキストを入力してください");
+        hideLoading();
+        return;
+      }
+      
+      const partnerMessage = document.querySelector("[name='partner_message']").value || "";
+      const contextInfo = document.querySelector("[name='context_info']").value || "";
+      const languagePair = document.getElementById("language_pair").value;
+      const [sourceLang, targetLang] = languagePair.split("-");
+      
+      // 🔧 軽量版: シンプルなリクエストID（高速）
+      const requestId = Date.now().toString(36);
+      
+      // 言語ラベルを更新
+      updateLanguageLabels(languagePair);
+      console.log(`軽量版翻訳実行[${requestId}]: ${sourceLang} → ${targetLang}`);
+      
+      // 🔧 軽量版: 最小限の処理中表示
+      setQuickProcessingState();
+      
+      // 翻訳APIを呼び出し（ヘッダー削除で軽量化）
+      const response = await fetch("/translate_chatgpt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          japanese_text: inputText,
+          partner_message: partnerMessage,
+          context_info: contextInfo,
+          language_pair: languagePair
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`サーバーエラー: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log(`軽量版翻訳APIレスポンス[${requestId}]:`, data.success ? "成功" : data.error);
+      
+      if (!data.success) {
+        throw new Error(data.error || "不明なエラー");
+      }
+      
+      // 🔧 軽量版: 基本的な整合性チェックのみ（高速）
+      if (data.translated_text === inputText) {
+        console.warn("⚠️ 翻訳結果が元の文章と同じです - 表示を調整します");
+        // 再実行せずに、表示のみ調整
+        data.translated_text = `[翻訳処理中にエラーが発生しました]`;
+      }
+      
+      // === 翻訳結果の表示（軽量化版） ===
+      
+      // 1. ChatGPT翻訳結果を即座に表示
+      displayChatGPTResultsFast(data);
+      
+      // 2. Gemini翻訳結果を即座に表示
+      displayGeminiResultsFast(data, inputText);
+      
+      // 3. 改善翻訳を非同期で処理（UIをブロックしない）
+      if (data.translated_text && !data.translated_text.includes("[翻訳処理中にエラー")) {
+        // バックグラウンドで改善翻訳を実行
+        processImprovedTranslationAsync(data.translated_text, languagePair).catch(console.error);
+      }
+      
+      // 4. Geminiニュアンス分析ボタンを表示
+      const nuanceTrigger = document.getElementById("gemini-nuance-trigger");
+      if (nuanceTrigger) {
+        nuanceTrigger.style.display = "block";
+      }
+      
+      console.log(`⏱ 軽量版翻訳処理完了[${requestId}]: ${Math.round(performance.now() - startTime)}ms`);
+      
+    } catch (error) {
+      console.error("軽量版翻訳エラー:", error);
+      quickClearResults();
+      alert("エラーが発生しました: " + error.message);
+    } finally {
+      hideLoading();
+    }
+  }
+
+  window.addEventListener("DOMContentLoaded", () => {
+    const trigger = document.getElementById("gemini-nuance-trigger");
+    const isReady = document.getElementById("gemini_ready")?.value === "1";
+    if (isReady && trigger) {
+      trigger.style.display = "block";
+    }
+  });
+
+  function fetchGeminiNuance() {
+    const el = document.getElementById("gemini-3way-analysis");
+    const card = document.getElementById("gemini-nuance-card");
+    if (!card || !el) return;
+
+    card.style.display = "block";
+    el.textContent = "{{ labels['gemini_loading'] }}";
+
+    const startTimeGemini = performance.now();
+
+    fetch("/get_nuance", {
+      method: "POST",
+      credentials: "include"
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.nuance) {
+          el.textContent = data.nuance;
+          showToast("toast-gemini-3way");
+          const trigger = document.getElementById("gemini-nuance-trigger");
+          if (trigger) trigger.style.display = "none";
+
+          console.log("⏱ Gemini分析表示まで:", Math.round(performance.now() - startTimeGemini), "ms");
+        }
+      })
+      .catch(() => {
+        el.textContent = "{{ labels['gemini_failed'] }}";
+      });
+  }
+  
+  function resetForm() {
+    // フォームのデータをクリア
+    document.getElementById("japanese_text").value = "";
+    document.querySelector("[name='partner_message']").value = "";
+    document.querySelector("[name='context_info']").value = "";
+    
+    // 翻訳結果表示エリアを非表示にする (オプション)
+    document.getElementById("chatgpt-result").style.display = "none";
+    document.getElementById("gemini-result").style.display = "none";
+    document.getElementById("better-translation-card").style.display = "none";
+    document.getElementById("gemini-nuance-card").style.display = "none";
+    document.getElementById("gemini-nuance-trigger").style.display = "none";
+
+    // フォームを送信
+    const form = document.querySelector("form");
+    const hiddenInput = document.createElement("input");
+    hiddenInput.type = "hidden";
+    hiddenInput.name = "reset";
+    hiddenInput.value = "true";
+    form.appendChild(hiddenInput);
+    form.submit();
+  }
+
+// 🧪 ==========実験用コード開始========== 🧪
+// 🧪 ==========実験用コード開始========== 🧪
+// 🧪 実験用関数
+// 🧪 修正版実験用関数
+// 🧪 エラー対応版実験用関数
+// 🧪 改良版: 翻訳品質が判断しやすい実験関数
+// 🧪 修正版: 表示問題を解決した実験関数
+async function runExperiment() {
+  try {
+    // 言語ペアに応じて適切なテスト文を用意
+    const languagePair = document.getElementById("language_pair").value;
+    let inputText = document.getElementById("japanese_text").value;
+    let experimentText = inputText;
+    
+    // もし入力が空、または判断しにくい場合は、推奨テスト文を提示
+    if (!inputText.trim()) {
+      const [source, target] = languagePair.split("-");
+      
+      if (source === "en" && target === "ja") {
+        experimentText = "Hello, how are you today? I hope you're having a wonderful day.";
+      } else if (source === "ja" && target === "en") {
+        experimentText = "こんにちは、今日はいかがお過ごしですか？素晴らしい一日をお過ごしのことと思います。";
+      } else if (source === "ja" && target === "fr") {
+        experimentText = "こんにちは、今日はいかがお過ごしですか？";
+      } else {
+        experimentText = "Hello, how are you today?";
+      }
+      
+      const useRecommended = confirm(`翻訳品質を判断しやすくするため、推奨テスト文を使用しますか？\n\n推奨テスト文: ${experimentText}\n\n「OK」で推奨文を使用、「キャンセル」で入力欄の文を使用`);
+      
+      if (!useRecommended) {
+        alert("テスト用の文章を入力してください");
+        return;
+      }
+    }
+    
+    console.log("🧪 実験リクエスト送信開始");
+    console.log("🧪 実験テキスト:", experimentText);
+    console.log("🧪 言語ペア:", languagePair);
+    
+    const response = await fetch("/experiment_prompts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        text: experimentText,
+        language_pair: languagePair
+      })
+    });
+    
+    console.log("🧪 レスポンス受信:", response.status);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`実験エラー: ${response.status} - ${errorText}`);
+    }
+    
+    const data = await response.json();
+    console.log("🧪 データ解析完了:", data);
+    
+    if (data.success && data.summary && data.results) {
+      const summary = data.summary;
+      const results = data.results;
+      
+      // 🔧 段階的に表示（アラートの文字数制限対策）
+      
+      // まず元の文章と言語ペアを表示
+      alert(`🧪 実験完了！\n\n📝 元の文章:\n${experimentText}\n\n🔄 翻訳方向: ${languagePair}\n\n次で翻訳結果を確認します...`);
+      
+      // 各翻訳結果を個別に表示
+      alert(`🇯🇵 日本語プロンプト版 [${summary.japanese_time.toFixed(2)}秒]:\n\n${results.japanese?.result || 'エラー'}`);
+      
+      alert(`🇺🇸 英語プロンプト版(フル) [${summary.english_full_time.toFixed(2)}秒]:\n\n${results.english_full?.result || 'エラー'}`);
+      
+      alert(`🚀 英語プロンプト版(最小) [${summary.english_minimal_time.toFixed(2)}秒]:\n\n${results.english_minimal?.result || 'エラー'}`);
+      
+      // 最後に速度サマリーを表示
+      alert(`⏱️ 速度比較結果:\n\n• 日本語版: ${summary.japanese_time.toFixed(2)}秒\n• 英語版(フル): ${summary.english_full_time.toFixed(2)}秒\n• 英語版(最小): ${summary.english_minimal_time.toFixed(2)}秒\n\n🚀 速度改善:\n• 英語(フル)版: ${summary.speed_improvement_full.toFixed(1)}%\n• 英語(最小)版: ${summary.speed_improvement_minimal.toFixed(1)}%`);
+      
+      console.log("🧪 詳細な実験結果:", data);
+      
+    } else {
+      throw new Error(data.error || "実験に失敗しました");
+    }
+    
+  } catch (error) {
+    console.error("🧪 実験エラー:", error);
+    alert("実験でエラーが発生しました: " + error.message);
+  }
+}
+
+</script>
+
+{% endblock %}
