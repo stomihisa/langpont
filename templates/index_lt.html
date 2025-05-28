@@ -1,285 +1,1028 @@
 {% extends "base.html" %}
 
-{% block title %}{{ labels["page_title"] }}{% endblock %}
+{% block title %}{{ labels["page_title"] }} - 軽量版{% endblock %}
+
+{% block head %}
+<link href="https://fonts.googleapis.com/css2?family=-apple-system,BlinkMacSystemFont,San+Francisco,Helvetica+Neue:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+        background: #f5f5f7;
+        color: #1d1d1f;
+        line-height: 1.6;
+    }
+    
+    /* ヘッダー */
+    .header {
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(20px);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        padding: 8px 0;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+    }
+    
+    .header-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 24px;
+    }
+    
+    .logo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .logo-icon {
+        width: 30px;
+        height: 30px;
+        background: linear-gradient(135deg, #007AFF, #5856D6);
+        border-radius: 7px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 15px;
+    }
+    
+    .logo-image {
+        width: 30px !important;
+        height: 30px !important;
+        border-radius: 7px;
+    }
+    
+    .logo-text {
+        font-size: 30px;
+        font-weight: 600;
+        color: #1d1d1f;
+    }
+    
+    .version-badge {
+        background: #34C759;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 500;
+        margin-left: 8px;
+    }
+    
+    .header-nav {
+        display: flex;
+        gap: 24px;
+        align-items: center;
+    }
+    
+    .nav-link {
+        color: #424245;
+        text-decoration: none;
+        font-weight: 400;
+        transition: color 0.2s ease;
+    }
+    
+    .nav-link:hover {
+        color: #007AFF;
+    }
+    
+    /* メインコンテナ */
+    .container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 40px 24px;
+    }
+    
+    /* 言語選択 */
+    .language-selector {
+        background: white;
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+        border: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    .language-pair-centered {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .language-select {
+        padding: 12px 16px;
+        border: 1px solid #d2d2d7;
+        border-radius: 8px;
+        font-size: 16px;
+        background: white;
+        min-width: 200px;
+        text-align: center;
+        transition: border-color 0.2s ease;
+    }
+
+    .language-select:focus {
+        outline: none;
+        border-color: #007AFF;
+        box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+    }
+    
+    .swap-button {
+        width: 40px;
+        height: 40px;
+        border: none;
+        background: #f2f2f7;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .swap-button:hover {
+        background: #e5e5ea;
+        transform: rotate(180deg);
+    }
+    
+    /* 翻訳エリア */
+    .translation-area {
+        display: block; /* grid から block に変更 */
+        margin-bottom: 24px;
+    }
+    
+    .input-panel {
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+        border: 1px solid rgba(0, 0, 0, 0.06);
+        max-width: 100%; /* 幅を調整 */
+    }
+    
+    .panel-header {
+        padding: 16px 20px;
+        background: #f9f9fb;
+        border-bottom: 1px solid #f2f2f7;
+        font-weight: 500;
+        color: #424245;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .panel-actions {
+        display: flex;
+        gap: 8px;
+    }
+    
+    .action-btn {
+        width: 28px;
+        height: 28px;
+        border: none;
+        background: transparent;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.2s ease;
+    }
+    
+    .action-btn:hover {
+        background: rgba(0, 122, 255, 0.1);
+    }
+    
+    .input-area {
+        width: 100%;
+        min-height: 200px;
+        padding: 20px;
+        border: none;
+        resize: vertical;
+        font-size: 16px;
+        line-height: 1.6;
+        font-family: inherit;
+    }
+    
+    .input-area:focus {
+        outline: none;
+    }
+    
+    /* 詳細設定 */
+    .advanced-section {
+        background: white;
+        border-radius: 16px;
+        margin-bottom: 24px;
+        overflow: hidden;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+        border: 1px solid rgba(0, 0, 0, 0.06);
+    }
+    
+    .advanced-toggle {
+        width: 100%;
+        padding: 16px 20px;
+        background: #f9f9fb;
+        border: none;
+        font-size: 16px;
+        font-weight: 500;
+        color: #424245;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: background-color 0.2s ease;
+    }
+    
+    .advanced-toggle:hover {
+        background: #f2f2f7;
+    }
+    
+    .advanced-content {
+        padding: 20px;
+        display: none;
+    }
+    
+    .advanced-content.show {
+        display: block;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-label {
+        display: block;
+        font-size: 14px;
+        font-weight: 500;
+        color: #424245;
+        margin-bottom: 8px;
+    }
+    
+    .form-textarea {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #d2d2d7;
+        border-radius: 8px;
+        font-size: 14px;
+        resize: vertical;
+        min-height: 80px;
+        font-family: inherit;
+    }
+    
+    .form-textarea:focus {
+        outline: none;
+        border-color: #007AFF;
+        box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+    }
+    
+    /* コントロールパネル */
+    .controls {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        margin-bottom: 32px;
+    }
+    
+    .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 22px;
+        font-size: 16px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .btn-primary {
+        background: #007AFF;
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: #0056b3;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+    }
+    
+    .btn-secondary {
+        background: #f2f2f7;
+        color: #424245;
+    }
+    
+    .btn-secondary:hover {
+        background: #e5e5ea;
+    }
+    
+    .btn-experiment {
+        background: linear-gradient(135deg, #FF9500, #FF6B00);
+        color: white;
+    }
+    
+    .btn-experiment:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(255, 149, 0, 0.3);
+    }
+    
+    /* 結果パネル */
+    .results-section {
+        display: grid;
+        gap: 24px;
+    }
+    
+    .result-card {
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+        border: 1px solid rgba(0, 0, 0, 0.06);
+        display: none;
+    }
+    
+    .result-card.show {
+        display: block;
+    }
+    
+    .result-header {
+        padding: 16px 20px;
+        background: linear-gradient(135deg, #f9f9fb, #f2f2f7);
+        border-bottom: 1px solid #f2f2f7;
+        font-weight: 600;
+        color: #1d1d1f;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .result-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1px;
+        background: #f2f2f7;
+    }
+    
+    .result-panel {
+        background: white;
+        padding: 20px;
+    }
+    
+    .result-label {
+        font-size: 12px;
+        font-weight: 500;
+        color: #8e8e93;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+    }
+    
+    .result-text {
+        font-size: 16px;
+        line-height: 1.6;
+        color: #1d1d1f;
+    }
+    
+    /* ローディング */
+    .loading {
+        display: none;
+        justify-content: center;
+        align-items: center;
+        padding: 40px;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+        margin: 24px 0;
+    }
+    
+    .loading.show {
+        display: flex;
+    }
+    
+    .spinner {
+        width: 32px;
+        height: 32px;
+        border: 3px solid #f2f2f7;
+        border-top: 3px solid #007AFF;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-right: 12px;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    /* トースト */
+    /* トースト - 完全リセット版 */
+   /* トースト - シンプル版 */
+    .toast {
+        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    @keyframes toast-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    }
+
+    /* レスポンシブ */
+    @media (max-width: 768px) {
+        .translation-area {
+            display: block; /* 既にblockなので変更なし */
+        }
+        
+        .result-content {
+            grid-template-columns: 1fr;
+        }
+        
+        .controls {
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .container {
+            padding: 20px 16px;
+        }
+        
+        .language-pair {
+            flex-direction: column;
+            gap: 16px;
+        }
+    }
+
+/* 🎛️ 翻訳モード選択のスタイル */
+.translation-mode-selector {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.mode-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.mode-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1d1d1f;
+}
+
+.current-mode {
+    background: linear-gradient(135deg, #007AFF, #5856D6);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.mode-toggle-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.mode-option {
+    position: relative;
+}
+
+.mode-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.mode-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 16px;
+    border: 2px solid #e5e5ea;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.mode-label:hover {
+    border-color: #007AFF;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.15);
+}
+
+.mode-option input[type="radio"]:checked + .mode-label {
+    border-color: #007AFF;
+    background: linear-gradient(135deg, rgba(0, 122, 255, 0.05), rgba(88, 86, 214, 0.05));
+}
+
+.mode-option input[type="radio"]:checked + .mode-label.premium-mode {
+    border-color: #FF9500;
+    background: linear-gradient(135deg, rgba(255, 149, 0, 0.05), rgba(255, 107, 0, 0.05));
+}
+
+.mode-icon {
+    font-size: 24px;
+    margin-bottom: 8px;
+}
+
+.mode-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1d1d1f;
+    margin-bottom: 4px;
+}
+
+.mode-description {
+    font-size: 12px;
+    color: #8e8e93;
+    text-align: center;
+    margin-bottom: 6px;
+}
+
+.mode-cost {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: #f2f2f7;
+    color: #424245;
+}
+
+.premium-mode .mode-cost {
+    background: linear-gradient(135deg, #FF9500, #FF6B00);
+    color: white;
+}
+
+@media (max-width: 768px) {
+    .mode-toggle-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* 🎨 コンパクトモードカード用CSS */
+/* 言語選択エリアの調整 */
+.language-pair {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+/* コンパクトモードカード */
+
+.compact-mode-card:hover {
+    border-color: #007AFF;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.15);
+}
+
+/* ヘッダーバナー */
+.header-mode-banner {
+    background: linear-gradient(135deg, #007AFF, #5856D6);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-left: 12px;
+    display: none;
+}
+
+.header-mode-banner.premium {
+    background: linear-gradient(135deg, #FF9500, #FF6B00);
+}
+
+.header-mode-banner.show {
+    display: inline-block;
+}
+
+/* ヘッダーバナーをクリック可能に */
+.header-mode-banner {
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    background: linear-gradient(135deg, #007AFF, #5856D6);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-left: 12px;
+    display: none;
+    cursor: pointer; /* クリック可能にする */
+    transition: all 0.2s ease; /* ホバー効果 */
+    user-select: none; /* テキスト選択を無効 */
+}
+
+.header-mode-banner:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+}
+
+.header-mode-banner.premium {
+    background: linear-gradient(135deg, #FF9500, #FF6B00);
+}
+
+.header-mode-banner.premium:hover {
+    box-shadow: 0 4px 12px rgba(255, 149, 0, 0.3);
+}
+
+.header-mode-banner.show {
+    display: inline-block;
+}
+
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+    .language-pair {
+        flex-direction: column;
+        gap: 16px;
+    }
+    
+    .compact-mode-cards {
+        justify-content: center;
+        width: 100%;
+    }
+    
+    .compact-mode-card {
+        flex: 1;
+        max-width: 120px;
+    }
+}
+
+</style>
+{% endblock %}
 
 {% block content %}
 
-{% include "header.html" %}
-
-<!-- 🆕 軽量版識別バナー -->
-<div style="background: linear-gradient(90deg, #4CAF50, #45a049); color: white; padding: 8px 20px; margin-bottom: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-  <div style="display: flex; justify-content: space-between; align-items: center; font-size: 14px;">
-    <div>
-      <span style="font-weight: bold;">🚀 {{ version_info.version }}</span>
-      <span style="margin-left: 15px;">📁 {{ version_info.file_name }}</span>
-      <span style="margin-left: 15px;">📅 {{ version_info.created_date }}</span>
-    </div>
-    <div style="font-size: 12px; opacity: 0.9;">
-      ⚡ {{ version_info.optimization }}
-    </div>
-  </div>
-</div>
-
-<form onsubmit="event.preventDefault(); showLoading();">
+<form onsubmit="event.preventDefault();">
   <input type="hidden" id="gemini_ready" value="{% if gemini_translation %}1{% else %}0{% endif %}">
 
-  <div class="card" style="margin-bottom: 20px;">
-    <label for="language_pair">{{ labels["label_direction"] }}</label>
-    <select id="language_pair" name="language_pair" style="margin-left: 10px;">
-      <option value="ja-fr">日本語 → フランス語</option>
-      <option value="fr-ja">フランス語 → 日本語</option>
-      <option value="fr-en">フランス語 → 英語</option>
-      <option value="en-ja">英語 → 日本語</option>
-      <option value="ja-en">日本語 → 英語</option>
-    </select>
-  </div>
-
-  <div class="card" style="margin-bottom: 20px; position: relative;">
-    <label for="japanese_text">{{ labels["input_label"] }}</label>
-    <textarea id="japanese_text" name="japanese_text" placeholder="{{ labels['placeholder_input'] }}">{{ japanese_text }}</textarea>
-  
-    <!-- ✅ コピー＆削除アイコンを右上に配置 -->
-    <img src="{{ url_for('static', filename='copy-icon.png') }}" class="copy-btn"
-         style="position: absolute; top: 18px; right: 36px; width: 20px; height: 20px;"
-         onclick="copyContent('japanese_text', 'toast-japanese')">
-    <img src="{{ url_for('static', filename='delete-icon.png') }}" class="delete-btn"
-         style="position: absolute; top: 18px; right: 10px; width: 20px; height: 20px;"
-         onclick="clearContent('japanese_text')">
-  
-    <div class="toast" id="toast-japanese">{{ labels["toast_copied"] }}</div>
-  </div>
-
-  <div class="card" style="margin-bottom: 20px;">
-    <button type="button" class="toggle-btn" onclick="toggleDetails()">{{ labels["toggle_details_open"] }}</button>
-  </div>
-
-  <div id="detail-section" style="display: none;">
-    <div class="card" style="margin-bottom: 20px;">
-      <label for="partner_message" style="margin-left:20px; font-size:14px;">{{ labels["label_partner_message"] }}</label>
-      <textarea name="partner_message" style="margin-left:30px; width:calc(100% - 40px); height:50px;">{{ partner_message }}</textarea>
-    </div>
-
-    <div class="card" style="margin-bottom: 20px;">
-      <label for="context_info" style="margin-left:20px; font-size:14px;">{{ labels["label_context_info"] }}</label>
-      <textarea name="context_info"
-        placeholder="{{ labels['placeholder_context'] }}"
-        style="margin-left:30px; width:calc(100% - 40px); height:50px;">{{ context_info or labels["default_context"] }}</textarea>
-    </div>
-  </div>
-
-  <input type="hidden" id="is-translated" value="{{ translated_text | length > 0 }}">
-
-  <!-- 実験用コードが入っています。 -->
-  <!-- 実験用コードが入っています。 -->
-  <!-- 実験用コードが入っています。 -->
-  <div class="card button-group" style="margin-bottom: 32px;">
-    <button type="button" class="translate-btn" onclick="runFastTranslation()">{{ labels["translate_button"] }}</button>
-    <button type="button" name="reset" value="true" class="reset-btn" onclick="resetForm()">{{ labels["reset_button"] }}</button>
-    <button type="button" class="translate-btn" onclick="runExperiment()" style="background-color: #ff8c00; margin-left: 10px;">🧪 実験比較</button>
-  </div>
-
-  <!-- 🧪 実験結果表示エリア -->
-<div class="card" id="experiment-results" style="display: none; margin-bottom: 20px;">
-  <div class="section-title">🧪 実験比較結果</div>
-  
-  <!-- 速度比較 -->
-  <div style="margin-bottom: 20px; padding: 10px; background-color: #f5f5f5; border-radius: 5px;">
-    <h4>⏱️ 処理時間比較</h4>
-    <div id="speed-comparison"></div>
-  </div>
-  
-  <!-- 翻訳結果比較 -->
-  <div style="margin-bottom: 20px;">
-    <h4>📝 翻訳結果比較</h4>
-    
-    <!-- 日本語版結果 -->
-    <div style="margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
-      <div style="font-weight: bold; color: #2196F3; margin-bottom: 5px;">🇯🇵 日本語プロンプト版</div>
-      <pre id="jp-result" style="background-color: #f9f9f9; padding: 8px; border-radius: 3px; margin: 0;"></pre>
-      <div style="font-size: 12px; color: #666; margin-top: 5px;">
-        トークン数: <span id="jp-tokens"></span> | 処理時間: <span id="jp-time"></span>秒
+<!-- ヘッダー -->
+  <header class="header">
+      <div class="header-content">
+        <div class="logo" onclick="resetApplication()" style="cursor: pointer;" title="リセット">
+          <img src="{{ url_for('static', filename='logo.png') }}" alt="LangPont Logo" style="width: 60px; height: 65px; border-radius: 7px;">
+          <span class="logo-text">{{ labels["title"] }}</span>
+          {% if version_info %}
+          <span class="version-badge">{{ version_info.version }}</span>
+          {% endif %}
+        </div>
+          <nav class="header-nav">
+              <div>
+                🌐 {{ labels["lang_switch"] }}：
+                <a href="/set_language/en" class="nav-link">EN</a> |
+                <a href="/set_language/jp" class="nav-link">JP</a> |
+                <a href="/set_language/fr" class="nav-link">FR</a>
+              </div>
+              {% if session.get('logged_in') %}
+                <a href="/logout" class="nav-link">🔓 {{ labels["logout"] }}</a>
+              {% endif %}
+          </nav>
       </div>
+  </header>
+
+  <div class="container">
+    <!-- 言語選択 -->
+    <!-- 言語選択（中央配置） -->
+    <div class="language-selector">
+        <div class="language-pair-centered">
+            <select id="language_pair" name="language_pair" class="language-select">
+                <option value="ja-fr">JPN → FRA</option>
+                <option value="fr-ja">FRA → JPN</option>
+                <option value="fr-en">FRA → ENG</option>
+                <option value="en-ja">ENG → JPN</option>
+                <option value="ja-en">JPN → ENG</option>
+            </select>
+        </div>
     </div>
-    
-    <!-- 英語フル版結果 -->
-    <div style="margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
-      <div style="font-weight: bold; color: #4CAF50; margin-bottom: 5px;">🇺🇸 英語プロンプト版（フル機能）</div>
-      <pre id="en-full-result" style="background-color: #f9f9f9; padding: 8px; border-radius: 3px; margin: 0;"></pre>
-      <div style="font-size: 12px; color: #666; margin-top: 5px;">
-        トークン数: <span id="en-full-tokens"></span> | 処理時間: <span id="en-full-time"></span>秒
-      </div>
+
+    <!-- 翻訳エリア -->
+    <div class="translation-area">
+        <div class="input-panel">
+            <div class="panel-header">
+                <span id="input-language">{{ labels["input_label"] }}</span>
+                <div class="panel-actions">
+                    <button type="button" class="action-btn" onclick="copyContent('japanese_text', 'toast-japanese', this)" title="コピー">📋</button>
+                    <button type="button" class="action-btn" onclick="clearContent('japanese_text')" title="クリア">🗑️</button>
+                </div>
+            </div>
+            <textarea id="japanese_text" name="japanese_text" class="input-area" placeholder="{{ labels['placeholder_input'] }}">{{ japanese_text }}</textarea>
+        </div>
     </div>
-    
-    <!-- 英語最小版結果 -->
-    <div style="margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
-      <div style="font-weight: bold; color: #FF9800; margin-bottom: 5px;">🚀 英語プロンプト版（最小限）</div>
-      <pre id="en-min-result" style="background-color: #f9f9f9; padding: 8px; border-radius: 3px; margin: 0;"></pre>
-      <div style="font-size: 12px; color: #666; margin-top: 5px;">
-        トークン数: <span id="en-min-tokens"></span> | 処理時間: <span id="en-min-time"></span>秒
-      </div>
+
+    <!-- 詳細設定 -->
+    <div class="advanced-section">
+        <button type="button" class="advanced-toggle" onclick="toggleAdvanced()">
+            {{ labels["toggle_details_open"] }}
+            <span>▼</span>
+        </button>
+        <div class="advanced-content" id="advancedContent">
+            <div class="form-group">
+                <label class="form-label">{{ labels["label_partner_message"] }}</label>
+                <textarea name="partner_message" class="form-textarea" placeholder="直前の会話内容があれば入力してください...">{{ partner_message }}</textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ labels["label_context_info"] }}</label>
+                <textarea name="context_info" class="form-textarea" placeholder="{{ labels['placeholder_context'] }}">{{ context_info or labels["default_context"] }}</textarea>
+            </div>
+        </div>
     </div>
-  </div>
-  
-  <!-- 推奨度 -->
-  <div style="padding: 10px; background-color: #e8f5e8; border-radius: 5px; border-left: 4px solid #4CAF50;">
-    <h4 style="margin: 0; color: #2E7D2E;">💡 推奨度</h4>
-    <div id="recommendation" style="margin-top: 8px;"></div>
-  </div>
-</div>
 
-  <!-- 実験用コードが入っています。（ここまで） -->
-  <!-- 実験用コードが入っています。（ここまで） -->
-  <!-- 実験用コードが入っています。（ここまで） -->
+    <input type="hidden" id="is-translated" value="{{ translated_text | length > 0 }}">
 
-  <!-- ChatGPT翻訳結果カード -->
-  <div class="card" id="chatgpt-result" style="display: none;">
-    <div class="section-title">{{ labels["section_chatgpt"] }}</div>
-    <div class="translation-row">
-      <div class="translation-block">
-        <!-- ★★★ 左側は常に target_lang (翻訳先言語) ★★★ -->
-        <div class="label" id="translated-label">{{ labels["label_" + target_lang] }}</div>
-        <img src="{{ url_for('static', filename='copy-icon.png') }}" class="copy-btn"
-            onclick="copyContent('translated-text', 'toast-translated')">
-        <pre id="translated-text" class="trans-text"></pre>
-        <div class="toast" id="toast-translated">{{ labels["toast_copied"] }}</div>
-      </div>
-      <div class="translation-block">
-        <!-- ★★★ 右側は常に source_lang (元の言語) ★★★ -->
-        <div class="label" id="reverse-translated-label">{{ labels["label_" + source_lang] }}</div>
-        <img src="{{ url_for('static', filename='copy-icon.png') }}" class="copy-btn"
-            onclick="copyContent('reverse-translated-text', 'toast-reverse')">
-        <pre id="reverse-translated-text" class="trans-text"></pre>
-        <div class="toast" id="toast-reverse">{{ labels["toast_copied"] }}</div>
-      </div>
+    <!-- コントロール -->
+    <div class="controls">
+        <button type="button" class="btn btn-primary" onclick="runFastTranslation()">
+            <span>✨</span>
+            {{ labels["translate_button"] }}
+        </button>
+        <button type="button" class="btn btn-secondary" onclick="resetForm()">
+            <span>🔄</span>
+            {{ labels["reset_button"] }}
+        </button>
+
     </div>
-  </div>
 
-  <!-- 改善翻訳 -->
-  <div class="card" id="better-translation-card" style="display: none;">
-    <div class="section-title">{{ labels["section_better"] }}</div>
-    <div class="translation-row">
-      <div class="translation-block">
-        <!-- ★★★ 左側は常に target_lang (翻訳先言語) ★★★ -->
-        <div class="label" id="better-translation-label">{{ labels["label_" + target_lang] }}</div>
-        <img src="{{ url_for('static', filename='copy-icon.png') }}" class="copy-btn" 
-            onclick="copyContent('better-translation', 'toast-better')">
-        <pre id="better-translation" class="trans-text"></pre>
-        <div class="toast" id="toast-better">{{ labels["toast_copied"] }}</div>
-      </div>
-      <div class="translation-block">
-        <!-- ★★★ 右側は常に source_lang (元の言語) ★★★ -->
-        <div class="label" id="reverse-better-translation-label">{{ labels["label_" + source_lang] }}</div>
-        <img src="{{ url_for('static', filename='copy-icon.png') }}" class="copy-btn" 
-            onclick="copyContent('reverse-better-translation', 'toast-better-rev')">
-        <pre id="reverse-better-translation" class="trans-text"></pre>
-        <div class="toast" id="toast-better-rev">{{ labels["toast_copied"] }}</div>
-      </div>
+    <!-- ローディング -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <span>{{ labels["loading_message"] }}</span>
     </div>
-  </div>
 
-  <!-- Geminiによる翻訳 -->
-  <div class="card" id="gemini-result" style="display: none;">
-    <div class="section-title">{{ labels["section_gemini"] }}</div>
-    <div class="translation-row">
-      <!-- 左：Geminiによる翻訳（target_lang） -->
-      <div class="translation-block">
-        <div class="label" id="label-gemini-target">{{ labels["label_" + target_lang] }}</div>
-        <pre id="gemini-translation"></pre>
-        <img src="/static/copy-icon.png" class="copy-btn" onclick="copyContent('gemini-translation', 'toast-gemini-translated')">
-        <div class="toast" id="toast-gemini-translated">{{ labels["toast_copied"] }}</div>
-      </div>
+    <!-- 結果セクション -->
+    <div class="results-section">
+        <!-- ChatGPT翻訳結果 -->
+        <div class="result-card" id="chatgpt-result">
+            <div class="result-header">
+                <span>🤖 {{ labels["section_chatgpt"] }}</span>
+                <button type="button" class="action-btn" onclick="copyContent('translated-text', 'toast-translated', this)" title="コピー">📋</button>
+            </div>
+            <div class="result-content">
+                <div class="result-panel">
+                    <div class="result-label" id="translated-label">{{ labels["label_" + target_lang] }}</div>
+                    <div class="result-text" id="translated-text"></div>
+                </div>
+                <div class="result-panel">
+                    <div class="result-label" id="reverse-translated-label">{{ labels["label_" + source_lang] }}</div>
+                    <div class="result-text" id="reverse-translated-text"></div>
+                </div>
+            </div>
+        </div>
 
-      <!-- 右：Gemini翻訳の逆翻訳（source_lang） -->
-      <div class="translation-block">
-        <div class="label" id="label-gemini-source">{{ labels["label_" + source_lang] }}</div>
-        <pre id="gemini-reverse-translation"></pre>
-        <img src="/static/copy-icon.png" class="copy-btn" onclick="copyContent('gemini-reverse-translation', 'toast-gemini-reverse')">
-        <div class="toast" id="toast-gemini-reverse">{{ labels["toast_copied"] }}</div>
-      </div>
+        <!-- 改善翻訳 -->
+        <div class="result-card" id="better-translation-card">
+            <div class="result-header">
+                <span>✨ {{ labels["section_better"] }}</span>
+                <button type="button" class="action-btn" onclick="copyContent('better-translation', 'toast-better', this)" title="コピー">📋</button>
+            </div>
+            <div class="result-content">
+                <div class="result-panel">
+                    <div class="result-label" id="better-translation-label">{{ labels["label_" + target_lang] }}</div>
+                    <div class="result-text" id="better-translation"></div>
+                </div>
+                <div class="result-panel">
+                    <div class="result-label" id="reverse-better-translation-label">{{ labels["label_" + source_lang] }}</div>
+                    <div class="result-text" id="reverse-better-translation"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gemini翻訳 -->
+        <div class="result-card" id="gemini-result">
+            <div class="result-header">
+                <span>💎 {{ labels["section_gemini"] }}</span>
+                <button type="button" class="action-btn" onclick="copyContent('gemini-translation', 'toast-gemini-translated', this)" title="コピー">📋</button>
+            </div>
+            <div class="result-content">
+                <div class="result-panel">
+                    <div class="result-label" id="label-gemini-target">{{ labels["label_" + target_lang] }}</div>
+                    <div class="result-text" id="gemini-translation"></div>
+                </div>
+                <div class="result-panel">
+                    <div class="result-label" id="label-gemini-source">{{ labels["label_" + source_lang] }}</div>
+                    <div class="result-text" id="gemini-reverse-translation"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Geminiニュアンス分析 -->
+        <div class="result-card" id="gemini-nuance-card">
+          <div class="result-header">
+              <span>🧠 {{ labels["gemini_nuance_title"] }}</span>
+              <button type="button" class="action-btn" onclick="copyContent('gemini-3way-analysis', 'toast-gemini-3way', this)" title="コピー">📋</button>
+          </div>
+          <div class="result-content">
+              <div class="result-panel" style="grid-column: 1 / -1;">
+                  <pre class="result-text" id="gemini-3way-analysis" style="white-space: pre-wrap; word-wrap: break-word; font-family: inherit; font-size: 16px; line-height: 1.8; margin: 0;">{{ labels["gemini_loading"] }}</pre>
+              </div>
+          </div>
+        </div>
     </div>
-  </div>
-</div>
 
-  <div id="loading" style="display: none; text-align: center; margin-top: 20px; font-weight: bold;">
-    <div class="spinner"></div>{{ labels["loading_message"] }}
-  </div>
-
-  <!-- {% for fr, jp, fr_id, jp_id, title in [
-    (translated_text, reverse_translated_text, "translated-text", "reverse-translated-text", labels["section_chatgpt"]),
-    (better_translation, reverse_better_text, "better-translation", "reverse-better-translation", labels["section_better"]),
-    (gemini_translation, gemini_reverse_translation, "gemini-translation", "gemini-reverse-translation", labels["section_gemini"])
-  ] if fr and jp %}  
-  
-    {% set fr_text = fr %}
-    {% set jp_text = jp %}
-    {% set fr_id = fr_id %}
-    {% set jp_id = jp_id %}
-    {% set title = title %}
-  
-    {% include "translation_card.html" %}
-  
-  {% endfor %} -->
-
-
-
-
-  <div class="card" id="gemini-nuance-card" style="display: none;">
-    <div class="section-title" style="position: relative;">
-      {{ labels["gemini_nuance_title"] }}
-      <img src="{{ url_for('static', filename='copy-icon.png') }}" class="copy-result-btn" style="position: absolute; top: 8px; right: 8px; width: 20px; height: 20px;" onclick="copyContent('gemini-3way-analysis', 'toast-gemini-3way')">
+    <!-- Geminiニュアンス分析ボタン -->
+    <div class="controls" id="gemini-nuance-trigger" style="display: none;">
+        <button type="button" class="btn btn-experiment" onclick="fetchGeminiNuance()">
+            <span>🧠</span>
+            {{ labels["button_gemini"] }}
+        </button>
     </div>
-    <pre id="gemini-3way-analysis">{{ labels["gemini_loading"] }}</pre>
-    <div class="toast" id="toast-gemini-3way">{{ labels["toast_copied"] }}</div>
-  </div>
 
-  <div class="card" id="gemini-nuance-trigger" style="display: none; text-align: center;">
-    <button type="button" class="translate-btn" onclick="fetchGeminiNuance()">{{ labels["button_gemini"] }}</button>
-  </div>
-
-  {% if translated_text or nuance_answer or chat_history %}
-  <div class="card">
-    <label for="nuance_question">{{ labels["additional_question"] }}</label>
-    <textarea name="nuance_question" placeholder="{{ labels['placeholder_followup'] }}">{{ nuance_question }}</textarea>
-    <button type="submit" class="translate-btn">{{ labels["button_submit_question"] }}</button>
-  </div>
-  {% endif %}
-
-  {% if nuance_answer %}
-  <div class="card">
-    <div class="section-title">{{ labels["answer_title"] }}</div>
-    <pre>{{ nuance_answer }}</pre>
-  </div>
-  {% endif %}
-
-  {% if chat_history %}
-  <div class="card">
-    <div class="section-title">{{ labels["history_title"] }}</div>
-    {% for item in chat_history %}
-    <div style="margin-bottom: 10px">
-      <strong>Q:</strong> {{ item.question }}<br>
-      <strong>A:</strong> {{ item.answer }}
+    <!-- 追加質問セクション -->
+    {% if translated_text or nuance_answer or chat_history %}
+    <div class="advanced-section">
+        <div class="advanced-content show">
+            <div class="form-group">
+                <label class="form-label">{{ labels["additional_question"] }}</label>
+                <textarea name="nuance_question" class="form-textarea" placeholder="{{ labels['placeholder_followup'] }}">{{ nuance_question }}</textarea>
+            </div>
+            <div class="controls">
+                <button type="submit" class="btn btn-primary">{{ labels["button_submit_question"] }}</button>
+            </div>
+        </div>
     </div>
-    {% endfor %}
+    {% endif %}
+
+    {% if nuance_answer %}
+    <div class="result-card show">
+        <div class="result-header">
+            <span>💬 {{ labels["answer_title"] }}</span>
+        </div>
+        <div class="result-content">
+            <div class="result-panel" style="grid-column: 1 / -1;">
+                <div class="result-text">{{ nuance_answer }}</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if chat_history %}
+    <div class="result-card show">
+        <div class="result-header">
+            <span>📜 {{ labels["history_title"] }}</span>
+        </div>
+        <div class="result-content">
+            <div class="result-panel" style="grid-column: 1 / -1;">
+                {% for item in chat_history %}
+                <div style="margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #f2f2f7;">
+                    <div style="font-weight: 600; color: #007AFF; margin-bottom: 4px;">Q: {{ item.question }}</div>
+                    <div>A: {{ item.answer }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
   </div>
-  {% endif %}
+
+  <!-- トースト通知 -->
+  <div class="toast" id="toast-japanese">{{ labels["toast_copied"] }}</div>
+  <div class="toast" id="toast-translated">{{ labels["toast_copied"] }}</div>
+  <div class="toast" id="toast-better">{{ labels["toast_copied"] }}</div>
+  <div class="toast" id="toast-gemini-translated">{{ labels["toast_copied"] }}</div>
+  <div class="toast" id="toast-gemini-3way">{{ labels["toast_copied"] }}</div>
+
 </form>
 
 {% endblock %}
 
 {% block scripts %}
-
-<!-- index_lt.html の <script> と </script> の間に入れる完全なコード -->
-
 <script>
-  function copyContent(id, toastId) {
+  // 既存のJavaScript関数をそのまま維持
+  function copyContent(id, toastId, buttonElement) {
     const el = document.getElementById(id);
     const text = el ? (el.value || el.innerText) : "";
     navigator.clipboard.writeText(text);
-    showToast(toastId);
+    
+    // ボタンが渡された場合は、その位置に表示
+    if (buttonElement) {
+      showToastNearButton(toastId, buttonElement);
+    } else {
+      showToast(toastId);
+    }
   }
 
-  function clearContent(name) {
-    const el = document.querySelector(`[name='${name}']`);
+  // ロゴクリックでリセット
+  function resetApplication() {
+    console.log('🔄 アプリケーションリセット開始');
+    
+    // 直接リセット実行
+    resetForm();
+  }
+
+  function showToastNearButton(toastId, buttonElement) {
+    const toast = document.getElementById(toastId);
+    if (!toast) return;
+    
+    // 既存のタイマーをクリア
+    if (toast.hideTimer) {
+      clearTimeout(toast.hideTimer);
+    }
+    
+    // ボタンの位置を取得
+    const buttonRect = buttonElement.getBoundingClientRect();
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+    
+    // トーストを完全にリセット
+    toast.style.cssText = `
+      position: fixed !important;
+      top: ${buttonRect.top - 45}px !important;
+      left: ${buttonRect.left + buttonRect.width/2 - 60}px !important;
+      width: 120px !important;
+      height: 32px !important;
+      background: #34C759 !important;
+      color: white !important;
+      border-radius: 6px !important;
+      font-size: 12px !important;
+      font-weight: 500 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      z-index: 9999 !important;
+      box-shadow: 0 4px 12px rgba(52, 199, 89, 0.4) !important;
+      pointer-events: none !important;
+      opacity: 1 !important;
+      transform: translateY(0) !important;
+    `;
+    
+    // 自動で消す
+    toast.hideTimer = setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateY(-10px)';
+      setTimeout(() => {
+        toast.style.display = 'none';
+      }, 300);
+    }, 1200);
+  }
+
+  function showToast(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    
+    // 既存のタイマーをクリア
+    if (el.hideTimer) {
+      clearTimeout(el.hideTimer);
+    }
+    
+    // 通常位置（右上）に表示
+    el.style.cssText = `
+      position: fixed !important;
+      top: 20px !important;
+      right: 20px !important;
+      width: 120px !important;
+      height: 32px !important;
+      background: #34C759 !important;
+      color: white !important;
+      border-radius: 6px !important;
+      font-size: 12px !important;
+      font-weight: 500 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      z-index: 9999 !important;
+      box-shadow: 0 4px 12px rgba(52, 199, 89, 0.4) !important;
+      pointer-events: none !important;
+      opacity: 1 !important;
+      transform: translateY(0) !important;
+    `;
+    
+    // 自動で消す
+    el.hideTimer = setTimeout(() => {
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(-10px)';
+      setTimeout(() => {
+        el.style.display = 'none';
+      }, 300);
+    }, 1200);
+  }
+
+  function clearContent(elementId) {
+    const el = document.getElementById(elementId);
     if (el) el.value = "";
   }
 
@@ -291,14 +1034,20 @@
     }
   }
 
-  function toggleDetails() {
-    const section = document.getElementById("detail-section");
-    const button = document.querySelector(".toggle-btn");
-    const isVisible = section.style.display === "block";
-    section.style.display = isVisible ? "none" : "block";
-    button.textContent = isVisible
-      ? "{{ labels['toggle_details_open'] }}"
-      : "{{ labels['toggle_details_close'] }}";
+  function toggleAdvanced() {
+    const content = document.getElementById("advancedContent");
+    const button = document.querySelector(".advanced-toggle");
+    const icon = button.querySelector("span");
+    
+    if (content.classList.contains("show")) {
+      content.classList.remove("show");
+      icon.textContent = "▼";
+      button.innerHTML = button.innerHTML.replace("{{ labels['toggle_details_close'] }}", "{{ labels['toggle_details_open'] }}");
+    } else {
+      content.classList.add("show");
+      icon.textContent = "▲";
+      button.innerHTML = button.innerHTML.replace("{{ labels['toggle_details_open'] }}", "{{ labels['toggle_details_close'] }}");
+    }
   }
 
   // 🔤 言語ラベルを更新する関数
@@ -313,40 +1062,34 @@
       "en": "英語"
     };
 
-    // *** ChatGPT翻訳セクション ***
-    // 左側: 翻訳先言語 (target)
+    // ChatGPT翻訳セクション
     const translatedLabel = document.getElementById("translated-label");
     if (translatedLabel) {
       translatedLabel.textContent = labelMap[target] || target;
     }
     
-    // 右側: 元の言語 (source)
     const reverseLabel = document.getElementById("reverse-translated-label");
     if (reverseLabel) {
       reverseLabel.textContent = labelMap[source] || source;
     }
     
-    // *** 改善翻訳セクション ***
-    // 左側: 翻訳先言語 (target)
+    // 改善翻訳セクション
     const betterTranslationLabel = document.getElementById("better-translation-label");
     if (betterTranslationLabel) {
       betterTranslationLabel.textContent = labelMap[target] || target;
     }
     
-    // 右側: 元の言語 (source)
     const reverseBetterLabel = document.getElementById("reverse-better-translation-label");
     if (reverseBetterLabel) {
       reverseBetterLabel.textContent = labelMap[source] || source;
     }
     
-    // *** Gemini翻訳セクション ***
-    // 左側のラベル（翻訳元言語 - source_lang）
+    // Gemini翻訳セクション
     const geminiSourceLabel = document.getElementById("label-gemini-source");
     if (geminiSourceLabel) {
       geminiSourceLabel.textContent = labelMap[source] || source;
     }
 
-    // 右側のラベル（翻訳先言語 - target_lang）
     const geminiTargetLabel = document.getElementById("label-gemini-target");
     if (geminiTargetLabel) {
       geminiTargetLabel.textContent = labelMap[target] || target;
@@ -370,15 +1113,15 @@
 
   function showLoading() {
     const loading = document.getElementById("loading");
-    if (loading) loading.style.display = "block";
+    if (loading) loading.classList.add("show");
   }
 
   function hideLoading() {
     const loading = document.getElementById("loading");
-    if (loading) loading.style.display = "none";
+    if (loading) loading.classList.remove("show");
   }
 
-  // 🚀 軽量版: 必要最小限のクリア（元の問題解決に必要な部分のみ）
+  // 軽量版: 必要最小限のクリア（元の問題解決に必要な部分のみ）
   function quickClearResults() {
     // 重要な表示エリアのみクリア（DOM操作を最小化）
     const criticalElements = ["translated-text", "reverse-translated-text"];
@@ -393,7 +1136,7 @@
     console.log("🧹 軽量版: 重要エリアをクリアしました");
   }
 
-  // 🚀 軽量版: 最小限の処理中表示
+  // 軽量版: 最小限の処理中表示
   function setQuickProcessingState() {
     const translatedText = document.getElementById("translated-text");
     if (translatedText) {
@@ -401,7 +1144,7 @@
     }
   }
 
-  // 🚀 軽量版: 高速表示（検証処理を最小化）
+  // 軽量版: 高速表示（検証処理を最小化）
   function displayChatGPTResultsFast(data) {
     const translatedText = document.getElementById("translated-text");
     const reverseTranslatedText = document.getElementById("reverse-translated-text");
@@ -411,12 +1154,12 @@
       // 即座に表示（遅延なし）
       translatedText.innerText = data.translated_text || "";
       reverseTranslatedText.innerText = data.reverse_translated_text || "";
-      chatgptResult.style.display = "block";
+      chatgptResult.classList.add("show");
       console.log("ChatGPT翻訳表示完了（軽量版）");
     }
   }
 
-  // 🚀 軽量版: Gemini結果の高速表示
+  // 軽量版: Gemini結果の高速表示
   function displayGeminiResultsFast(data, inputText) {
     const geminiSource = document.getElementById("gemini-translation");
     const geminiTarget = document.getElementById("gemini-reverse-translation");
@@ -425,12 +1168,12 @@
     if (geminiSource && geminiTarget && geminiResult) {
       geminiSource.innerText = data.gemini_translation || "(翻訳結果なし)";
       geminiTarget.innerText = inputText;
-      geminiResult.style.display = "block";
+      geminiResult.classList.add("show");
       console.log("Gemini翻訳表示完了（軽量版）");
     }
   }
 
-  // 🚀 非同期版: 改善翻訳を背景で処理（UIをブロックしない）
+  // 非同期版: 改善翻訳を背景で処理（UIをブロックしない）
   async function processImprovedTranslationAsync(translatedText, languagePair) {
     try {
       console.log("改善翻訳を非同期で開始:", translatedText.substring(0, 30) + "...");
@@ -460,7 +1203,7 @@
         betterTranslationElement.innerText = improveData.improved_text;
 
         const betterCard = document.getElementById("better-translation-card");
-        if (betterCard) betterCard.style.display = "block";
+        if (betterCard) betterCard.classList.add("show");
 
         // 改善翻訳の逆翻訳も非同期で処理
         processReverseBetterTranslationAsync(improveData.improved_text, languagePair);
@@ -477,7 +1220,7 @@
     }
   }
 
-  // 🚀 非同期版: 改善翻訳の逆翻訳
+  // 非同期版: 改善翻訳の逆翻訳
   async function processReverseBetterTranslationAsync(improvedText, languagePair) {
     try {
       const reverseBetterElement = document.getElementById("reverse-better-translation");
@@ -515,13 +1258,13 @@
     }
   }
 
-  // 🚀 軽量版のメイン翻訳関数
+  // パフォーマンス最適化版の翻訳処理（軽量版）
   async function runFastTranslation() {
     try {
       showLoading();
       const startTime = performance.now();
       
-      // 🔧 軽量版: 必要最小限のクリア（高速）
+      // 軽量版: 必要最小限のクリア（高速）
       quickClearResults();
       
       // 入力データ取得
@@ -537,14 +1280,14 @@
       const languagePair = document.getElementById("language_pair").value;
       const [sourceLang, targetLang] = languagePair.split("-");
       
-      // 🔧 軽量版: シンプルなリクエストID（高速）
+      // 軽量版: シンプルなリクエストID（高速）
       const requestId = Date.now().toString(36);
       
       // 言語ラベルを更新
       updateLanguageLabels(languagePair);
       console.log(`軽量版翻訳実行[${requestId}]: ${sourceLang} → ${targetLang}`);
       
-      // 🔧 軽量版: 最小限の処理中表示
+      // 軽量版: 最小限の処理中表示
       setQuickProcessingState();
       
       // 翻訳APIを呼び出し（ヘッダー削除で軽量化）
@@ -570,10 +1313,9 @@
         throw new Error(data.error || "不明なエラー");
       }
       
-      // 🔧 軽量版: 基本的な整合性チェックのみ（高速）
+      // 軽量版: 基本的な整合性チェックのみ（高速）
       if (data.translated_text === inputText) {
         console.warn("⚠️ 翻訳結果が元の文章と同じです - 表示を調整します");
-        // 再実行せずに、表示のみ調整
         data.translated_text = `[翻訳処理中にエラーが発生しました]`;
       }
       
@@ -608,6 +1350,90 @@
     }
   }
 
+  // 修正版実験用関数
+  async function runExperiment() {
+    try {
+      // 言語ペアに応じて適切なテスト文を用意
+      const languagePair = document.getElementById("language_pair").value;
+      let inputText = document.getElementById("japanese_text").value;
+      let experimentText = inputText;
+      
+      // もし入力が空、または判断しにくい場合は、推奨テスト文を提示
+      if (!inputText.trim()) {
+        const [source, target] = languagePair.split("-");
+        
+        if (source === "en" && target === "ja") {
+          experimentText = "Hello, how are you today? I hope you're having a wonderful day.";
+        } else if (source === "ja" && target === "en") {
+          experimentText = "こんにちは、今日はいかがお過ごしですか？素晴らしい一日をお過ごしのことと思います。";
+        } else if (source === "ja" && target === "fr") {
+          experimentText = "こんにちは、今日はいかがお過ごしですか？";
+        } else {
+          experimentText = "Hello, how are you today?";
+        }
+        
+        const useRecommended = confirm(`翻訳品質を判断しやすくするため、推奨テスト文を使用しますか？\n\n推奨テスト文: ${experimentText}\n\n「OK」で推奨文を使用、「キャンセル」で入力欄の文を使用`);
+        
+        if (!useRecommended) {
+          alert("テスト用の文章を入力してください");
+          return;
+        }
+      }
+      
+      console.log("🧪 実験リクエスト送信開始");
+      console.log("🧪 実験テキスト:", experimentText);
+      console.log("🧪 言語ペア:", languagePair);
+      
+      const response = await fetch("/experiment_prompts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          text: experimentText,
+          language_pair: languagePair
+        })
+      });
+      
+      console.log("🧪 レスポンス受信:", response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`実験エラー: ${response.status} - ${errorText}`);
+      }
+      
+      const data = await response.json();
+      console.log("🧪 データ解析完了:", data);
+      
+      if (data.success && data.summary && data.results) {
+        const summary = data.summary;
+        const results = data.results;
+        
+        // 段階的に表示（アラートの文字数制限対策）
+        
+        // まず元の文章と言語ペアを表示
+        alert(`🧪 実験完了！\n\n📝 元の文章:\n${experimentText}\n\n🔄 翻訳方向: ${languagePair}\n\n次で翻訳結果を確認します...`);
+        
+        // 各翻訳結果を個別に表示
+        alert(`🇯🇵 日本語プロンプト版 [${summary.japanese_time.toFixed(2)}秒]:\n\n${results.japanese?.result || 'エラー'}`);
+        
+        alert(`🇺🇸 英語プロンプト版(フル) [${summary.english_full_time.toFixed(2)}秒]:\n\n${results.english_full?.result || 'エラー'}`);
+        
+        alert(`🚀 英語プロンプト版(最小) [${summary.english_minimal_time.toFixed(2)}秒]:\n\n${results.english_minimal?.result || 'エラー'}`);
+        
+        // 最後に速度サマリーを表示
+        alert(`⏱️ 速度比較結果:\n\n• 日本語版: ${summary.japanese_time.toFixed(2)}秒\n• 英語版(フル): ${summary.english_full_time.toFixed(2)}秒\n• 英語版(最小): ${summary.english_minimal_time.toFixed(2)}秒\n\n🚀 速度改善:\n• 英語(フル)版: ${summary.speed_improvement_full.toFixed(1)}%\n• 英語(最小)版: ${summary.speed_improvement_minimal.toFixed(1)}%`);
+        
+        console.log("🧪 詳細な実験結果:", data);
+        
+      } else {
+        throw new Error(data.error || "実験に失敗しました");
+      }
+      
+    } catch (error) {
+      console.error("実験エラー:", error);
+      alert("実験でエラーが発生しました: " + error.message);
+    }
+  }
+
   window.addEventListener("DOMContentLoaded", () => {
     const trigger = document.getElementById("gemini-nuance-trigger");
     const isReady = document.getElementById("gemini_ready")?.value === "1";
@@ -621,7 +1447,7 @@
     const card = document.getElementById("gemini-nuance-card");
     if (!card || !el) return;
 
-    card.style.display = "block";
+    card.classList.add("show");
     el.textContent = "{{ labels['gemini_loading'] }}";
 
     const startTimeGemini = performance.now();
@@ -634,7 +1460,7 @@
       .then(data => {
         if (data.nuance) {
           el.textContent = data.nuance;
-          showToast("toast-gemini-3way");
+          // showToast("toast-gemini-3way"); ← この行を削除またはコメントアウト
           const trigger = document.getElementById("gemini-nuance-trigger");
           if (trigger) trigger.style.display = "none";
 
@@ -652,12 +1478,12 @@
     document.querySelector("[name='partner_message']").value = "";
     document.querySelector("[name='context_info']").value = "";
     
-    // 翻訳結果表示エリアを非表示にする (オプション)
-    document.getElementById("chatgpt-result").style.display = "none";
-    document.getElementById("gemini-result").style.display = "none";
-    document.getElementById("better-translation-card").style.display = "none";
-    document.getElementById("gemini-nuance-card").style.display = "none";
-    document.getElementById("gemini-nuance-trigger").style.display = "none";
+    // 翻訳結果表示エリアを非表示にする
+    const resultCards = document.querySelectorAll(".result-card");
+    resultCards.forEach(card => card.classList.remove("show"));
+    
+    const nuanceTrigger = document.getElementById("gemini-nuance-trigger");
+    if (nuanceTrigger) nuanceTrigger.style.display = "none";
 
     // フォームを送信
     const form = document.querySelector("form");
@@ -669,96 +1495,169 @@
     form.submit();
   }
 
-// 🧪 ==========実験用コード開始========== 🧪
-// 🧪 ==========実験用コード開始========== 🧪
-// 🧪 実験用関数
-// 🧪 修正版実験用関数
-// 🧪 エラー対応版実験用関数
-// 🧪 改良版: 翻訳品質が判断しやすい実験関数
-// 🧪 修正版: 表示問題を解決した実験関数
-async function runExperiment() {
-  try {
-    // 言語ペアに応じて適切なテスト文を用意
-    const languagePair = document.getElementById("language_pair").value;
-    let inputText = document.getElementById("japanese_text").value;
-    let experimentText = inputText;
-    
-    // もし入力が空、または判断しにくい場合は、推奨テスト文を提示
-    if (!inputText.trim()) {
-      const [source, target] = languagePair.split("-");
+  // 🎛️ 翻訳モード切り替え関数
+  function switchTranslationMode(mode) {
+      console.log(`🎛️ 翻訳モードを ${mode} に切り替え中...`);
       
-      if (source === "en" && target === "ja") {
-        experimentText = "Hello, how are you today? I hope you're having a wonderful day.";
-      } else if (source === "ja" && target === "en") {
-        experimentText = "こんにちは、今日はいかがお過ごしですか？素晴らしい一日をお過ごしのことと思います。";
-      } else if (source === "ja" && target === "fr") {
-        experimentText = "こんにちは、今日はいかがお過ごしですか？";
-      } else {
-        experimentText = "Hello, how are you today?";
-      }
+      const currentModeElement = document.getElementById('current-mode');
+      const originalText = currentModeElement.textContent;
+      currentModeElement.textContent = '切り替え中...';
       
-      const useRecommended = confirm(`翻訳品質を判断しやすくするため、推奨テスト文を使用しますか？\n\n推奨テスト文: ${experimentText}\n\n「OK」で推奨文を使用、「キャンセル」で入力欄の文を使用`);
-      
-      if (!useRecommended) {
-        alert("テスト用の文章を入力してください");
-        return;
-      }
-    }
-    
-    console.log("🧪 実験リクエスト送信開始");
-    console.log("🧪 実験テキスト:", experimentText);
-    console.log("🧪 言語ペア:", languagePair);
-    
-    const response = await fetch("/experiment_prompts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ 
-        text: experimentText,
-        language_pair: languagePair
+      fetch(`/set_translation_mode/${mode}`, {
+          method: 'GET',
+          credentials: 'include'
       })
-    });
-    
-    console.log("🧪 レスポンス受信:", response.status);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`実験エラー: ${response.status} - ${errorText}`);
-    }
-    
-    const data = await response.json();
-    console.log("🧪 データ解析完了:", data);
-    
-    if (data.success && data.summary && data.results) {
-      const summary = data.summary;
-      const results = data.results;
-      
-      // 🔧 段階的に表示（アラートの文字数制限対策）
-      
-      // まず元の文章と言語ペアを表示
-      alert(`🧪 実験完了！\n\n📝 元の文章:\n${experimentText}\n\n🔄 翻訳方向: ${languagePair}\n\n次で翻訳結果を確認します...`);
-      
-      // 各翻訳結果を個別に表示
-      alert(`🇯🇵 日本語プロンプト版 [${summary.japanese_time.toFixed(2)}秒]:\n\n${results.japanese?.result || 'エラー'}`);
-      
-      alert(`🇺🇸 英語プロンプト版(フル) [${summary.english_full_time.toFixed(2)}秒]:\n\n${results.english_full?.result || 'エラー'}`);
-      
-      alert(`🚀 英語プロンプト版(最小) [${summary.english_minimal_time.toFixed(2)}秒]:\n\n${results.english_minimal?.result || 'エラー'}`);
-      
-      // 最後に速度サマリーを表示
-      alert(`⏱️ 速度比較結果:\n\n• 日本語版: ${summary.japanese_time.toFixed(2)}秒\n• 英語版(フル): ${summary.english_full_time.toFixed(2)}秒\n• 英語版(最小): ${summary.english_minimal_time.toFixed(2)}秒\n\n🚀 速度改善:\n• 英語(フル)版: ${summary.speed_improvement_full.toFixed(1)}%\n• 英語(最小)版: ${summary.speed_improvement_minimal.toFixed(1)}%`);
-      
-      console.log("🧪 詳細な実験結果:", data);
-      
-    } else {
-      throw new Error(data.error || "実験に失敗しました");
-    }
-    
-  } catch (error) {
-    console.error("🧪 実験エラー:", error);
-    alert("実験でエラーが発生しました: " + error.message);
+      .then(response => {
+          if (response.ok) {
+              if (mode === 'premium') {
+                  currentModeElement.textContent = '🌟 Premium Mode';
+                  currentModeElement.style.background = 'linear-gradient(135deg, #FF9500, #FF6B00)';
+              } else {
+                  currentModeElement.textContent = '🚀 Normal Mode';
+                  currentModeElement.style.background = 'linear-gradient(135deg, #007AFF, #5856D6)';
+              }
+              
+              console.log(`✅ 翻訳モード切り替え完了: ${mode}`);
+          } else {
+              throw new Error('切り替えに失敗しました');
+          }
+      })
+      .catch(error => {
+          console.error('❌ モード切り替えエラー:', error);
+          currentModeElement.textContent = originalText;
+      });
   }
+
+// 🎛️ コンパクトモードカード選択機能
+  function showHeaderBanner(mode) {
+      console.log(`🎨 ヘッダーバナー表示: ${mode}`);
+      
+      // 既存のバナーを削除
+      const existingBanner = document.querySelector('.header-mode-banner');
+      if (existingBanner) {
+          existingBanner.remove();
+      }
+      
+      // 新しいバナーを作成
+      const banner = document.createElement('div');
+      banner.className = `header-mode-banner ${mode} show`;
+      
+      if (mode === 'premium') {
+          banner.textContent = '🌟 Premium Mode';
+      } else {
+          banner.textContent = '🚀 Normal Mode';
+      }
+      
+      // ヘッダーナビに追加
+      const headerNav = document.querySelector('.header-nav');
+      if (headerNav) {
+          headerNav.insertBefore(banner, headerNav.firstChild);
+          console.log('✅ ヘッダーバナー追加完了');
+      } else {
+          console.error('ヘッダーナビが見つかりません');
+      }
+  }
+
+  // ➕ 以下の新しい関数群を追加してください
+
+// ヘッダーバナークリックでモード切り替え
+function toggleModeFromHeader() {
+    const currentMode = getCurrentMode();
+    const newMode = currentMode === 'premium' ? 'normal' : 'premium';
+    
+    console.log(`🎛️ ヘッダーバナーからモード切り替え: ${currentMode} → ${newMode}`);
+    
+    // モード切り替え実行
+    switchToMode(newMode);
 }
 
-</script>
+function getCurrentMode() {
+    const banner = document.querySelector('.header-mode-banner');
+    if (banner && banner.classList.contains('premium')) {
+        return 'premium';
+    }
+    return 'normal';
+}
 
+function switchToMode(mode) {
+    console.log(`🔄 モード切り替え: ${mode}`);
+    
+    // ヘッダーバナーを更新
+    showHeaderBanner(mode);
+    
+    // サーバーに送信
+    switchTranslationModeCompact(mode);
+}
+
+function showHeaderBanner(mode) {
+    console.log(`🎨 ヘッダーバナー表示: ${mode}`);
+    
+    // 既存のバナーを削除
+    const existingBanner = document.querySelector('.header-mode-banner');
+    if (existingBanner) {
+        existingBanner.remove();
+    }
+    
+    // 新しいバナーを作成
+    const banner = document.createElement('div');
+    banner.className = `header-mode-banner ${mode} show`;
+    
+    if (mode === 'premium') {
+        banner.textContent = '🌟 Premium Mode';
+    } else {
+        banner.textContent = '🚀 Normal Mode';
+    }
+    
+    // クリックイベントを追加
+    banner.addEventListener('click', toggleModeFromHeader);
+    
+    // ヘッダーナビに追加
+    const headerNav = document.querySelector('.header-nav');
+    if (headerNav) {
+        headerNav.insertBefore(banner, headerNav.firstChild);
+        console.log('✅ ヘッダーバナー追加完了（クリック可能）');
+    } else {
+        console.error('ヘッダーナビが見つかりません');
+    }
+}
+
+function switchTranslationModeCompact(mode) {
+    console.log(`🔄 サーバーにモード変更送信: ${mode}`);
+    
+    fetch(`/set_translation_mode/${mode}`, {
+        method: 'GET',
+        credentials: 'include'
+    })
+    .then(response => {
+        if (response.ok) {
+            console.log(`✅ モード切り替え完了: ${mode}`);
+        } else {
+            console.error('モード切り替えに失敗しました');
+        }
+    })
+    .catch(error => {
+        console.error('❌ モード切り替えエラー:', error);
+    });
+}
+
+// 初期化処理を更新
+function initializeApp() {
+    console.log('🎨 アプリ初期化開始');
+    
+    // デフォルトでNormalモードを設定
+    switchToMode('normal');
+    
+    console.log('🎨 アプリ初期化完了');
+}
+
+// ページ読み込み時に初期化
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('📄 DOM読み込み完了 - アプリ初期化開始');
+    
+    // 少し遅延させて初期化
+    setTimeout(initializeApp, 100);
+});
+
+  
+</script>
 {% endblock %}

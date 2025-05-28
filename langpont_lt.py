@@ -174,10 +174,198 @@ def f_translate_to_lightweight_japanese_backup(input_text, source_lang, target_l
         print(f"❌ f_translate_to_lightweight_japanese_backup でエラー: {str(e)}")
         raise Exception(f"翻訳処理でエラーが発生しました: {str(e)}")
 
+
+# 🌟 ========== Normal/Premium Mode 対応関数群 ========== 🌟
+# 🌟 ========== Normal/Premium Mode 対応関数群 ========== 🌟
+# 🌟 ========== Normal/Premium Mode 対応関数群 ========== 🌟
+
+# 🌟 プレミアム版翻訳関数
+# 🌟 プレミアム版翻訳関数（背景情報強化版）
+def f_translate_to_lightweight_premium(input_text, source_lang, target_lang, partner_message="", context_info=""):
+    """
+    🌟 プレミアム版: 文化的配慮を重視した高品質翻訳関数（背景情報強化版）
+    """
+    
+    print(f"🌟 f_translate_to_lightweight_premium 開始 - {source_lang} -> {target_lang}")
+    
+    lang_map = {"ja": "Japanese", "fr": "French", "en": "English"}
+    target_label = lang_map.get(target_lang, target_lang)
+    
+    # 🔧 改善: より詳細で明確なコンテキスト処理
+    if partner_message.strip() or context_info.strip():
+        
+        # コンテキスト情報を整理
+        context_sections = []
+        
+        if partner_message.strip():
+            context_sections.append(f"PREVIOUS CONVERSATION:\n{partner_message.strip()}")
+        
+        if context_info.strip():
+            context_sections.append(f"BACKGROUND & RELATIONSHIP:\n{context_info.strip()}")
+        
+        context_text = "\n\n".join(context_sections)
+        
+        # 🔧 改善: 背景情報を強く反映するプロンプト
+        prompt = f"""You are a professional translator specializing in culturally appropriate {target_label} translation.
+
+IMPORTANT CONTEXT TO CONSIDER:
+{context_text}
+
+TRANSLATION INSTRUCTIONS:
+- Consider the relationship and background information carefully
+- Use appropriate formality level based on the context
+- Ensure cultural sensitivity and business appropriateness
+- Translate naturally while respecting the contextual nuances
+
+TRANSLATE TO {target_label.upper()}:
+{input_text}
+
+Remember: The context above is crucial for determining the appropriate tone, formality, and cultural considerations."""
+        
+        print(f"🧱 プレミアム背景強化版プロンプト作成完了")
+        print(f"📝 コンテキスト詳細: {context_text[:100]}...")
+        
+    else:
+        # コンテキストがない場合は標準的なプロフェッショナル翻訳
+        prompt = f"Professional, culturally appropriate translation to {target_label}:\n\n{input_text}"
+        print(f"🧱 プレミアムシンプルプロンプト作成完了")
+    
+    estimated_tokens = len(prompt.split()) * 1.3
+    print(f"📊 プレミアム版推定トークン数: {estimated_tokens:.0f}")
+    print(f"📝 送信プロンプト（最初の200文字）: {prompt[:200]}...")
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.1,
+            max_tokens=400
+        )
+        
+        result = response.choices[0].message.content.strip()
+        
+        if not result or len(result.strip()) < 2:
+            raise ValueError("翻訳結果が短すぎます")
+            
+        if result.strip() == input_text.strip():
+            raise ValueError("翻訳されていません")
+        
+        print(f"✅ プレミアム翻訳完了: {result[:50]}...")
+        return result
+
+    except Exception as e:
+        print(f"❌ プレミアム版エラー: {str(e)}")
+        print("🔄 標準改善版に切り替えます...")
+        return f_translate_to_lightweight_normal(input_text, source_lang, target_lang, partner_message, context_info)
+
+
+# 🚀 標準改善版翻訳関数（Normal Mode）
+# 🚀 標準改善版翻訳関数（背景情報強化版）
+def f_translate_to_lightweight_normal(input_text, source_lang, target_lang, partner_message="", context_info=""):
+    """
+    🚀 標準改善版: コンテキストを重視したバランス型翻訳関数（背景情報強化版）
+    """
+    
+    print(f"🚀 f_translate_to_lightweight_normal 開始 - {source_lang} -> {target_lang}")
+    
+    lang_map = {"ja": "Japanese", "fr": "French", "en": "English"}
+    target_label = lang_map.get(target_lang, target_lang)
+    
+    # 🔧 改善: より効果的な背景情報の活用
+    if partner_message.strip() or context_info.strip():
+        
+        # 重要な情報を明確に分離
+        context_info_clean = []
+        
+        if partner_message.strip():
+            context_info_clean.append(f"Previous: {partner_message.strip()}")
+        
+        if context_info.strip():
+            context_info_clean.append(f"Background: {context_info.strip()}")
+        
+        context_summary = " | ".join(context_info_clean)
+        
+        # 🔧 改善: 背景情報を活用することを明確に指示
+        prompt = f"""Translate to {target_label}, carefully considering this context for appropriate tone and formality:
+
+CONTEXT: {context_summary}
+
+Based on the context above, translate this text with appropriate cultural sensitivity:
+
+{input_text}"""
+        
+        print(f"🧱 標準背景強化版プロンプト作成完了")
+        print(f"📝 背景要約: {context_summary}")
+        
+    else:
+        prompt = f"Translate to {target_label}:\n{input_text}"
+        print(f"🧱 標準シンプルプロンプト作成完了")
+    
+    estimated_tokens = len(prompt.split()) * 1.3
+    print(f"📊 標準版推定トークン数: {estimated_tokens:.0f}")
+    print(f"📝 送信プロンプト（最初の150文字）: {prompt[:150]}...")
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.1,
+            max_tokens=400
+        )
+        
+        result = response.choices[0].message.content.strip()
+        
+        if not result or len(result.strip()) < 2:
+            raise ValueError("翻訳結果が短すぎます")
+            
+        if result.strip() == input_text.strip():
+            raise ValueError("翻訳されていません")
+        
+        print(f"✅ 標準翻訳完了: {result[:50]}...")
+        return result
+
+    except Exception as e:
+        print(f"❌ 標準版エラー: {str(e)}")
+        print("🔄 オリジナル版に切り替えます...")
+        return f_translate_to_lightweight_original(input_text, source_lang, target_lang, partner_message, context_info)
+
+# 📋 修正のポイント
+"""
+🔧 主な改善点:
+
+1. コンテキスト情報の明確な分離と整理
+2. 背景情報の重要性を強調するプロンプト
+3. 文化的配慮と敬語レベルの考慮を明示
+4. より詳細なログ出力でデバッグ可能
+
+🎯 期待される効果:
+- 背景情報がより確実に翻訳に反映される
+- ビジネス関係に適した敬語レベルの選択
+- 文化的に適切な表現の使用
+"""
+
+
+# 📈 使用カウント更新関数
+def update_usage_count(mode):
+    """翻訳使用回数をカウント（課金計算用）"""
+    
+    if mode == "premium":
+        session["premium_usage_count"] = session.get("premium_usage_count", 0) + 1
+        print(f"📈 Premium使用回数: {session['premium_usage_count']}")
+    else:
+        session["normal_usage_count"] = session.get("normal_usage_count", 0) + 1
+        print(f"📈 Normal使用回数: {session['normal_usage_count']}")
+
+
+
 # 🚀 現在使用中: 英語プロンプト最小版軽量翻訳関数
 # 📊 実験結果: 平均-2.9% (ほぼ同等速度) + 90%コスト削減 + 同等品質
 # 🔧 修正版: 英語プロンプト最小版軽量翻訳関数
-def f_translate_to_lightweight(input_text, source_lang, target_lang, partner_message="", context_info=""):
+def f_translate_to_lightweight_with_cleanup(input_text, source_lang, target_lang, partner_message="", context_info=""):
     """
     🚀 修正版: 英語プロンプト最小版軽量翻訳関数
     
@@ -187,7 +375,7 @@ def f_translate_to_lightweight(input_text, source_lang, target_lang, partner_mes
     - より直接的なプロンプト
     """
     
-    print(f"🚀 f_translate_to_lightweight(英語最小版・修正) 開始 - {source_lang} -> {target_lang}")
+    print(f"🚀 f_translate_to_lightweight_with_cleanup(英語最小版・修正) 開始 - {source_lang} -> {target_lang}")
     
     # 言語マッピング
     lang_map = {"ja": "Japanese", "fr": "French", "en": "English"}
@@ -250,14 +438,14 @@ def f_translate_to_lightweight(input_text, source_lang, target_lang, partner_mes
         return result
 
     except Exception as e:
-        print(f"❌ f_translate_to_lightweight(英語最小版・修正) でエラー: {str(e)}")
+        print(f"❌ f_translate_to_lightweight_with_cleanup(英語最小版・修正) でエラー: {str(e)}")
         # フォールバック: 日本語版バックアップを使用
         print("🔄 日本語版バックアップに切り替えます...")
         return f_translate_to_lightweight_japanese_backup(input_text, source_lang, target_lang, partner_message, context_info)
 
 # 🧪 実験用: さらに改良した版も用意
 # 🚀 最終推奨版: 英語最小版（後処理なし・高速重視）
-def f_translate_to_lightweight(input_text, source_lang, target_lang, partner_message="", context_info=""):
+def f_translate_to_lightweight_original(input_text, source_lang, target_lang, partner_message="", context_info=""):
     """
     🚀 最終推奨版: 英語プロンプト最小版軽量翻訳関数
     
@@ -273,7 +461,7 @@ def f_translate_to_lightweight(input_text, source_lang, target_lang, partner_mes
     - 稀な問題より全体最適化
     """
     
-    print(f"🚀 f_translate_to_lightweight(最終版) 開始 - {source_lang} -> {target_lang}")
+    print(f"🚀 f_translate_to_lightweight_original(最終版) 開始 - {source_lang} -> {target_lang}")
     
     # 言語マッピング
     lang_map = {"ja": "Japanese", "fr": "French", "en": "English"}
@@ -312,10 +500,29 @@ def f_translate_to_lightweight(input_text, source_lang, target_lang, partner_mes
         return result
 
     except Exception as e:
-        print(f"❌ f_translate_to_lightweight(最終版) でエラー: {str(e)}")
+        print(f"❌ f_translate_to_lightweight_original(最終版) でエラー: {str(e)}")
         # エラー時のみ日本語版バックアップ
         print("🔄 日本語版バックアップに切り替えます...")
         return f_translate_to_lightweight_japanese_backup(input_text, source_lang, target_lang, partner_message, context_info)
+
+
+# 🔄 新しいメイン翻訳関数（モード切り替え対応）
+def f_translate_to_lightweight(input_text, source_lang, target_lang, partner_message="", context_info=""):
+    """
+    🔄 モード切り替え対応メイン翻訳関数
+    """
+    
+    # セッションから翻訳モードを取得（デフォルトはnormal）
+    translation_mode = session.get("translation_mode", "normal")
+    
+    print(f"🔄 翻訳モード: {translation_mode.upper()}")
+    
+    if translation_mode == "premium":
+        return f_translate_to_lightweight_premium(input_text, source_lang, target_lang, partner_message, context_info)
+    else:
+        # normal モードでは現在の高速版を使用
+        return f_translate_to_lightweight_normal(input_text, source_lang, target_lang, partner_message, context_info)
+
 
 # 🛠️ オプション: 手動で前置き除去が必要な場合の関数
 def clean_translation_result(result):
@@ -666,13 +873,21 @@ def f_translate_to_french(japanese_text, partner_message="", context_info=""):
     )
     return response.choices[0].message.content.strip()
 
-def f_reverse_translation(translated_text, target_lang, source_lang):
-    """翻訳されたテキストを元の言語に戻す関数"""
+# 🔄 langpont_lt.py の f_reverse_translation 関数を以下で置き換えてください
+
+# 📦 バックアップ: 元の日本語版逆翻訳関数（保持用）
+def f_reverse_translation_japanese_backup(translated_text, target_lang, source_lang):
+    """
+    🇯🇵 バックアップ版: 日本語プロンプト逆翻訳関数
+    
+    元の実装を保持（必要時に復元可能）
+    切り替え方法: この関数の内容を f_reverse_translation にコピーして置き換え
+    """
     if not translated_text:
-        print("⚠️ f_reverse_translation: 空のテキストが渡されました")
+        print("⚠️ f_reverse_translation_japanese_backup: 空のテキストが渡されました")
         return "(翻訳テキストが空です)"
 
-    print(f"🔄 f_reverse_translation 実行:")
+    print(f"🔄 f_reverse_translation_japanese_backup 実行:")
     print(f" - translated_text: {translated_text}")
     print(f" - source_lang: {source_lang}")
     print(f" - target_lang: {target_lang}")
@@ -688,7 +903,7 @@ def f_reverse_translation(translated_text, target_lang, source_lang):
 
     system_message = (
         f"あなたは優秀な{target_label}および{source_label}の翻訳者です。"
-        f" 次の文章を元の言語（{source_label}）に自然な形で正確に翻訳してください。"
+        f" 次の文章を元の言語（{source_lang}）に自然な形で正確に翻訳してください。"
     )
 
     user_prompt = f"""
@@ -697,7 +912,7 @@ def f_reverse_translation(translated_text, target_lang, source_lang):
     {translated_text}
     """.strip()
 
-    print("📤 f_reverse_translation 呼び出し:")
+    print("📤 f_reverse_translation_japanese_backup 呼び出し:")
     print(f" - システムメッセージ: {system_message}")
     print(f" - ユーザープロンプト: {user_prompt}")
 
@@ -710,14 +925,110 @@ def f_reverse_translation(translated_text, target_lang, source_lang):
             ]
         )
         result = response.choices[0].message.content.strip()
-        print("📥 f_reverse_translation 結果:", result)
+        print("📥 f_reverse_translation_japanese_backup 結果:", result)
         return result
 
     except Exception as e:
         import traceback
-        print("❌ f_reverse_translation エラー:", str(e))
+        print("❌ f_reverse_translation_japanese_backup エラー:", str(e))
         print(traceback.format_exc())
         raise
+
+# 🚀 現在使用中: 軽量版逆翻訳関数（英語最小プロンプト）
+def f_reverse_translation(translated_text, target_lang, source_lang):
+    """
+    🚀 軽量版逆翻訳関数（英語最小プロンプト）
+    
+    実装内容:
+    - 英語最小プロンプト採用
+    - トークン数90%削減
+    - 処理速度向上
+    - フォールバック機能付き
+    """
+    if not translated_text:
+        print("⚠️ f_reverse_translation(軽量版): 空のテキストが渡されました")
+        return "(翻訳テキストが空です)"
+
+    print(f"🔄 f_reverse_translation(軽量版) 実行:")
+    print(f" - translated_text: {translated_text}")
+    print(f" - source_lang: {source_lang}")
+    print(f" - target_lang: {target_lang}")
+
+    # 🚀 軽量版: 英語最小プロンプト
+    lang_map = {"ja": "Japanese", "fr": "French", "en": "English"}
+    source_label = lang_map.get(source_lang, source_lang)
+    
+    # 超シンプルなプロンプト
+    prompt = f"Translate to {source_label}:\n{translated_text}"
+
+    # トークン数概算
+    estimated_tokens = len(prompt.split()) * 1.3
+    print(f"🧱 軽量版逆翻訳プロンプト作成完了 (推定トークン数: {estimated_tokens:.0f})")
+    print(f"📝 プロンプト: {prompt}")
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.1,
+            max_tokens=300
+        )
+        
+        result = response.choices[0].message.content.strip()
+        
+        # 簡単な検証
+        if not result or len(result.strip()) < 2:
+            raise ValueError("逆翻訳結果が短すぎます")
+        
+        print("📥 軽量版逆翻訳結果:", result)
+        return result
+
+    except Exception as e:
+        import traceback
+        print("❌ f_reverse_translation(軽量版) エラー:", str(e))
+        print(traceback.format_exc())
+        
+        # 🔄 フォールバック: 日本語版バックアップを使用
+        print("🔄 日本語版バックアップに切り替えます...")
+        return f_reverse_translation_japanese_backup(translated_text, target_lang, source_lang)
+
+# 📋 切り替え方法ガイド
+#"""
+#🔄 日本語版に戻す場合:
+#
+#1. 簡単な方法（関数呼び出し変更）:
+#   - 全ての f_reverse_translation() 呼び出しを
+#   - f_reverse_translation_japanese_backup() に変更
+
+#2. 完全な方法（関数内容置き換え）:
+#   - f_reverse_translation_japanese_backup の内容を
+#   - f_reverse_translation にコピーして置き換え
+
+#3. 自動フォールバック:
+#   - エラー時は自動的に日本語版バックアップを使用
+#"""
+
+# 📊 期待される改善効果
+#"""
+#🔍 逆翻訳プロンプト比較:
+
+#【従来版（日本語）】
+#システムメッセージ: "あなたは優秀なフランス語および日本語の翻訳者です。次の文章を元の言語（日本語）に自然な形で正確に翻訳してください。"
+#ユーザープロンプト: "以下のフランス語の文を日本語に翻訳してください：\n---\nVous devriez quitter cette entreprise."
+#推定トークン数: 約100-150トークン
+
+#【軽量版（英語）】
+#プロンプト: "Translate to Japanese:\nVous devriez quitter cette entreprise."
+#推定トークン数: 約10-15トークン
+
+#📈 改善効果:
+#- トークン数削減: 85-90%
+#- 処理速度向上: 推定20-30%
+#- APIコスト削減: 85-90%
+#- 品質: 同等維持
+#"""
 
 def f_better_translation(text_to_improve, source_lang="fr", target_lang="en"):
     """翻訳テキストをより自然に改善する関数"""
@@ -830,51 +1141,124 @@ def f_translate_with_gemini(text, source_lang, target_lang, partner_message="", 
     else:
         return f"Gemini API error: {response.status_code} - {response.text}"
 
+# 🔧 修正版: 言語の動的取得
 def f_gemini_3way_analysis(translated_text, better_translation, gemini_translation):
-    """3つの翻訳結果を比較分析する関数"""
+    """3つの翻訳結果を背景情報の内容に応じて動的に分析する関数（ヘッダー言語設定対応版）"""
 
     # APIキー確認
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
     if not GEMINI_API_KEY:
         return "⚠️ Gemini APIキーがありません"
 
+    # 🆕 ヘッダーの言語設定を取得（優先）
+    display_lang = session.get("lang", "jp")  # デフォルトは日本語
+    
+    print(f"🌐 Gemini分析表示言語: {display_lang}")
+    
+    # 表示言語に応じた分析言語を設定
+    analysis_lang_map = {
+        "jp": "Japanese",
+        "en": "English", 
+        "fr": "French"
+    }
+    
+    analysis_language = analysis_lang_map.get(display_lang, "Japanese")
+    
+    # 🔍 デバッグ機能
+    print("🔍 === セッションデータ詳細確認 ===")
+    print("📋 重要なセッションキー:")
+    debug_keys = ['input_text', 'partner_message', 'context_info', 'language_pair', 'source_lang', 'target_lang', 'lang']
+    for key in debug_keys:
+        value = session.get(key, None)
+        print(f"   {key}: {repr(value)}")
+    print("=" * 50)
+
+    # 翻訳の言語ペアを取得（分析内容のため）
+    language_pair = session.get("language_pair", "ja-fr")
+    
+    try:
+        source_lang, target_lang = language_pair.split("-")
+        print(f"🔍 翻訳言語ペア: {source_lang} -> {target_lang}")
+    except:
+        source_lang = session.get("source_lang", "ja")
+        target_lang = session.get("target_lang", "fr") 
+        print(f"⚠️ language_pair分割失敗、個別取得: {source_lang} -> {target_lang}")
+
     # 文字数チェック
     total_input = translated_text + better_translation + gemini_translation
     warning = "⚠️ 入力が長いため、分析結果は要約されています。\n\n" if len(total_input) > 2000 else ""
 
-    # セッションから言語取得（デフォルトはja-fr）
-    source_lang = session.get("source_lang", "ja")
-    target_lang = session.get("target_lang", "fr")
+    # 背景情報を取得
+    input_text = session.get("input_text", "")
+    partner_message = session.get("partner_message", "")
+    context_info = session.get("context_info", "")
 
+    # 翻訳言語のマッピング（内容分析用）
     lang_map = {
-        "ja": "日本語",
-        "fr": "フランス語",
-        "en": "英語"
+        "ja": "Japanese",
+        "fr": "French", 
+        "en": "English",
+        "es": "Spanish",
+        "de": "German",
+        "it": "Italian",
+        "pt": "Portuguese",
+        "ru": "Russian",
+        "ko": "Korean",
+        "zh": "Chinese"
     }
 
-    source_label = lang_map.get(source_lang, source_lang)
-    target_label = lang_map.get(target_lang, target_lang)
+    # 翻訳対象言語ラベル取得
+    source_label = lang_map.get(source_lang, source_lang.capitalize())
+    target_label = lang_map.get(target_lang, target_lang.capitalize())
+    
+    print(f"🌐 翻訳対象: {source_label} -> {target_label}")
+    print(f"📝 分析表示言語: {analysis_language}")
 
-    # Geminiへのプロンプト
-    prompt = f"""
-以下の3つの{target_label}の文について、それぞれの表現のニュアンスの違いを{source_label}で比較して説明してください。
-あなたは翻訳表現の専門家です。
-比較は「丁寧さ」「口調」「トーン」「文構造」「ニュアンスの違い」を簡潔に言語化してください。
-出力は{source_label}で簡潔にまとめてください。重要なニュアンスや文体の違いが十分に伝わるようにしてください。
-必要なら500文字を超えても構いません。
+    # 背景情報の内容に応じたプロンプト構築
+    if context_info.strip():
+        context_section = f"""
+CONTEXT PROVIDED:
+- Previous conversation: {partner_message or "None"}
+- Situation/Background: {context_info.strip()}
 
-【ChatGPTによる翻訳】
-{translated_text}
+Based on this specific context, analyze which translation is most appropriate."""
+        
+        analysis_instruction = "Analyze: formality, tone, and appropriateness for the given situation/relationship."
+        
+    else:
+        context_section = f"""
+CONTEXT: General conversation (no specific context provided)
+- Previous conversation: {partner_message or "None"}
 
-【より良い翻訳提案（ChatGPT）】
-{better_translation}
+Analyze as general daily conversation."""
+        
+        analysis_instruction = "Analyze: formality, tone, and general conversational appropriateness."
 
-【Geminiによる翻訳】
-{gemini_translation}
-""".strip()
+    # 🆕 分析表示言語に応じたプロンプト
+    prompt = f"""Compare these 3 {target_label} translations considering the specific context. 
 
-    print("📤 Gemini 3way分析リクエスト:")
-    print(f" - prompt: {prompt[:300]}...")
+IMPORTANT: Respond in {analysis_language} with clear, readable format using bullet points and clear sections.
+
+ORIGINAL TEXT ({source_label}): {input_text}
+
+{context_section}
+
+TRANSLATIONS:
+1. ChatGPT: {translated_text}
+2. ChatGPT Enhanced: {better_translation}  
+3. Gemini: {gemini_translation}
+
+{analysis_instruction}
+
+CONCLUSION: Which translation best fits this specific situation and why? 
+
+REMEMBER: Your entire response must be in {analysis_language}."""
+
+    print("📤 Gemini 言語対応分析:")
+    print(f" - 翻訳言語ペア: {source_lang} -> {target_lang}")
+    print(f" - 分析表示言語: {analysis_language}")
+    print(f" - 推定トークン数: {len(prompt.split()) * 1.3:.0f}")
+    print(f" - 背景情報: {context_info[:50] if context_info else '(なし - 日常会話として分析)'}...")
 
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key={GEMINI_API_KEY}"
     headers = {"Content-Type": "application/json"}
@@ -884,7 +1268,7 @@ def f_gemini_3way_analysis(translated_text, better_translation, gemini_translati
         response = requests.post(url, headers=headers, json=data, timeout=30)
         if response.status_code == 200:
             result_text = response.json()["candidates"][0]["content"]["parts"][0]["text"]
-            print("📥 Gemini 3way分析結果:", result_text[:100] + "...")
+            print(f"📥 Gemini 言語対応分析結果: {result_text[:100]}...")
             return warning + result_text.strip()
         else:
             error_msg = f"⚠️ Gemini API error: {response.status_code} - {response.text}"
@@ -901,11 +1285,36 @@ def f_gemini_3way_analysis(translated_text, better_translation, gemini_translati
         print(traceback.format_exc())
         return error_msg
 
+# 📋 修正のポイント
+"""
+🔧 主な修正点:
+
+1. language_pairから動的に言語を取得
+   - ja-fr → ja, fr
+   - en-ja → en, ja  
+   - fr-en → fr, en
+
+2. より包括的な言語マッピング
+   - 10言語に対応
+   - 未知の言語でも安全に処理
+
+3. デバッグログの充実
+   - 検出された言語ペアを表示
+   - エラー時の詳細情報
+
+4. フォールバック処理
+   - language_pair分割失敗時の対応
+   - 不明な言語コードへの対応
+"""
+
 # スピードアップ用改修
 # langpont_lt.py の修正箇所
 
 # 1. translate_chatgpt_only 関数を置き換え
 # 🚀 これが「最初のアーティファクト」のコードです
+# 🔧 translate_chatgpt_only 関数の修正
+# langpont_lt.py の translate_chatgpt_only 関数を以下で修正してください
+
 @app.route("/translate_chatgpt", methods=["POST"])
 def translate_chatgpt_only():
     try:
@@ -922,19 +1331,28 @@ def translate_chatgpt_only():
         for key in critical_keys:
             session.pop(key, None)
 
-        # セッションに保存
+        # 🆕 修正: 背景情報も含めてセッションに保存
         session["source_lang"] = source_lang
         session["target_lang"] = target_lang
         session["language_pair"] = language_pair
+        session["input_text"] = input_text           # ← 追加
+        session["partner_message"] = partner_message # ← 追加
+        session["context_info"] = context_info       # ← 追加
 
         print(f"🟦 [軽量版/translate_chatgpt] 翻訳実行: {source_lang} -> {target_lang}")
         print(f"🔵 入力: {input_text[:30]}...")
+        print(f"💬 partner_message: {partner_message[:30] if partner_message else '(なし)'}...")  # ← 追加
+        print(f"🏢 context_info: {context_info[:30] if context_info else '(なし)'}...")      # ← 追加
 
         if not input_text:
             return {
                 "success": False,
                 "error": "翻訳するテキストが空です"
             }
+
+        # 🆕 モード取得と使用カウント更新
+        translation_mode = session.get("translation_mode", "normal")
+        update_usage_count(translation_mode)
 
         # 翻訳実行（軽量版関数を使用）
         translated = f_translate_to_lightweight(input_text, source_lang, target_lang, partner_message, context_info)
@@ -957,11 +1375,19 @@ def translate_chatgpt_only():
             print(f"⚠️ Gemini翻訳エラー:", str(gemini_error))
             gemini_translation = f"Gemini翻訳エラー: {str(gemini_error)}"
 
-        # セッションに保存
+        # 🆕 修正: セッションに翻訳結果と背景情報を再度保存（確実にするため）
         session["input_text"] = input_text
+        session["partner_message"] = partner_message
+        session["context_info"] = context_info
         session["translated_text"] = translated
         session["reverse_translated_text"] = reverse
         session["gemini_translation"] = gemini_translation
+
+        # 🔍 デバッグ: セッション保存の確認
+        print("🔍 === セッション保存確認 ===")
+        print(f"📝 保存されたcontext_info: {repr(session.get('context_info'))}")
+        print(f"💬 保存されたpartner_message: {repr(session.get('partner_message'))}")
+        print("=" * 40)
 
         # レスポンスを返す
         return {
@@ -982,7 +1408,8 @@ def translate_chatgpt_only():
             "success": False,
             "error": str(e)
         }
-
+    
+    
 @app.route("/reverse_translate_chatgpt", methods=["POST"])
 def reverse_translate_chatgpt():
     """ChatGPT翻訳結果を逆翻訳するエンドポイント"""
@@ -1342,6 +1769,33 @@ def logout():
 def set_language(lang):
     session["lang"] = lang
     return redirect(url_for("index"))
+
+@app.route("/set_translation_mode/<mode>")
+def set_translation_mode(mode):
+    """翻訳モード切り替えエンドポイント"""
+    
+    if mode in ["normal", "premium"]:
+        session["translation_mode"] = mode
+        print(f"🎛️ 翻訳モードを {mode.upper()} に変更しました")
+        
+        if mode == "premium":
+            session["mode_message"] = "Premium Mode に切り替えました。より高品質な翻訳をお楽しみください。"
+        else:
+            session["mode_message"] = "Normal Mode に切り替えました。"
+    else:
+        session["mode_message"] = "無効なモードです。"
+    
+    return redirect(url_for("index"))
+
+@app.route("/get_usage_stats")
+def get_usage_stats():
+    """使用状況統計を取得"""
+    
+    return {
+        "normal_usage": session.get("normal_usage_count", 0),
+        "premium_usage": session.get("premium_usage_count", 0),
+        "current_mode": session.get("translation_mode", "normal")
+    }
 
 
 # ====== ここからこのCodeのトラブル対応マニュアル ======
