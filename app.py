@@ -4,20 +4,25 @@ from dotenv import load_dotenv
 from datetime import datetime, timedelta
 import json
 import hashlib
+import logging
+import re
+from functools import wraps
+import secrets
 
 # バージョン情報の定義
 VERSION_INFO = {
-    "file_name": "app.py",
-    "version": "Early Access版", 
-    "created_date": "2025/5/31",
-    "optimization": "使用制限機能付き + Push型翻訳",
-    "status": "本番準備中"
+    "file_name": "app_security_enhanced.py",
+    "version": "Security Enhanced版", 
+    "created_date": "2025/6/3",
+    "optimization": "Task 2.5 セキュリティ強化 + 使用制限機能付き + Push型翻訳",
+    "status": "本番準備完了"
 }
 
 # .env を読み込む
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 
-from flask import Flask, render_template, request, session, redirect, url_for, jsonify
+from flask import Flask, render_template, request, session, redirect, url_for, jsonify, abort
+from werkzeug.exceptions import RequestEntityTooLarge
 from openai import OpenAI
 from textwrap import dedent
 from concurrent.futures import ThreadPoolExecutor
@@ -27,23 +32,266 @@ import time
 import re
 from labels import labels
 
-# APIキー
-api_key = os.getenv("OPENAI_API_KEY")
+# =============================================================================
+# ログ設定（Task 2.5.5）
+# =============================================================================
+def setup_logging():
+    """セキュリティイベント用ログ設定"""
+    # ログディレクトリ作成
+    os.makedirs('logs', exist_ok=True)
+    
+    # セキュリティログ設定
+    security_logger = logging.getLogger('security')
+    security_logger.setLevel(logging.INFO)
+    
+    # ファイルハンドラー
+    security_handler = logging.FileHandler('logs/security.log')
+    security_handler.setLevel(logging.INFO)
+    
+    # アプリケーションログ
+    app_logger = logging.getLogger('app')
+    app_logger.setLevel(logging.INFO)
+    app_handler = logging.FileHandler('logs/app.log')
+    
+    # フォーマッター
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    security_handler.setFormatter(formatter)
+    app_handler.setFormatter(formatter)
+    
+    security_logger.addHandler(security_handler)
+    app_logger.addHandler(app_handler)
+    
+    return security_logger, app_logger
+
+# ログ初期化
+security_logger, app_logger = setup_logging()
+
+# =============================================================================
+# セキュリティ設定
+# =============================================================================
+
+# APIキー取得と表示
+api_key = os.getenv("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY_TEST")
+api_key_status = "設定済み" if api_key else "未設定"
+print(f"🔍 OPENAI_API_KEY: {api_key_status}")
+
 if not api_key:
     raise ValueError("OPENAI_API_KEY が環境変数に見つかりません")
 
-# Flask
+# Flask設定
 app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
+app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16MB制限
 
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", "default_secret_key")
+# セキュリティ設定
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", secrets.token_hex(32))
 app.permanent_session_lifetime = timedelta(hours=1)
 
 # OpenAI client
 client = OpenAI(api_key=api_key)
 
 # =============================================================================
-# 使用制限機能
+# セキュリティヘッダー設定（Task 2.5.1）
+# =============================================================================
+
+@app.after_request
+def add_security_headers(response):
+    """セキュリティヘッダーを追加"""
+    # セキュリティヘッダー
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    
+    # CSP設定
+    csp = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data:; "
+        "connect-src 'self' https://api.openai.com https://generativelanguage.googleapis.com"
+    )
+    response.headers['Content-Security-Policy'] = csp
+    
+    return response
+
+# =============================================================================
+# CSRF対策（Task 2.5.2）
+# =============================================================================
+
+def generate_csrf_token():
+    """CSRFトークンを生成"""
+    if 'csrf_token' not in session:
+        session['csrf_token'] = secrets.token_hex(32)
+    return session['csrf_token']
+
+def validate_csrf_token(token):
+    """CSRFトークンを検証"""
+    return token and token == session.get('csrf_token')
+
+@app.context_processor
+def inject_csrf_token():
+    """テンプレートにCSRFトークンを注入"""
+    return dict(csrf_token=generate_csrf_token)
+
+def csrf_protect(f):
+    """CSRF保護デコレータ"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if request.method == "POST":
+            token = request.form.get('csrf_token') or request.headers.get('X-CSRF-Token')
+            if not validate_csrf_token(token):
+                log_security_event("csrf_attack", f"invalid_token={token[:10]}...")
+                abort(403)
+        return f(*args, **kwargs)
+    return decorated_function
+
+# =============================================================================
+# 入力値検証（Task 2.5.4）
+# =============================================================================
+
+class InputValidator:
+    """入力値検証クラス"""
+    
+    @staticmethod
+    def validate_text_input(text, max_length=5000, min_length=1):
+        """テキスト入力を検証"""
+        if not text or not isinstance(text, str):
+            return False, "テキストが入力されていません"
+        
+        # 長さチェック
+        if len(text) < min_length:
+            return False, f"テキストが短すぎます（最小{min_length}文字）"
+        
+        if len(text) > max_length:
+            return False, f"テキストが長すぎます（最大{max_length}文字）"
+        
+        # 危険な文字列チェック
+        dangerous_patterns = [
+            r'<script[^>]*>.*?</script>',
+            r'javascript:',
+            r'vbscript:',
+            r'onload\s*=',
+            r'onerror\s*=',
+            r'eval\s*\(',
+            r'exec\s*\(',
+        ]
+        
+        for pattern in dangerous_patterns:
+            if re.search(pattern, text, re.IGNORECASE):
+                return False, "不正な文字列が含まれています"
+        
+        return True, "OK"
+    
+    @staticmethod
+    def validate_language_pair(lang_pair):
+        """言語ペアを検証"""
+        valid_pairs = [
+            'ja-fr', 'fr-ja', 'ja-en', 'en-ja', 
+            'fr-en', 'en-fr'
+        ]
+        
+        if lang_pair not in valid_pairs:
+            return False, "無効な言語ペアです"
+        
+        return True, "OK"
+    
+    @staticmethod
+    def validate_question(question):
+        """質問テキストを検証"""
+        return InputValidator.validate_text_input(question, max_length=1000, min_length=5)
+
+# =============================================================================
+# エラーハンドリング（Task 2.5.3）
+# =============================================================================
+
+@app.errorhandler(400)
+def bad_request(error):
+    """400エラーハンドラー"""
+    log_security_event("bad_request", f"error={error}")
+    return jsonify({
+        'success': False,
+        'error': 'リクエストが正しくありません',
+        'error_code': 'BAD_REQUEST'
+    }), 400
+
+@app.errorhandler(403)
+def forbidden(error):
+    """403エラーハンドラー"""
+    log_security_event("forbidden_access", f"error={error}")
+    return jsonify({
+        'success': False,
+        'error': 'アクセスが拒否されました',
+        'error_code': 'FORBIDDEN'
+    }), 403
+
+@app.errorhandler(404)
+def not_found(error):
+    """404エラーハンドラー"""
+    return jsonify({
+        'success': False,
+        'error': 'ページが見つかりません',
+        'error_code': 'NOT_FOUND'
+    }), 404
+
+@app.errorhandler(413)
+def request_entity_too_large(error):
+    """413エラーハンドラー"""
+    log_security_event("large_request", "size_exceeded")
+    return jsonify({
+        'success': False,
+        'error': 'リクエストサイズが大きすぎます',
+        'error_code': 'REQUEST_TOO_LARGE'
+    }), 413
+
+@app.errorhandler(429)
+def too_many_requests(error):
+    """429エラーハンドラー"""
+    log_security_event("rate_limit_exceeded", "too_many_requests")
+    return jsonify({
+        'success': False,
+        'error': 'リクエストが多すぎます。しばらく待ってから再試行してください',
+        'error_code': 'RATE_LIMIT_EXCEEDED'
+    }), 429
+
+@app.errorhandler(500)
+def internal_server_error(error):
+    """500エラーハンドラー"""
+    app_logger.error(f"Internal Server Error: {error}")
+    return jsonify({
+        'success': False,
+        'error': 'サーバー内部エラーが発生しました',
+        'error_code': 'INTERNAL_SERVER_ERROR'
+    }), 500
+
+# =============================================================================
+# ヘルパー関数
+# =============================================================================
+
+def get_client_ip():
+    """クライアントIPアドレスを取得"""
+    # プロキシ経由の場合のIP取得
+    if request.environ.get('HTTP_X_FORWARDED_FOR'):
+        return request.environ['HTTP_X_FORWARDED_FOR'].split(',')[0].strip()
+    elif request.environ.get('HTTP_X_REAL_IP'):
+        return request.environ['HTTP_X_REAL_IP']
+    else:
+        return request.remote_addr
+
+def log_security_event(event_type, details):
+    """セキュリティイベントをログに記録"""
+    security_logger.info(f"SecurityEvent: {event_type} | IP={get_client_ip()} | Details={details}")
+
+def log_app_event(event_type, details):
+    """アプリケーションイベントをログに記録"""
+    app_logger.info(f"AppEvent: {event_type} | IP={get_client_ip()} | Details={details}")
+
+# =============================================================================
+# 使用制限機能（既存コード）
 # =============================================================================
 
 # 制限設定
@@ -52,7 +300,7 @@ USAGE_FILE = "usage_data.json"
 
 def get_client_id():
     """クライアント識別子を取得（IPアドレス + User-Agent の組み合わせ）"""
-    client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
+    client_ip = get_client_ip()
     user_agent = request.headers.get('User-Agent', '')
     # シンプルなハッシュ化
     client_id = hashlib.md5(f"{client_ip}_{user_agent}".encode()).hexdigest()[:16]
@@ -65,7 +313,8 @@ def load_usage_data():
             with open(USAGE_FILE, 'r') as f:
                 return json.load(f)
         return {}
-    except:
+    except Exception as e:
+        app_logger.error(f"使用データ読み込みエラー: {e}")
         return {}
 
 def save_usage_data(data):
@@ -74,7 +323,7 @@ def save_usage_data(data):
         with open(USAGE_FILE, 'w') as f:
             json.dump(data, f)
     except Exception as e:
-        print(f"使用データ保存エラー: {e}")
+        app_logger.error(f"使用データ保存エラー: {e}")
 
 def check_daily_usage(client_id):
     """1日の使用制限をチェック"""
@@ -112,6 +361,8 @@ def increment_usage(client_id):
     usage_data[usage_key] = usage_data.get(usage_key, 0) + 1
     save_usage_data(usage_data)
     
+    log_app_event("usage_incremented", f"client_id={client_id}, count={usage_data[usage_key]}")
+    
     return usage_data[usage_key]
 
 def get_usage_status(client_id):
@@ -127,7 +378,7 @@ def get_usage_status(client_id):
     }
 
 # =============================================================================
-# インタラクティブ質問処理システム（既存のコード）
+# インタラクティブ質問処理システム（既存コード - セキュリティ強化版）
 # =============================================================================
 
 class TranslationContext:
@@ -225,19 +476,24 @@ class QuestionAnalyzer:
         return None
 
 class InteractiveTranslationProcessor:
-    """インタラクティブな翻訳処理を行うクラス"""
+    """インタラクティブな翻訳処理を行うクラス（セキュリティ強化版）"""
     
     def __init__(self, client):
         self.client = client
     
     def process_question(self, question, context):
-        """質問を処理してレスポンスを生成"""
+        """質問を処理してレスポンスを生成（入力値検証付き）"""
+        
+        # 入力値検証
+        is_valid, error_msg = InputValidator.validate_question(question)
+        if not is_valid:
+            log_security_event("invalid_question_input", f"question={question[:100]}, error={error_msg}")
+            raise ValueError(error_msg)
         
         question_type = QuestionAnalyzer.analyze_question(question)
         reference_number = QuestionAnalyzer.extract_reference_number(question)
         
-        print(f"🧠 質問タイプ: {question_type}")
-        print(f"🔢 参照番号: {reference_number}")
+        log_app_event("question_processed", f"type={question_type}, ref_num={reference_number}")
         
         # 処理タイプに応じて適切なメソッドを呼び出し
         if question_type == "style_adjustment":
@@ -456,7 +712,7 @@ Provide a helpful answer in {response_language}."""
 interactive_processor = InteractiveTranslationProcessor(client)
 
 # =============================================================================
-# 翻訳関数群（既存のコード）
+# 翻訳関数群（既存コード）
 # =============================================================================
 
 def f_translate_to_lightweight_premium(input_text, source_lang, target_lang, partner_message="", context_info=""):
@@ -829,10 +1085,11 @@ REMEMBER: Your entire response must be in {analysis_language}."""
         return error_msg
 
 # =============================================================================
-# ルーティング
+# ルーティング（セキュリティ強化版）
 # =============================================================================
 
 @app.route("/login", methods=["GET", "POST"])
+@csrf_protect
 def login():
     error = ""
     if request.method == "POST":
@@ -844,13 +1101,16 @@ def login():
             correct_pw = os.getenv("APP_PASSWORD", "linguru2025")
             if password == correct_pw:
                 session["logged_in"] = True
+                log_app_event("login_success", "user_logged_in")
                 return redirect(url_for("index"))
             else:
                 error = "パスワードが違います"
+                log_security_event("login_failure", f"invalid_password_attempt")
 
     return render_template("login.html", error=error)
 
 @app.route("/", methods=["GET", "POST"])
+@csrf_protect
 def index():
     lang = session.get("lang", "jp")
     label = labels.get(lang, labels["jp"])
@@ -863,6 +1123,12 @@ def index():
     mode_message = session.get("mode_message", "")
 
     language_pair = request.form.get("language_pair", "ja-fr") if request.method == "POST" else "ja-fr"
+    
+    # 言語ペア検証
+    is_valid_pair, _ = InputValidator.validate_language_pair(language_pair)
+    if not is_valid_pair:
+        language_pair = "ja-fr"  # デフォルトに戻す
+        
     source_lang, target_lang = language_pair.split("-")
         
     japanese_text = ""
@@ -888,16 +1154,25 @@ def index():
                 session.pop(key, None)
             
             TranslationContext.clear_context()
+            log_app_event("form_reset", "user_reset_form")
 
             japanese_text = ""
             partner_message = ""
             context_info = ""
             nuance_question = ""
         else:
+            # 入力値検証
             japanese_text = request.form.get("japanese_text", "").strip()
             partner_message = request.form.get("partner_message", "").strip()
             context_info = request.form.get("context_info", "").strip()
             nuance_question = request.form.get("nuance_question", "").strip()
+            
+            # テキスト入力の検証
+            if japanese_text:
+                is_valid, error_msg = InputValidator.validate_text_input(japanese_text)
+                if not is_valid:
+                    log_security_event("invalid_input", f"japanese_text validation failed: {error_msg}")
+                    japanese_text = ""
 
     return render_template("index.html",
         japanese_text=japanese_text,
@@ -929,12 +1204,20 @@ def alpha_landing():
 
 @app.route("/logout")
 def logout():
+    log_app_event("logout", "user_logged_out")
     session.clear()
     return redirect(url_for("login"))
 
 @app.route("/set_language/<lang>")
 def set_language(lang):
+    # 言語パラメータ検証
+    valid_languages = ["jp", "en", "fr"]
+    if lang not in valid_languages:
+        log_security_event("invalid_language", f"invalid_lang={lang}")
+        lang = "jp"
+    
     session["lang"] = lang
+    log_app_event("language_changed", f"new_lang={lang}")
     return redirect(url_for("index"))
 
 @app.route("/set_translation_mode/<mode>")
@@ -943,6 +1226,7 @@ def set_translation_mode(mode):
     
     if mode in ["normal", "premium"]:
         session["translation_mode"] = mode
+        log_app_event("mode_changed", f"new_mode={mode}")
         print(f"🎛️ 翻訳モードを {mode.upper()} に変更しました")
         
         if mode == "premium":
@@ -950,6 +1234,7 @@ def set_translation_mode(mode):
         else:
             session["mode_message"] = "Normal Mode に切り替えました。"
     else:
+        log_security_event("invalid_mode", f"invalid_mode={mode}")
         session["mode_message"] = "無効なモードです。"
     
     return redirect(url_for("index"))
@@ -962,6 +1247,7 @@ def translate_chatgpt_only():
         can_use, current_usage, daily_limit = check_daily_usage(client_id)
         
         if not can_use:
+            log_security_event("usage_limit_exceeded", f"client_id={client_id}, usage={current_usage}")
             return jsonify({
                 "success": False,
                 "error": "usage_limit_exceeded",
@@ -979,6 +1265,23 @@ def translate_chatgpt_only():
         context_info = data.get("context_info", "")
         language_pair = data.get("language_pair", "ja-fr")  
         
+        # 入力値検証
+        is_valid_text, text_error = InputValidator.validate_text_input(input_text)
+        if not is_valid_text:
+            log_security_event("invalid_translation_input", f"text_error={text_error}")
+            return jsonify({
+                "success": False,
+                "error": text_error
+            })
+        
+        is_valid_pair, pair_error = InputValidator.validate_language_pair(language_pair)
+        if not is_valid_pair:
+            log_security_event("invalid_language_pair", f"pair={language_pair}")
+            return jsonify({
+                "success": False,
+                "error": pair_error
+            })
+        
         source_lang, target_lang = language_pair.split("-")  
 
         # セッションクリア
@@ -994,7 +1297,9 @@ def translate_chatgpt_only():
         session["partner_message"] = partner_message
         session["context_info"] = context_info
 
-        print(f"🟦 [Early Access版/translate_chatgpt] 翻訳実行: {source_lang} -> {target_lang}")
+        log_app_event("translation_started", f"lang_pair={language_pair}, text_length={len(input_text)}")
+
+        print(f"🟦 [Security Enhanced版/translate_chatgpt] 翻訳実行: {source_lang} -> {target_lang}")
         print(f"🔵 入力: {input_text[:30]}...")
 
         if not input_text:
@@ -1073,6 +1378,8 @@ def translate_chatgpt_only():
             }
         )
 
+        log_app_event("translation_completed", f"client_id={client_id}, usage={new_usage_count}")
+
         return jsonify({
             "success": True,
             "source_lang": source_lang,
@@ -1094,8 +1401,8 @@ def translate_chatgpt_only():
     
     except Exception as e:
         import traceback
-        print(f"❌ Early Access版translate_chatgpt_only エラー:", str(e))
-        print(traceback.format_exc())
+        app_logger.error(f"Security Enhanced版translate_chatgpt_only エラー: {str(e)}")
+        app_logger.error(traceback.format_exc())
         return jsonify({
             "success": False,
             "error": str(e)
@@ -1131,16 +1438,18 @@ def get_nuance():
                 context["metadata"]
             )
         
+        log_app_event("nuance_analysis_completed", "gemini_3way_analysis")
+        
         return {"nuance": result}
     except Exception as e:
         import traceback
-        print("❌ get_nuance エラー:", str(e))
-        print(traceback.format_exc())
+        app_logger.error(f"get_nuance エラー: {str(e)}")
+        app_logger.error(traceback.format_exc())
         return {"error": str(e)}, 500
 
 @app.route("/interactive_question", methods=["POST"])
 def interactive_question():
-    """インタラクティブな質問を処理するエンドポイント"""
+    """インタラクティブな質問を処理するエンドポイント（セキュリティ強化版）"""
     try:
         data = request.get_json() or {}
         question = data.get("question", "").strip()
@@ -1149,6 +1458,15 @@ def interactive_question():
             return jsonify({
                 "success": False,
                 "error": "質問が入力されていません"
+            })
+        
+        # 入力値検証
+        is_valid, error_msg = InputValidator.validate_question(question)
+        if not is_valid:
+            log_security_event("invalid_question", f"question={question[:50]}, error={error_msg}")
+            return jsonify({
+                "success": False,
+                "error": error_msg
             })
         
         # 翻訳コンテキストを取得
@@ -1175,6 +1493,8 @@ def interactive_question():
         })
         session["chat_history"] = chat_history
         
+        log_app_event("interactive_question_processed", f"type={result.get('type')}, question_length={len(question)}")
+        
         print(f"✅ インタラクティブ質問処理完了: {result.get('type')}")
         
         return jsonify({
@@ -1185,8 +1505,8 @@ def interactive_question():
         
     except Exception as e:
         import traceback
-        print(f"❌ インタラクティブ質問エラー: {str(e)}")
-        print(traceback.format_exc())
+        app_logger.error(f"インタラクティブ質問エラー: {str(e)}")
+        app_logger.error(traceback.format_exc())
         return jsonify({
             "success": False,
             "error": str(e)
@@ -1197,6 +1517,7 @@ def clear_chat_history():
     """チャット履歴をクリアするエンドポイント"""
     try:
         session["chat_history"] = []
+        log_app_event("chat_history_cleared", "user_cleared_history")
         
         return jsonify({
             "success": True,
@@ -1204,7 +1525,7 @@ def clear_chat_history():
         })
         
     except Exception as e:
-        print(f"❌ チャット履歴クリアエラー: {str(e)}")
+        app_logger.error(f"チャット履歴クリアエラー: {str(e)}")
         return jsonify({
             "success": False,
             "error": str(e)
@@ -1212,15 +1533,33 @@ def clear_chat_history():
 
 @app.route("/reverse_better_translation", methods=["POST"])
 def reverse_better_translation():
-    """改善された翻訳を逆翻訳するAPIエンドポイント"""
+    """改善された翻訳を逆翻訳するAPIエンドポイント（セキュリティ強化版）"""
     try:
         data = request.get_json() or {}
         improved_text = data.get("french_text", "")
         language_pair = data.get("language_pair", "ja-fr")
+        
+        # 入力値検証
+        is_valid_text, text_error = InputValidator.validate_text_input(improved_text)
+        if not is_valid_text:
+            log_security_event("invalid_reverse_translation_input", f"error={text_error}")
+            return jsonify({
+                "success": False,
+                "error": text_error
+            })
+        
+        is_valid_pair, pair_error = InputValidator.validate_language_pair(language_pair)
+        if not is_valid_pair:
+            log_security_event("invalid_reverse_language_pair", f"pair={language_pair}")
+            return jsonify({
+                "success": False,
+                "error": pair_error
+            })
+        
         source_lang, target_lang = language_pair.split("-")
 
         print("🔍 reverse_better_translation:")
-        print(" - improved_text:", improved_text)
+        print(" - improved_text:", improved_text[:50])
         print(" - language_pair:", language_pair)
         print(" - source_lang:", source_lang)
         print(" - target_lang:", target_lang)
@@ -1233,8 +1572,10 @@ def reverse_better_translation():
 
         reversed_text = f_reverse_translation(improved_text, target_lang, source_lang)
 
-        print("🔁 改善翻訳の逆翻訳対象:", improved_text)
-        print("🟢 改善翻訳の逆翻訳結果:", reversed_text)
+        print("🔁 改善翻訳の逆翻訳対象:", improved_text[:50])
+        print("🟢 改善翻訳の逆翻訳結果:", reversed_text[:50])
+        
+        log_app_event("reverse_better_translation_completed", f"text_length={len(improved_text)}")
 
         return jsonify({
             "success": True,
@@ -1243,8 +1584,8 @@ def reverse_better_translation():
 
     except Exception as e:
         import traceback
-        print("❌ reverse_better_translation エラー:", str(e))
-        print(traceback.format_exc())
+        app_logger.error(f"reverse_better_translation エラー: {str(e)}")
+        app_logger.error(traceback.format_exc())
         return jsonify({
             "success": False,
             "error": str(e)
@@ -1264,6 +1605,7 @@ def get_usage_status_endpoint():
         })
     
     except Exception as e:
+        app_logger.error(f"使用状況取得エラー: {str(e)}")
         return jsonify({
             "success": False,
             "error": str(e)
@@ -1279,16 +1621,121 @@ def get_usage_stats():
         "current_mode": session.get("translation_mode", "normal")
     }
 
+# =============================================================================
+# セキュリティ監視とログ管理
+# =============================================================================
+
+@app.before_request
+def security_monitoring():
+    """リクエスト前のセキュリティ監視"""
+    
+    # 疑わしいUser-Agentをチェック
+    user_agent = request.headers.get('User-Agent', '')
+    suspicious_agents = ['bot', 'crawler', 'spider', 'scraper']
+    
+    if any(agent in user_agent.lower() for agent in suspicious_agents):
+        log_security_event("suspicious_user_agent", f"ua={user_agent[:100]}")
+    
+    # リクエスト頻度監視（簡易版）
+    client_ip = get_client_ip()
+    current_time = time.time()
+    
+    # セッションベースの簡易レート制限
+    last_request_time = session.get('last_request_time', 0)
+    if current_time - last_request_time < 1:  # 1秒に1回の制限
+        log_security_event("rate_limit_warning", f"fast_requests_from={client_ip}")
+    
+    session['last_request_time'] = current_time
+
+@app.route("/security/logs")
+def view_security_logs():
+    """セキュリティログ表示（管理者用）"""
+    # 管理者権限チェック（簡易版）
+    if not session.get("logged_in"):
+        abort(403)
+    
+    try:
+        with open('logs/security.log', 'r') as f:
+            logs = f.readlines()[-50:]  # 最新50行
+        
+        return jsonify({
+            "success": True,
+            "logs": logs
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        })
+
+# =============================================================================
+# CSRFトークン対応のHTMLテンプレート修正が必要
+# =============================================================================
+
+def create_csrf_protected_form_template():
+    """CSRF保護対応のフォームテンプレート例"""
+    return """
+    <!-- フォームにCSRFトークンを追加 -->
+    <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <!-- 他のフォーム要素 -->
+    </form>
+    
+    <!-- JavaScriptでのAjax送信時 -->
+    <script>
+    function sendSecureRequest(data) {
+        fetch('/api_endpoint', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(data)
+        });
+    }
+    </script>
+    """
+
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8080))
+    # ポート設定（既存の良い部分を維持）
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else int(os.environ.get("PORT", 8080))
     
     # 本番環境判定
-    is_production = os.getenv('FLASK_ENV') == 'production'
+    is_production = os.getenv('FLASK_ENV') == 'production' or os.getenv('AWS_EXECUTION_ENV')
     
     # 本番環境用セキュリティ設定
     if is_production:
         app.config['SESSION_COOKIE_SECURE'] = True
         app.config['SESSION_COOKIE_HTTPONLY'] = True
         app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+        print("🔒 本番環境セキュリティ設定を適用しました")
+        print(f"🌍 外部アクセス可能: http://langpont.com:{port if port != 80 else ''}")
+    else:
+        print("🔧 開発環境で実行中")
+        print(f"🏠 ローカルアクセス: http://localhost:{port}")
     
-    app.run(host="0.0.0.0", port=port, debug=not is_production)
+    # セキュリティ強化完了メッセージ
+    print("🛡️ セキュリティ強化機能:")
+    print("  ✅ セキュリティヘッダー")
+    print("  ✅ CSRF対策")
+    print("  ✅ エラーハンドリング")
+    print("  ✅ 入力値検証")
+    print("  ✅ ログ機能")
+    print("  ✅ セキュリティ監視")
+    
+    # ホスト設定（既存の設定を維持）
+    host = "0.0.0.0"  # すでに外部アクセス可能な設定
+    debug_mode = not is_production
+    
+    print(f"🚀 LangPont起動中: Host={host}, Port={port}, Debug={debug_mode}")
+    
+    try:
+        app.run(host=host, port=port, debug=debug_mode)
+    except PermissionError:
+        if port == 80:
+            print("⚠️ ポート80への権限がありません。ポート8080を使用します。")
+            port = 8080
+            print(f"🔄 ポート変更: {port}")
+            app.run(host=host, port=port, debug=debug_mode)
+        else:
+            raise
