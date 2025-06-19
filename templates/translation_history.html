@@ -1,0 +1,1391 @@
+{% extends "base.html" %}
+
+{% block title %}LangPont{% endblock %}
+
+{% block head %}
+<style>
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+        background: #f8f9fa;
+        margin: 0;
+        padding: 0;
+    }
+    
+    .history-container {
+        max-width: 1400px;
+        margin: 20px auto;
+        padding: 0 20px;
+    }
+    
+    .history-header {
+        background: var(--gradient-primary);
+        color: white;
+        padding: 30px;
+        border-radius: 16px;
+        margin-bottom: 30px;
+        box-shadow: var(--shadow-medium);
+    }
+    
+    .history-title {
+        font-size: 28px;
+        font-weight: 700;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .history-subtitle {
+        font-size: 16px;
+        opacity: 0.9;
+        margin: 0;
+    }
+    
+    /* 検索・フィルター */
+    .search-filters {
+        background: white;
+        padding: 24px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        border: 1px solid rgba(0, 0, 0, 0.06);
+    }
+    
+    .filter-row {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 1fr auto;
+        gap: 16px;
+        align-items: end;
+    }
+    
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .filter-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 6px;
+    }
+    
+    .filter-input {
+        padding: 10px 12px;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: all 0.2s ease;
+    }
+    
+    .filter-input:focus {
+        outline: none;
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px rgba(46, 134, 171, 0.1);
+    }
+    
+    .filter-select {
+        padding: 10px 12px;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 14px;
+        background: white;
+        cursor: pointer;
+    }
+    
+    .btn-search {
+        background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+        color: white;
+        padding: 12px 20px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 8px rgba(46, 134, 171, 0.3);
+    }
+    
+    .btn-search:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 16px rgba(46, 134, 171, 0.4);
+    }
+    
+    /* 🆕 戻るボタンのスタイル */
+    .btn-back {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        padding: 8px 16px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        backdrop-filter: blur(10px);
+    }
+    
+    .btn-back:hover {
+        background: rgba(255, 255, 255, 0.3);
+        border-color: rgba(255, 255, 255, 0.5);
+        transform: translateY(-1px);
+        color: white;
+        text-decoration: none;
+    }
+    
+    /* 統計情報 */
+    .history-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+    
+    .stat-card {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        text-align: center;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        border: 1px solid rgba(0, 0, 0, 0.06);
+    }
+    
+    .stat-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--color-primary);
+        margin-bottom: 4px;
+    }
+    
+    .stat-label {
+        font-size: 12px;
+        color: #6b7280;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    /* 履歴エントリ */
+    .history-entries {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+    
+    .history-entry {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        border: 1px solid rgba(0, 0, 0, 0.06);
+        transition: all 0.2s ease;
+    }
+    
+    .history-entry:hover {
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        transform: translateY(-1px);
+    }
+    
+    .entry-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        border-bottom: 1px solid #f3f4f6;
+        padding-bottom: 12px;
+    }
+    
+    .entry-meta {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        font-size: 14px;
+        color: #6b7280;
+    }
+    
+    .language-pair {
+        background: #e5f3ff;
+        color: #0369a1;
+        padding: 4px 8px;
+        border-radius: 16px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    
+    .entry-actions {
+        display: flex;
+        gap: 8px;
+    }
+    
+    .btn-action {
+        padding: 6px 12px;
+        border: none;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .btn-bookmark {
+        background: #fef3c7;
+        color: #92400e;
+    }
+    
+    .btn-bookmark.active {
+        background: #f59e0b;
+        color: white;
+    }
+    
+    .btn-rate {
+        background: #e5e7eb;
+        color: #374151;
+    }
+    
+    .btn-export {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+    
+    /* 翻訳コンテンツ */
+    .translation-content {
+        display: grid;
+        gap: 16px;
+    }
+    
+    .source-text {
+        background: #f8f9fa;
+        padding: 16px;
+        border-radius: 8px;
+        border-left: 4px solid #6b7280;
+    }
+    
+    .source-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+    }
+    
+    .source-content {
+        font-size: 16px;
+        line-height: 1.6;
+        color: #1a1a1a;
+    }
+    
+    .translations-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-top: 16px;
+    }
+    
+    .translation-result {
+        background: #fafafa;
+        padding: 16px;
+        border-radius: 8px;
+        border-left: 4px solid var(--color-primary);
+    }
+    
+    .result-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--color-primary);
+        text-transform: uppercase;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .result-content {
+        font-size: 15px;
+        line-height: 1.6;
+        color: #1a1a1a;
+    }
+    
+    .quality-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+    }
+    
+    .quality-stars {
+        color: #f59e0b;
+    }
+    
+    /* Enhanced translation */
+    .translation-enhanced {
+        border-left-color: #10b981;
+    }
+    
+    .translation-enhanced .result-label {
+        color: #10b981;
+    }
+    
+    /* モバイル対応 */
+    @media (max-width: 768px) {
+        .history-container {
+            margin: 10px auto;
+            padding: 0 12px;
+        }
+        
+        .history-header {
+            padding: 20px;
+        }
+        
+        .history-title {
+            font-size: 24px;
+        }
+        
+        .filter-row {
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+        
+        .history-stats {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .translations-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .entry-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        
+        .entry-meta {
+            flex-wrap: wrap;
+        }
+        
+        /* モバイル用の戻るボタン調整 */
+        .history-header div[style*="display: flex"] {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 8px;
+        }
+        
+        .btn-back {
+            align-self: flex-end;
+            font-size: 12px;
+            padding: 6px 12px;
+        }
+    }
+    
+    /* ローディング状態 */
+    .loading {
+        text-align: center;
+        padding: 40px;
+        color: #6b7280;
+    }
+    
+    .loading-spinner {
+        display: inline-block;
+        width: 24px;
+        height: 24px;
+        border: 3px solid #e5e7eb;
+        border-top: 3px solid var(--color-primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    /* 空状態 */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #6b7280;
+    }
+    
+    .empty-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+    }
+    
+    .empty-title {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: #374151;
+    }
+    
+    .empty-description {
+        font-size: 14px;
+        margin-bottom: 20px;
+    }
+    
+    /* 🆕 星評価モーダルのスタイル */
+    .rating-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        backdrop-filter: blur(5px);
+    }
+    
+    .rating-modal-content {
+        background: white;
+        border-radius: 16px;
+        max-width: 500px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        animation: modalSlideIn 0.3s ease-out;
+    }
+    
+    @keyframes modalSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-20px) scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+    
+    .rating-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 24px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .rating-modal-header h3 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+        color: #1a1a1a;
+    }
+    
+    .rating-modal-close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: #6b7280;
+        padding: 0;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: all 0.2s ease;
+    }
+    
+    .rating-modal-close:hover {
+        background: #f3f4f6;
+        color: #374151;
+    }
+    
+    .rating-modal-body {
+        padding: 24px;
+    }
+    
+    .star-rating {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        margin: 20px 0;
+    }
+    
+    .star {
+        font-size: 32px;
+        cursor: pointer;
+        color: #d1d5db;
+        transition: all 0.2s ease;
+        user-select: none;
+    }
+    
+    .star:hover {
+        transform: scale(1.1);
+    }
+    
+    .star.selected {
+        color: #f59e0b;
+        transform: scale(1.1);
+    }
+    
+    .rating-labels {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        color: #6b7280;
+        margin: 10px 0 20px 0;
+    }
+    
+    .feedback-section {
+        margin: 20px 0;
+    }
+    
+    .feedback-section label {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 8px;
+    }
+    
+    .feedback-section textarea {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 14px;
+        resize: vertical;
+        transition: border-color 0.2s ease;
+        box-sizing: border-box;
+    }
+    
+    .feedback-section textarea:focus {
+        outline: none;
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px rgba(46, 134, 171, 0.1);
+    }
+    
+    .rating-modal-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+        margin-top: 24px;
+        padding-top: 20px;
+        border-top: 1px solid #e5e7eb;
+    }
+    
+    .rating-modal-actions .btn-secondary {
+        background: #f3f4f6;
+        color: #374151;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .rating-modal-actions .btn-secondary:hover {
+        background: #e5e7eb;
+    }
+    
+    .rating-modal-actions .btn-primary {
+        background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .rating-modal-actions .btn-primary:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(46, 134, 171, 0.4);
+    }
+    
+    .rating-modal-actions .btn-primary:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    
+    /* 🆕 4段階評価システム用スタイル */
+    .evaluation-stage {
+        margin: 20px 0;
+        padding: 16px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border-left: 4px solid var(--color-primary);
+    }
+    
+    .evaluation-stage h4 {
+        margin: 0 0 8px 0;
+        color: var(--color-primary);
+        font-size: 16px;
+        font-weight: 600;
+    }
+    
+    .evaluation-stage p {
+        margin: 0 0 12px 0;
+        color: #374151;
+        font-size: 14px;
+    }
+    
+    .radio-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .radio-group label {
+        display: flex;
+        align-items: center;
+        padding: 8px 12px;
+        background: white;
+        border: 2px solid #e5e7eb;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 14px;
+    }
+    
+    .radio-group label:hover {
+        border-color: var(--color-primary);
+        background: #f0f8ff;
+    }
+    
+    .radio-group label.selected {
+        border-color: var(--color-primary);
+        background: #e5f3ff;
+        color: var(--color-primary);
+        font-weight: 600;
+    }
+    
+    .radio-group input[type="radio"] {
+        margin-right: 8px;
+        accent-color: var(--color-primary);
+    }
+    
+    /* 必須項目マーカー */
+    .evaluation-stage:first-child::after {
+        content: "必須";
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        background: #dc2626;
+        color: white;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: 600;
+    }
+    
+    .evaluation-stage {
+        position: relative;
+    }
+    
+    /* 🆕 Gemini分析表示用スタイル */
+    .gemini-analysis-section {
+        border-top: 1px solid #e5e7eb;
+        padding-top: 16px;
+    }
+    
+    .analysis-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        margin-bottom: 12px;
+        overflow: hidden;
+    }
+    
+    .analysis-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        background: #e2e8f0;
+        border-bottom: 1px solid #cbd5e1;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+    }
+    
+    .analysis-header:hover {
+        background: #cbd5e1;
+    }
+    
+    .analysis-header h5 {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 600;
+        color: #475569;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .analysis-icon {
+        font-size: 16px;
+    }
+    
+    .btn-toggle {
+        background: var(--color-primary);
+        color: white;
+        border: none;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .btn-toggle:hover {
+        background: var(--color-primary-dark);
+    }
+    
+    .analysis-content {
+        padding: 16px;
+        background: white;
+        font-size: 14px;
+        line-height: 1.6;
+        color: #374151;
+        max-height: 400px;
+        overflow-y: auto;
+        transition: all 0.3s ease;
+    }
+    
+    .analysis-content.collapsed {
+        max-height: 0;
+        padding: 0 16px;
+        overflow: hidden;
+    }
+    
+    .analysis-content pre {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        background: #f8f9fa;
+        padding: 12px;
+        border-radius: 4px;
+        margin: 8px 0;
+        border-left: 3px solid var(--color-primary);
+    }
+    
+    /* 🆕 文章表示最適化用スタイル */
+    .expandable-text {
+        position: relative;
+    }
+    
+    .expandable-text.truncated {
+        max-height: 120px;
+        overflow: hidden;
+        position: relative;
+    }
+    
+    .expandable-text.truncated::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 40px;
+        background: linear-gradient(transparent, white);
+        pointer-events: none;
+    }
+    
+    .expand-button {
+        display: inline-block;
+        margin-top: 8px;
+        padding: 4px 8px;
+        background: var(--color-primary);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .expand-button:hover {
+        background: var(--color-primary-dark);
+        transform: translateY(-1px);
+    }
+    
+    .character-count {
+        font-size: 11px;
+        color: #6b7280;
+        margin-left: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="history-container">
+    <!-- ヘッダー -->
+    <div class="history-header">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <h1 class="history-title" style="margin: 0;">
+                📚 {{ labels["translation_history"] }}
+            </h1>
+            <a href="{{ url_for('index') }}" class="btn-back" title="翻訳アプリに戻る">
+                ← {{ labels["back_to_app"] or "アプリに戻る" }}
+            </a>
+        </div>
+        <p class="history-subtitle">{{ labels["history_subtitle"] or "過去の翻訳履歴を検索・管理できます" }}</p>
+    </div>
+    
+    <!-- 検索・フィルター -->
+    <div class="search-filters">
+        <form method="GET" action="{{ url_for('auth.detailed_translation_history') }}">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label class="filter-label">🔍 翻訳内容を検索</label>
+                    <input type="text" name="search" class="filter-input" 
+                           placeholder="翻訳内容や元のテキストで検索..." 
+                           value="{{ search_query or '' }}"
+                           title="翻訳元テキストや翻訳結果を検索できます">
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">🌐 言語ペア</label>
+                    <select name="language_pair" class="filter-select" title="翻訳の言語ペアでフィルタ">
+                        <option value="">すべての言語ペア</option>
+                        <!-- 日本語から他言語 -->
+                        <option value="ja-en" {% if filters.get('language_pair') == 'ja-en' %}selected{% endif %}>🇯🇵 日本語 → 🇺🇸 英語</option>
+                        <option value="ja-fr" {% if filters.get('language_pair') == 'ja-fr' %}selected{% endif %}>🇯🇵 日本語 → 🇫🇷 フランス語</option>
+                        <option value="ja-es" {% if filters.get('language_pair') == 'ja-es' %}selected{% endif %}>🇯🇵 日本語 → 🇪🇸 スペイン語</option>
+                        <!-- 他言語から日本語 -->
+                        <option value="en-ja" {% if filters.get('language_pair') == 'en-ja' %}selected{% endif %}>🇺🇸 英語 → 🇯🇵 日本語</option>
+                        <option value="fr-ja" {% if filters.get('language_pair') == 'fr-ja' %}selected{% endif %}>🇫🇷 フランス語 → 🇯🇵 日本語</option>
+                        <option value="es-ja" {% if filters.get('language_pair') == 'es-ja' %}selected{% endif %}>🇪🇸 スペイン語 → 🇯🇵 日本語</option>
+                        <!-- 英語とその他の言語 -->
+                        <option value="en-fr" {% if filters.get('language_pair') == 'en-fr' %}selected{% endif %}>🇺🇸 英語 → 🇫🇷 フランス語</option>
+                        <option value="fr-en" {% if filters.get('language_pair') == 'fr-en' %}selected{% endif %}>🇫🇷 フランス語 → 🇺🇸 英語</option>
+                        <option value="en-es" {% if filters.get('language_pair') == 'en-es' %}selected{% endif %}>🇺🇸 英語 → 🇪🇸 スペイン語</option>
+                        <option value="es-en" {% if filters.get('language_pair') == 'es-en' %}selected{% endif %}>🇪🇸 スペイン語 → 🇺🇸 英語</option>
+                        <!-- フランス語とスペイン語 -->
+                        <option value="fr-es" {% if filters.get('language_pair') == 'fr-es' %}selected{% endif %}>🇫🇷 フランス語 → 🇪🇸 スペイン語</option>
+                        <option value="es-fr" {% if filters.get('language_pair') == 'es-fr' %}selected{% endif %}>🇪🇸 スペイン語 → 🇫🇷 フランス語</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">📅 開始日</label>
+                    <input type="date" name="date_from" class="filter-input" 
+                           value="{{ filters.get('date_from', '') }}"
+                           title="この日以降の翻訳履歴を表示">
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">⭐ 最低評価</label>
+                    <select name="min_rating" class="filter-select" title="この評価以上の翻訳のみ表示">
+                        <option value="">すべての評価</option>
+                        <option value="5" {% if filters.get('min_rating') == 5 %}selected{% endif %}>⭐⭐⭐⭐⭐ (5点)</option>
+                        <option value="4" {% if filters.get('min_rating') == 4 %}selected{% endif %}>⭐⭐⭐⭐ (4点以上)</option>
+                        <option value="3" {% if filters.get('min_rating') == 3 %}selected{% endif %}>⭐⭐⭐ (3点以上)</option>
+                        <option value="2" {% if filters.get('min_rating') == 2 %}selected{% endif %}>⭐⭐ (2点以上)</option>
+                        <option value="1" {% if filters.get('min_rating') == 1 %}selected{% endif %}>⭐ (1点以上)</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn-search" title="条件に基づいて履歴を検索">
+                    🔍 検索実行
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- 🆕 統計情報（改善版） -->
+    <div class="history-stats">
+        <div class="stat-card" title="これまでに実行した翻訳の総数">
+            <div class="stat-value">{{ (history_entries|length) if history_entries else 0 }}</div>
+            <div class="stat-label">📊 総翻訳数</div>
+        </div>
+        <div class="stat-card" title="今週実行した翻訳数">
+            <div class="stat-value">{{ analytics.get('this_week', 0) if analytics else 0 }}</div>
+            <div class="stat-label">📅 今週の翻訳</div>
+        </div>
+        <div class="stat-card" title="ブックマークした翻訳数">
+            <div class="stat-value">{{ analytics.get('bookmarked', 0) if analytics else 0 }}</div>
+            <div class="stat-label">🔖 ブックマーク</div>
+        </div>
+        <div class="stat-card" title="翻訳の平均評価（1-5段階）">
+            <div class="stat-value">{{ "%.1f"|format(analytics.get('avg_rating', 0)) if analytics else "0.0" }}</div>
+            <div class="stat-label">⭐ 平均評価</div>
+        </div>
+    </div>
+    
+    <!-- 履歴エントリ -->
+    {% if history_entries %}
+    <div class="history-entries">
+        {% for entry in history_entries %}
+        <div class="history-entry" data-entry-id="{{ entry.id }}">
+            <!-- エントリヘッダー -->
+            <div class="entry-header">
+                <div class="entry-meta">
+                    <span class="language-pair">
+                        {{ entry.source_language.upper() }} → {{ entry.target_language.upper() }}
+                    </span>
+                    <span>📅 {{ entry.created_at[:16] if entry.created_at else 'N/A' }}</span>
+                    {% if entry.user_rating %}
+                    <span class="quality-indicator">
+                        <span class="quality-stars">
+                            {% for i in range(entry.user_rating) %}⭐{% endfor %}
+                        </span>
+                    </span>
+                    {% endif %}
+                </div>
+                
+                <div class="entry-actions">
+                    <button class="btn-action btn-bookmark {% if entry.bookmarked %}active{% endif %}" 
+                            onclick="toggleBookmark({{ entry.id }}, {{ entry.bookmarked|lower }})"
+                            title="{% if entry.bookmarked %}ブックマークを解除{% else %}ブックマークに追加{% endif %}">
+                        {% if entry.bookmarked %}🔖 保存済み{% else %}📑 保存{% endif %}
+                    </button>
+                    <button class="btn-action btn-rate" 
+                            onclick="rateTranslation({{ entry.id }})"
+                            title="この翻訳を1-5段階で評価">
+                        ⭐ 評価
+                    </button>
+                    <button class="btn-action btn-export" 
+                            onclick="exportEntry({{ entry.id }})"
+                            title="この翻訳データをJSONファイルでダウンロード">
+                        📤 エクスポート
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 翻訳コンテンツ -->
+            <div class="translation-content">
+                <!-- ソーステキスト -->
+                <div class="source-text">
+                    <div class="source-label">{{ labels["source_text"] }} ({{ entry.source_language.upper() }})</div>
+                    <div class="source-content expandable-text" data-text="{{ entry.source_text }}">{{ entry.source_text }}</div>
+                    {% if entry.context_info %}
+                    <div style="margin-top: 8px; font-size: 14px; color: #6b7280;">
+                        💭 {{ labels["context"] }}: {{ entry.context_info }}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- 翻訳結果 -->
+                <div class="translations-grid">
+                    {% if entry.chatgpt_translation %}
+                    <div class="translation-result" title="ChatGPTによる基本翻訳">
+                        <div class="result-label">
+                            🤖 ChatGPT 基本翻訳
+                        </div>
+                        <div class="result-content expandable-text" data-text="{{ entry.chatgpt_translation }}">{{ entry.chatgpt_translation }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if entry.gemini_translation %}
+                    <div class="translation-result" title="Geminiによる翻訳">
+                        <div class="result-label">
+                            ✨ Gemini 翻訳
+                        </div>
+                        <div class="result-content expandable-text" data-text="{{ entry.gemini_translation }}">{{ entry.gemini_translation }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if entry.enhanced_translation %}
+                    <div class="translation-result translation-enhanced" title="ChatGPTによる改善翻訳">
+                        <div class="result-label">
+                            🎯 ChatGPT 改善翻訳
+                        </div>
+                        <div class="result-content expandable-text" data-text="{{ entry.enhanced_translation }}">{{ entry.enhanced_translation }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- 🆕 Phase 1: Gemini分析結果表示セクション -->
+                {% if entry.gemini_analysis_result %}
+                <div class="gemini-analysis-section" style="margin-top: 16px;">
+                    <div class="analysis-card" title="Gemini AIによる3つの翻訳比較分析">
+                        <div class="analysis-header">
+                            <span class="analysis-icon">🧠</span>
+                            <h5>Gemini 3つの翻訳比較分析</h5>
+                            <button class="btn-toggle" onclick="toggleAnalysis(this)" title="分析を展開/折りたたみ">
+                                <span class="toggle-text">展開</span>
+                            </button>
+                        </div>
+                        <div class="analysis-content collapsed">
+                            <pre>{{ entry.gemini_analysis_result }}</pre>
+                            
+                            {% if entry.gemini_recommendation_extracted %}
+                            <div style="background: #e8f4fd; padding: 12px; border-radius: 6px; border-left: 4px solid #2E86AB; margin-top: 12px;">
+                                <h6 style="margin: 0 0 8px 0; color: #2E86AB; font-size: 14px; font-weight: 600;">📊 Task 2.9.2 推奨抽出結果</h6>
+                                <p style="margin: 4px 0; font-size: 13px;"><strong>推奨エンジン:</strong> {{ entry.gemini_recommendation_extracted }}</p>
+                                {% if entry.gemini_recommendation_confidence %}
+                                <p style="margin: 4px 0; font-size: 13px;"><strong>信頼度:</strong> {{ "%.3f"|format(entry.gemini_recommendation_confidence) }}</p>
+                                {% endif %}
+                                {% if entry.gemini_recommendation_strength %}
+                                <p style="margin: 4px 0; font-size: 13px;"><strong>推奨強度:</strong> {{ entry.gemini_recommendation_strength }}</p>
+                                {% endif %}
+                                {% if entry.gemini_recommendation_reasons %}
+                                <p style="margin: 4px 0; font-size: 13px;"><strong>推奨理由:</strong> {{ entry.gemini_recommendation_reasons }}</p>
+                                {% endif %}
+                                {% if entry.analysis_timestamp %}
+                                <p style="margin: 8px 0 0 0; font-size: 11px; color: #666;">分析実行時刻: {{ entry.analysis_timestamp }}</p>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="gemini-analysis-section" style="margin-top: 16px;">
+                    <div class="analysis-card" style="background: #fff3cd; border-color: #ffeaa7;">
+                        <div class="analysis-header" style="background: #ffeaa7;">
+                            <span class="analysis-icon">⚠️</span>
+                            <h5 style="color: #856404;">Gemini分析結果なし</h5>
+                        </div>
+                        <div class="analysis-content" style="background: #fff3cd; color: #856404; font-style: italic;">
+                            この翻訳にはGemini分析結果が保存されていません。新しい翻訳ではGemini分析と推奨抽出が自動的に実行されます。
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- ページネーション -->
+    {% if history_entries|length >= 20 %}
+    <div style="text-align: center; margin-top: 30px;">
+        <a href="{{ url_for('auth.translation_history', page=(page+1), **request.args) }}" 
+           class="btn-search">
+            {{ labels["load_more"] }}
+        </a>
+    </div>
+    {% endif %}
+    
+    {% else %}
+    <!-- 空状態 -->
+    <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <div class="empty-title">{{ labels["no_history_title"] }}</div>
+        <div class="empty-description">{{ labels["no_history_description"] }}</div>
+        <a href="{{ url_for('index') }}" class="btn-search">
+            {{ labels["start_translating"] }}
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+// ブックマーク切り替え（統計自動更新機能付き）
+function toggleBookmark(entryId, isBookmarked) {
+    // UIを即座に更新（ユーザビリティ向上）
+    const button = document.querySelector(`button[onclick*="toggleBookmark(${entryId}"]`);
+    if (button) {
+        button.disabled = true;
+        button.textContent = '更新中...';
+    }
+    
+    fetch('{{ url_for("auth.bookmark_detailed_translation") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: `history_id=${entryId}&bookmarked=${!isBookmarked}&csrf_token={{ csrf_token }}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 🆕 統計情報を自動更新
+            updateStatistics();
+            // ページリロードの代わりに部分更新
+            setTimeout(() => location.reload(), 500);
+        } else {
+            alert(data.error || 'エラーが発生しました');
+            if (button) {
+                button.disabled = false;
+                button.textContent = isBookmarked ? '🔖 保存済み' : '📑 保存';
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('通信エラーが発生しました');
+        if (button) {
+            button.disabled = false;
+            button.textContent = isBookmarked ? '🔖 保存済み' : '📑 保存';
+        }
+    });
+}
+
+// 🆕 星評価UIシステム（改善版）
+function rateTranslation(entryId) {
+    showRatingModal(entryId);
+}
+
+function showRatingModal(entryId) {
+    // 🆕 4段階評価システム対応モーダル作成
+    const modal = document.createElement('div');
+    modal.className = 'rating-modal';
+    modal.innerHTML = `
+        <div class="rating-modal-content">
+            <div class="rating-modal-header">
+                <h3>📊 翻訳品質評価（4段階システム）</h3>
+                <button class="rating-modal-close" onclick="closeRatingModal()">&times;</button>
+            </div>
+            <div class="rating-modal-body">
+                <div class="evaluation-stage">
+                    <h4>1️⃣ 【実際の利用選択】（必須）</h4>
+                    <p>この翻訳を実際の場面で使いますか？</p>
+                    <div class="radio-group" data-stage="usage">
+                        <label><input type="radio" name="usage" value="use_as_is"> そのまま使う</label>
+                        <label><input type="radio" name="usage" value="use_with_edit"> 軽く修正して使う</label>
+                        <label><input type="radio" name="usage" value="use_as_reference"> 参考程度に留める</label>
+                        <label><input type="radio" name="usage" value="not_use"> 使わない</label>
+                    </div>
+                </div>
+                
+                <div class="evaluation-stage">
+                    <h4>2️⃣ 【コンテキスト適合度】</h4>
+                    <p>文脈や状況に適した翻訳ですか？</p>
+                    <div class="radio-group" data-stage="context">
+                        <label><input type="radio" name="context" value="perfect"> 完全に適している</label>
+                        <label><input type="radio" name="context" value="mostly_good"> ほぼ適している</label>
+                        <label><input type="radio" name="context" value="partially_good"> 部分的に適している</label>
+                        <label><input type="radio" name="context" value="not_suitable"> 適していない</label>
+                    </div>
+                </div>
+                
+                <div class="evaluation-stage">
+                    <h4>3️⃣ 【個別翻訳評価】</h4>
+                    <p>最も優れていると思う翻訳を選択してください：</p>
+                    <div class="radio-group" data-stage="best_translation">
+                        <label><input type="radio" name="best_translation" value="chatgpt"> ChatGPT 基本翻訳</label>
+                        <label><input type="radio" name="best_translation" value="enhanced"> ChatGPT 改善翻訳</label>
+                        <label><input type="radio" name="best_translation" value="gemini"> Gemini 翻訳</label>
+                        <label><input type="radio" name="best_translation" value="none"> どれも満足できない</label>
+                    </div>
+                </div>
+                
+                <div class="evaluation-stage">
+                    <h4>4️⃣ 【Gemini分析評価】</h4>
+                    <p>Gemini AIの分析・比較結果は有用でしたか？</p>
+                    <div class="radio-group" data-stage="gemini_analysis">
+                        <label><input type="radio" name="gemini_analysis" value="very_helpful"> とても有用</label>
+                        <label><input type="radio" name="gemini_analysis" value="helpful"> 有用</label>
+                        <label><input type="radio" name="gemini_analysis" value="somewhat_helpful"> やや有用</label>
+                        <label><input type="radio" name="gemini_analysis" value="not_helpful"> 有用でない</label>
+                    </div>
+                </div>
+                
+                <div class="feedback-section">
+                    <label for="rating-feedback">詳細フィードバック (任意):</label>
+                    <textarea id="rating-feedback" placeholder="改善点や要望があればお聞かせください..." rows="3"></textarea>
+                </div>
+                
+                <div class="rating-modal-actions">
+                    <button class="btn-secondary" onclick="closeRatingModal()">キャンセル</button>
+                    <button class="btn-primary" onclick="submitAdvancedRating(${entryId})" disabled id="submit-rating-btn">評価を送信</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // 🆕 4段階評価システムのイベント設定
+    const radioGroups = modal.querySelectorAll('.radio-group');
+    let requiredFieldsFilled = false;
+    
+    // 各ラジオボタンにイベントリスナーを追加
+    radioGroups.forEach(group => {
+        const radioInputs = group.querySelectorAll('input[type="radio"]');
+        radioInputs.forEach(radio => {
+            radio.addEventListener('change', function() {
+                // 必須項目（実際の利用選択）がチェックされているかを確認
+                const usageRadios = modal.querySelectorAll('input[name="usage"]');
+                requiredFieldsFilled = Array.from(usageRadios).some(r => r.checked);
+                
+                // 送信ボタンの有効/無効を切り替え
+                document.getElementById('submit-rating-btn').disabled = !requiredFieldsFilled;
+                
+                // 選択されたラジオボタンの親ラベルを強調
+                radioInputs.forEach(r => {
+                    r.closest('label').classList.toggle('selected', r.checked);
+                });
+            });
+        });
+    });
+}
+
+// 🆕 4段階評価システム用送信関数
+function submitAdvancedRating(entryId) {
+    const modal = document.querySelector('.rating-modal');
+    
+    // 各段階の評価データを収集
+    const evaluationData = {
+        usage: getSelectedValue(modal, 'usage'),
+        context: getSelectedValue(modal, 'context'),
+        best_translation: getSelectedValue(modal, 'best_translation'),
+        gemini_analysis: getSelectedValue(modal, 'gemini_analysis')
+    };
+    
+    const feedback = document.getElementById('rating-feedback').value;
+    
+    // 必須項目チェック
+    if (!evaluationData.usage) {
+        alert('「実際の利用選択」は必須項目です');
+        return;
+    }
+    
+    // 送信ボタンを無効化
+    const submitBtn = document.getElementById('submit-rating-btn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = '送信中...';
+    
+    // 評価データをJSON形式で送信
+    fetch('{{ url_for("auth.rate_detailed_translation") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: `history_id=${entryId}&evaluation_data=${encodeURIComponent(JSON.stringify(evaluationData))}&feedback=${encodeURIComponent(feedback)}&csrf_token={{ csrf_token }}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closeRatingModal();
+            // 🆕 統計情報を自動更新
+            updateStatistics();
+            // ページリロードの代わりに部分更新
+            setTimeout(() => location.reload(), 500);
+        } else {
+            alert(data.error || 'エラーが発生しました');
+            submitBtn.disabled = false;
+            submitBtn.textContent = '評価を送信';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('通信エラーが発生しました');
+        submitBtn.disabled = false;
+        submitBtn.textContent = '評価を送信';
+    });
+}
+
+// ラジオボタンの選択値を取得するヘルパー関数
+function getSelectedValue(modal, name) {
+    const selectedRadio = modal.querySelector(`input[name="${name}"]:checked`);
+    return selectedRadio ? selectedRadio.value : null;
+}
+
+function closeRatingModal() {
+    const modal = document.querySelector('.rating-modal');
+    if (modal) {
+        document.body.removeChild(modal);
+    }
+}
+
+// 🆕 統計情報自動更新関数
+function updateStatistics() {
+    try {
+        // 統計カードの値を動的に更新
+        console.log('統計情報を更新中...');
+        
+        // ブックマーク数の更新（簡易版）
+        const bookmarkCard = document.querySelector('.stat-card:nth-child(3) .stat-value');
+        if (bookmarkCard) {
+            const currentCount = parseInt(bookmarkCard.textContent) || 0;
+            // 実際の更新はサーバーサイドで行われるため、ここでは表示のみ
+            console.log('ブックマーク統計更新準備完了');
+        }
+    } catch (error) {
+        console.warn('統計更新エラー:', error);
+    }
+}
+
+// エントリエクスポート
+function exportEntry(entryId) {
+    window.open(`{{ url_for("auth.export_detailed_history") }}?entry_id=${entryId}`, '_blank');
+}
+
+// 🆕 Gemini分析の展開/折りたたみ機能
+function toggleAnalysis(button) {
+    const analysisCard = button.closest('.analysis-card');
+    const content = analysisCard.querySelector('.analysis-content');
+    const toggleText = button.querySelector('.toggle-text');
+    
+    if (content.classList.contains('collapsed')) {
+        content.classList.remove('collapsed');
+        toggleText.textContent = '折りたたみ';
+    } else {
+        content.classList.add('collapsed');
+        toggleText.textContent = '展開';
+    }
+}
+
+// ヘッダークリックでも展開/折りたたみ
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.analysis-header')) {
+        const header = e.target.closest('.analysis-header');
+        const button = header.querySelector('.btn-toggle');
+        if (button && e.target !== button && !button.contains(e.target)) {
+            toggleAnalysis(button);
+        }
+    }
+});
+
+// 🆕 文章表示最適化機能
+document.addEventListener('DOMContentLoaded', function() {
+    const expandableTexts = document.querySelectorAll('.expandable-text');
+    
+    expandableTexts.forEach(element => {
+        const fullText = element.dataset.text || element.textContent;
+        const characterLimit = 200; // 200文字で切り取り
+        
+        if (fullText.length > characterLimit) {
+            const truncatedText = fullText.substring(0, characterLimit);
+            
+            // 切り詰めた状態で初期化
+            element.innerHTML = truncatedText + '...';
+            element.classList.add('truncated');
+            
+            // 展開ボタンを作成
+            const expandButton = document.createElement('button');
+            expandButton.className = 'expand-button';
+            expandButton.textContent = `もっと読む (${fullText.length}文字)`;
+            expandButton.onclick = function() {
+                toggleTextExpansion(element, fullText, truncatedText, expandButton);
+            };
+            
+            // 文字数表示を追加
+            const charCount = document.createElement('span');
+            charCount.className = 'character-count';
+            charCount.textContent = `${fullText.length}文字`;
+            
+            element.parentNode.appendChild(expandButton);
+        }
+    });
+});
+
+function toggleTextExpansion(element, fullText, truncatedText, button) {
+    if (element.classList.contains('truncated')) {
+        // 展開
+        element.innerHTML = fullText;
+        element.classList.remove('truncated');
+        button.textContent = '折りたたむ';
+    } else {
+        // 折りたたみ
+        element.innerHTML = truncatedText + '...';
+        element.classList.add('truncated');
+        button.textContent = `もっと読む (${fullText.length}文字)`;
+    }
+}
+
+// 検索フォーム自動送信（デバウンス）
+let searchTimeout;
+document.querySelector('input[name="search"]').addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        this.form.submit();
+    }, 1000);
+});
+</script>
+{% endblock %}

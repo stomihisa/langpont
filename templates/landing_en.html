@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LangPont</title>
+    <meta name="description" content="{{ labels.meta_description }}">
+    
+    <!-- 🆕 Favicon設定 -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32.svg') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='favicon-180.svg') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='favicon-192.svg') }}">
+    <link rel="icon" type="image/png" sizes="512x512" href="{{ url_for('static', filename='favicon-512.svg') }}">
+    <meta name="theme-color" content="#4A90E2">
+    
+    <!-- Inter Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* 🍎 Apple Blue メインカラー */
+            --color-primary: #007AFF;
+            --color-primary-dark: #5856D6;
+            --color-primary-gradient: linear-gradient(135deg, #007AFF 0%, #5856D6 100%);
+            
+            /* 🌟 アクセントカラー */
+            --color-accent: #34C759;
+            --color-accent-dark: #30B352;
+            
+            /* 🎯 背景色 */
+            --color-background: #F2F2F7;
+            --color-background-secondary: #FFFFFF;
+            --color-background-tertiary: #FAFAFA;
+            
+            /* 📝 テキストカラー */
+            --color-text-primary: #1D1D1F;
+            --color-text-secondary: #6B6B6B;
+            --color-text-tertiary: #8E8E93;
+            
+            /* 🔲 ボーダー・分割線 */
+            --color-border: #E5E5E7;
+            --color-border-light: #F2F2F7;
+            
+            /* ⚠️ ステータスカラー */
+            --color-error: #FF453A;
+            --color-warning: #FF9F0A;
+            --color-success: #34C759;
+            
+            /* 🎨 グラデーション */
+            --gradient-primary: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+            --gradient-accent: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-dark) 100%);
+            
+            /* 📱 Apple風シャドウ */
+            --shadow-small: 0 2px 8px rgba(0, 122, 255, 0.1);
+            --shadow-medium: 0 4px 16px rgba(0, 122, 255, 0.15);
+            --shadow-large: 0 8px 32px rgba(0, 122, 255, 0.2);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #1a1a1a;
+            background: var(--color-background-secondary);
+        }
+        
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            z-index: 1000;
+            padding: 16px 0;
+        }
+        
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--color-primary);
+            text-decoration: none;
+        }
+        
+        .nav {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+        }
+        
+        .nav-link {
+            text-decoration: none;
+            color: #4a4a4a;
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+        
+        .nav-link:hover {
+            color: var(--color-primary);
+        }
+        
+        .language-selector {
+            position: relative;
+        }
+        
+        .language-btn {
+            background: none;
+            border: 1px solid #e0e0e0;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #4a4a4a;
+            transition: all 0.2s ease;
+        }
+        
+        .language-btn:hover {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+        }
+        
+        .language-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            min-width: 150px;
+            display: none;
+            z-index: 1001;
+        }
+        
+        .language-dropdown.show {
+            display: block;
+        }
+        
+        .language-option {
+            display: block;
+            padding: 12px 16px;
+            text-decoration: none;
+            color: #4a4a4a;
+            font-size: 14px;
+            transition: background-color 0.2s ease;
+        }
+        
+        .language-option:hover {
+            background-color: #f8f9fa;
+            color: var(--color-primary);
+        }
+        
+        /* Main Content */
+        .main {
+            padding-top: 80px;
+        }
+        
+        /* Hero Section - Professional & Direct */
+        .hero {
+            background: var(--gradient-primary);
+            color: white;
+            padding: 120px 0;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.02'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") repeat;
+            opacity: 0.3;
+        }
+        
+        .hero-content {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 24px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .hero-title {
+            font-size: 56px;
+            font-weight: 700;
+            line-height: 1.1;
+            margin-bottom: 28px;
+            white-space: pre-line;
+        }
+        
+        .hero-subtitle {
+            font-size: 22px;
+            opacity: 0.9;
+            margin-bottom: 24px;
+            line-height: 1.6;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .hero-description {
+            font-size: 18px;
+            opacity: 0.85;
+            margin-bottom: 44px;
+            line-height: 1.6;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            font-style: italic;
+        }
+        
+        .hero-cta {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 40px;
+        }
+        
+        .btn-primary {
+            background: #F28500;
+            color: white;
+            padding: 18px 36px;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 16px rgba(242, 133, 0, 0.2);
+        }
+        
+        .btn-primary:hover {
+            background: #d17000;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 28px rgba(242, 133, 0, 0.35);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: white;
+            padding: 18px 36px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.6);
+            transform: translateY(-2px);
+        }
+        
+        .trust-indicators {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            opacity: 0.8;
+            font-size: 14px;
+        }
+        
+        .trust-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* Examples Section - Business-focused scenarios */
+        .examples {
+            padding: 120px 0;
+            background: var(--color-background);
+        }
+        
+        .examples-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+        
+        .section-title {
+            text-align: center;
+            font-size: 52px;
+            font-weight: 700;
+            margin-bottom: 24px;
+            color: #1a1a1a;
+            line-height: 1.2;
+        }
+        
+        .section-subtitle {
+            text-align: center;
+            font-size: 20px;
+            color: #6b7280;
+            margin-bottom: 80px;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .examples-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 40px;
+        }
+        
+        .example-card {
+            background: white;
+            border-radius: 20px;
+            padding: 32px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .example-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.1);
+            border-color: var(--color-primary);
+        }
+        
+        .example-header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        
+        .example-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+        }
+        
+        .example-context {
+            font-size: 14px;
+            color: #6b7280;
+            background: var(--color-background);
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+        
+        .example-before {
+            margin-bottom: 24px;
+        }
+        
+        .example-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #dc2626;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .example-text {
+            background: #fef2f2;
+            padding: 16px;
+            border-radius: 12px;
+            border-left: 4px solid #dc2626;
+            font-size: 16px;
+            font-weight: 500;
+        }
+        
+        .example-after {
+            margin-bottom: 16px;
+        }
+        
+        .example-after .example-label {
+            color: #059669;
+        }
+        
+        .example-options {
+            background: #f0fdf4;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid #059669;
+        }
+        
+        .example-option {
+            margin-bottom: 12px;
+            font-size: 15px;
+            line-height: 1.6;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(5, 150, 105, 0.1);
+        }
+        
+        .example-option:last-child {
+            margin-bottom: 0;
+            border-bottom: none;
+        }
+        
+        .option-type {
+            font-weight: 600;
+            color: #059669;
+        }
+        
+        /* Features Section */
+        .features {
+            padding: 120px 0;
+            background: white;
+        }
+        
+        .features-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 50px;
+            margin-top: 80px;
+        }
+        
+        .feature-card {
+            background: white;
+            padding: 50px;
+            border-radius: 20px;
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            text-align: center;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+        }
+        
+        .feature-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--color-primary), #F28500);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin: 0 auto 30px;
+        }
+        
+        .feature-title {
+            font-size: 26px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #1a1a1a;
+        }
+        
+        .feature-desc {
+            color: #6b7280;
+            line-height: 1.8;
+            font-size: 16px;
+        }
+        
+        /* Testimonials Section */
+        .testimonials {
+            padding: 120px 0;
+            background: var(--color-background);
+        }
+        
+        .testimonials-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+        
+        .testimonials-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 50px;
+            margin-top: 80px;
+        }
+        
+        .testimonial-card {
+            background: white;
+            padding: 50px;
+            border-radius: 20px;
+            position: relative;
+            border-left: 4px solid var(--color-primary);
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .testimonial-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .testimonial-quote {
+            font-size: 19px;
+            line-height: 1.7;
+            margin-bottom: 30px;
+            color: #374151;
+            font-style: italic;
+        }
+        
+        .testimonial-author {
+            font-weight: 600;
+            color: var(--color-primary);
+            font-size: 16px;
+        }
+        
+        /* Pricing Section */
+        .pricing {
+            padding: 120px 0;
+            background: white;
+        }
+        
+        .pricing-content {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+        
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 40px;
+            margin-top: 80px;
+        }
+        
+        .pricing-card {
+            background: white;
+            padding: 60px;
+            border-radius: 20px;
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
+            text-align: center;
+            position: relative;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .pricing-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .pricing-card.featured {
+            border: 3px solid #F28500;
+            transform: scale(1.05);
+            position: relative;
+        }
+        
+        .pricing-card.featured::before {
+            content: "POPULAR";
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #F28500;
+            color: white;
+            padding: 8px 24px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        
+        .pricing-title {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #1a1a1a;
+        }
+        
+        .pricing-price {
+            font-size: 54px;
+            font-weight: 700;
+            color: var(--color-primary);
+            margin-bottom: 12px;
+        }
+        
+        .pricing-period {
+            color: #6b7280;
+            margin-bottom: 40px;
+            font-size: 16px;
+        }
+        
+        .pricing-features {
+            list-style: none;
+            margin-bottom: 50px;
+            text-align: left;
+        }
+        
+        .pricing-features li {
+            padding: 12px 0;
+            color: #374151;
+            position: relative;
+            padding-left: 35px;
+            font-size: 16px;
+        }
+        
+        .pricing-features li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #10b981;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        /* CTA Section */
+        .cta {
+            padding: 120px 0;
+            background: var(--gradient-primary);
+            color: white;
+            text-align: center;
+        }
+        
+        .cta-content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+        
+        .cta-title {
+            font-size: 52px;
+            font-weight: 700;
+            margin-bottom: 28px;
+            line-height: 1.2;
+        }
+        
+        .cta-subtitle {
+            font-size: 22px;
+            opacity: 0.9;
+            margin-bottom: 44px;
+            line-height: 1.6;
+        }
+        
+        .cta-note {
+            font-size: 15px;
+            opacity: 0.8;
+            margin-top: 20px;
+        }
+        
+        /* Footer */
+        .footer {
+            background: #1a1a1a;
+            color: white;
+            padding: 100px 0 50px;
+        }
+        
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+        
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 80px;
+            margin-bottom: 50px;
+        }
+        
+        .footer-brand {
+            max-width: 350px;
+        }
+        
+        .footer-logo {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--color-primary);
+            margin-bottom: 20px;
+        }
+        
+        .footer-desc {
+            color: #9ca3af;
+            line-height: 1.7;
+            font-size: 16px;
+        }
+        
+        .footer-section h3 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: white;
+        }
+        
+        .footer-links {
+            list-style: none;
+        }
+        
+        .footer-links li {
+            margin-bottom: 12px;
+        }
+        
+        .footer-links a {
+            color: #9ca3af;
+            text-decoration: none;
+            transition: color 0.2s ease;
+            font-size: 15px;
+        }
+        
+        .footer-links a:hover {
+            color: var(--color-primary);
+        }
+        
+        .footer-bottom {
+            border-top: 1px solid #374151;
+            padding-top: 50px;
+            text-align: center;
+            color: #9ca3af;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 36px;
+            }
+            
+            .hero-subtitle {
+                font-size: 18px;
+            }
+            
+            .section-title {
+                font-size: 36px;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .testimonials-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .pricing-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .examples-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .footer-grid {
+                grid-template-columns: 1fr;
+                gap: 50px;
+            }
+            
+            .hero-cta {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .nav {
+                display: none;
+            }
+            
+            .feature-card,
+            .testimonial-card,
+            .pricing-card {
+                padding: 30px;
+            }
+            
+            .cta-title {
+                font-size: 36px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <a href="#" class="logo">
+                <img src="{{ url_for('static', filename='logo_improved.png') }}" alt="LangPont" style="width: 32px; height: 32px; border-radius: 6px; margin-right: 10px;">
+                LangPont
+            </a>
+            <nav class="nav">
+                <a href="#examples" class="nav-link">Examples</a>
+                <a href="#features" class="nav-link">Features</a>
+                <a href="#testimonials" class="nav-link">Testimonials</a>
+                <a href="#pricing" class="nav-link">Pricing</a>
+                <div class="language-selector">
+                    <button class="language-btn" onclick="toggleLanguageDropdown()">
+                        🇺🇸 English ▼
+                    </button>
+                    <div class="language-dropdown" id="languageDropdown">
+                        <a href="/alpha/jp" class="language-option">🇯🇵 日本語</a>
+                        <a href="/alpha/fr" class="language-option">🇫🇷 Français</a>
+                        <a href="/alpha/es" class="language-option">🇪🇸 Español</a>
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </header>
+    
+    <main class="main">
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="hero-content">
+                <h1 class="hero-title">{{ labels.hero_title }}</h1>
+                <p class="hero-subtitle">{{ labels.hero_subtitle }}</p>
+                <p class="hero-description">{{ labels.hero_description }}</p>
+                <div class="hero-cta">
+                    <a href="{{ main_app_url }}" class="btn-primary" onclick="trackCTA('start_trial')">
+                        🚀 {{ labels.hero_cta_primary }}
+                    </a>
+                    <a href="#examples" class="btn-secondary">
+                        📺 {{ labels.hero_cta_secondary }}
+                    </a>
+                </div>
+                <div class="trust-indicators">
+                    <div class="trust-item">
+                        <span>✅</span>
+                        <span>Free Trial</span>
+                    </div>
+                    <div class="trust-item">
+                        <span>💳</span>
+                        <span>No Credit Card</span>
+                    </div>
+                    <div class="trust-item">
+                        <span>⚡</span>
+                        <span>3-min Setup</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Examples Section - Business-focused scenarios -->
+        <section class="examples" id="examples">
+            <div class="examples-content">
+                <h2 class="section-title">{{ labels.examples_title }}</h2>
+                <p class="section-subtitle">{{ labels.examples_subtitle }}</p>
+                
+                <div class="examples-grid">
+                    <!-- Business Email Request -->
+                    <div class="example-card">
+                        <div class="example-header">
+                            <h3 class="example-title">Business Email Request</h3>
+                            <div class="example-context">Requesting report from team member</div>
+                        </div>
+                        <div class="example-before">
+                            <div class="example-label">Basic Translation</div>
+                            <div class="example-text">"Por favor envíe el informe mañana."</div>
+                        </div>
+                        <div class="example-after">
+                            <div class="example-label">LangPont Context-Aware Options</div>
+                            <div class="example-options">
+                                <div class="example-option">
+                                    <span class="option-type">Formal:</span> "¿Podría enviarme el informe para mañana, por favor?"
+                                </div>
+                                <div class="example-option">
+                                    <span class="option-type">Urgent:</span> "Necesitamos el informe con urgencia para mañana."
+                                </div>
+                                <div class="example-option">
+                                    <span class="option-type">Casual:</span> "¿Puedes mandarme el informe para mañana?"
+                                </div>
+                                <div class="example-option">
+                                    <span class="option-type">Friendly:</span> "¿Te importaría enviarme el informe para mañana?"
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Team Meeting Proposal -->
+                    <div class="example-card">
+                        <div class="example-header">
+                            <h3 class="example-title">Team Meeting Proposal</h3>
+                            <div class="example-context">Proposing new idea to colleagues</div>
+                        </div>
+                        <div class="example-before">
+                            <div class="example-label">Basic Translation</div>
+                            <div class="example-text">"Tengo una idea para el proyecto."</div>
+                        </div>
+                        <div class="example-after">
+                            <div class="example-label">LangPont Context-Aware Options</div>
+                            <div class="example-options">
+                                <div class="example-option">
+                                    <span class="option-type">Confident:</span> "¡Tengo una gran idea para el proyecto!"
+                                </div>
+                                <div class="example-option">
+                                    <span class="option-type">Formal:</span> "Me gustaría proponer una idea para el proyecto."
+                                </div>
+                                <div class="example-option">
+                                    <span class="option-type">Collaborative:</span> "¿Qué tal si probamos esto para el proyecto?"
+                                </div>
+                                <div class="example-option">
+                                    <span class="option-type">Modest:</span> "Estaba pensando que podríamos intentar algo para el proyecto."
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Client Negotiation -->
+                    <div class="example-card">
+                        <div class="example-header">
+                            <h3 class="example-title">Client Negotiation</h3>
+                            <div class="example-context">Important business decision communication</div>
+                        </div>
+                        <div class="example-before">
+                            <div class="example-label">Basic Translation</div>
+                            <div class="example-text">"Lo consideraré."</div>
+                        </div>
+                        <div class="example-after">
+                            <div class="example-label">LangPont Context-Aware Options</div>
+                            <div class="example-options">
+                                <div class="example-option">
+                                    <span class="option-type">Professional:</span> "Lo consideraremos cuidadosamente."
+                                </div>
+                                <div class="example-option">
+                                    <span class="option-type">Business:</span> "Necesito tiempo para revisar esta propuesta a fondo."
+                                </div>
+                                <div class="example-option">
+                                    <span class="option-type">Direct:</span> "Déjame pensarlo y te respondo."
+                                </div>
+                                <div class="example-option">
+                                    <span class="option-type">Collaborative:</span> "Me parece interesante, me gustaría discutirlo con mi equipo."
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Customer Appreciation -->
+                    <div class="example-card">
+                        <div class="example-header">
+                            <h3 class="example-title">Customer Appreciation</h3>
+                            <div class="example-context">Thanking client for business partnership</div>
+                        </div>
+                        <div class="example-before">
+                            <div class="example-label">Basic Translation</div>
+                            <div class="example-text">"Gracias por elegirnos."</div>
+                        </div>
+                        <div class="example-after">
+                            <div class="example-label">LangPont Context-Aware Options</div>
+                            <div class="example-options">
+                                <div class="example-option">
+                                    <span class="option-type">Formal:</span> "Nos sentimos honrados de haber sido seleccionados para este proyecto."
+                                </div>
+                                <div class="example-option">
+                                    <span class="option-type">Professional:</span> "Muchas gracias por confiar en nosotros."
+                                </div>
+                                <div class="example-option">
+                                    <span class="option-type">Warm:</span> "Estamos muy agradecidos de que hayan elegido trabajar con nosotros."
+                                </div>
+                                <div class="example-option">
+                                    <span class="option-type">Enthusiastic:</span> "¡Gracias por darnos esta oportunidad!"
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Networking Event -->
+                    <div class="example-card">
+                        <div class="example-header">
+                            <h3 class="example-title">Networking Event</h3>
+                            <div class="example-context">Inviting colleagues to company event</div>
+                        </div>
+                        <div class="example-before">
+                            <div class="example-label">Basic Translation</div>
+                            <div class="example-text">"¿Quieres venir a mi evento?"</div>
+                        </div>
+                        <div class="example-after">
+                            <div class="example-label">LangPont Context-Aware Options</div>
+                            <div class="example-options">
+                                <div class="example-option">
+                                    <span class="option-type">Professional:</span> "Estoy organizando un evento y me encantaría que nos acompañara."
+                                </div>
+                                <div class="example-option">
+                                    <span class="option-type">Colleague:</span> "Estoy organizando un evento, ¡definitivamente deberías venir!"
+                                </div>
+                                <div class="example-option">
+                                    <span class="option-type">Casual:</span> "¿Quieres venir a mi evento este fin de semana?"
+                                </div>
+                                <div class="example-option">
+                                    <span class="option-type">Close friend:</span> "¡TIENES que venir a mi evento, no será lo mismo sin ti!"
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Business Apology -->
+                    <div class="example-card">
+                        <div class="example-header">
+                            <h3 class="example-title">Business Apology</h3>
+                            <div class="example-context">Addressing mistake with client</div>
+                        </div>
+                        <div class="example-before">
+                            <div class="example-label">Basic Translation</div>
+                            <div class="example-text">"Lo siento mucho."</div>
+                        </div>
+                        <div class="example-after">
+                            <div class="example-label">LangPont Context-Aware Options</div>
+                            <div class="example-options">
+                                <div class="example-option">
+                                    <span class="option-type">Formal:</span> "Me disculpo profundamente por este error y asumo toda la responsabilidad."
+                                </div>
+                                <div class="example-option">
+                                    <span class="option-type">Professional:</span> "Lamento sinceramente el error y cualquier inconveniente causado."
+                                </div>
+                                <div class="example-option">
+                                    <span class="option-type">Direct:</span> "Lamento mucho esta confusión."
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Features Section -->
+        <section class="features" id="features">
+            <div class="features-content">
+                <h2 class="section-title">{{ labels.features_title }}</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🤖</div>
+                        <h3 class="feature-title">{{ labels.feature_1_title }}</h3>
+                        <p class="feature-desc">{{ labels.feature_1_desc }}</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">🧠</div>
+                        <h3 class="feature-title">{{ labels.feature_2_title }}</h3>
+                        <p class="feature-desc">{{ labels.feature_2_desc }}</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">⚡</div>
+                        <h3 class="feature-title">{{ labels.feature_3_title }}</h3>
+                        <p class="feature-desc">{{ labels.feature_3_desc }}</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">🔍</div>
+                        <h3 class="feature-title">{{ labels.feature_4_title }}</h3>
+                        <p class="feature-desc">{{ labels.feature_4_desc }}</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Testimonials Section -->
+        <section class="testimonials" id="testimonials">
+            <div class="testimonials-content">
+                <h2 class="section-title">{{ labels.testimonials_title }}</h2>
+                <div class="testimonials-grid">
+                    <div class="testimonial-card">
+                        <p class="testimonial-quote">{{ labels.testimonial_1 }}</p>
+                        <p class="testimonial-author">{{ labels.testimonial_1_author }}</p>
+                    </div>
+                    <div class="testimonial-card">
+                        <p class="testimonial-quote">{{ labels.testimonial_2 }}</p>
+                        <p class="testimonial-author">{{ labels.testimonial_2_author }}</p>
+                    </div>
+                    <div class="testimonial-card">
+                        <p class="testimonial-quote">{{ labels.testimonial_3 }}</p>
+                        <p class="testimonial-author">{{ labels.testimonial_3_author }}</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Pricing Section -->
+        <section class="pricing" id="pricing">
+            <div class="pricing-content">
+                <h2 class="section-title">{{ labels.pricing_title }}</h2>
+                <div class="pricing-grid">
+                    <div class="pricing-card">
+                        <h3 class="pricing-title">{{ labels.pricing_free_title }}</h3>
+                        <div class="pricing-price">{{ labels.pricing_free_price }}</div>
+                        <p class="pricing-period">{{ labels.pricing_free_desc }}</p>
+                        <ul class="pricing-features">
+                            <li>10 translations/day</li>
+                            <li>Basic translation features</li>
+                            <li>Dual engine comparison</li>
+                        </ul>
+                        <a href="{{ main_app_url }}" class="btn-primary" onclick="trackCTA('start_free')">
+                            Get Started
+                        </a>
+                    </div>
+                    <div class="pricing-card featured">
+                        <h3 class="pricing-title">{{ labels.pricing_pro_title }}</h3>
+                        <div class="pricing-price">{{ labels.pricing_pro_price }}</div>
+                        <p class="pricing-period">{{ labels.pricing_pro_desc }}</p>
+                        <ul class="pricing-features">
+                            <li>100 translations/day</li>
+                            <li>History & management</li>
+                            <li>Priority support</li>
+                            <li>API access</li>
+                        </ul>
+                        <button class="btn-primary" onclick="trackCTA('upgrade_pro')">
+                            Choose Pro
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- CTA Section -->
+        <section class="cta">
+            <div class="cta-content">
+                <h2 class="cta-title">{{ labels.cta_title }}</h2>
+                <p class="cta-subtitle">{{ labels.cta_subtitle }}</p>
+                <a href="{{ main_app_url }}" class="btn-primary" onclick="trackCTA('final_cta')">
+                    🚀 {{ labels.cta_button }}
+                </a>
+                <p class="cta-note">{{ labels.cta_note }}</p>
+            </div>
+        </section>
+    </main>
+    
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <div class="footer-logo">
+                        <img src="{{ url_for('static', filename='logo_improved.png') }}" alt="LangPont" style="width: 24px; height: 24px; border-radius: 4px; margin-right: 10px; vertical-align: middle;">
+                        LangPont
+                    </div>
+                    <p class="footer-desc">{{ labels.footer_description }}</p>
+                </div>
+                <div class="footer-section">
+                    <h3>{{ labels.footer_links_product }}</h3>
+                    <ul class="footer-links">
+                        <li><a href="#features">Features</a></li>
+                        <li><a href="#pricing">Pricing</a></li>
+                        <li><a href="{{ main_app_url }}">Use App</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>{{ labels.footer_links_support }}</h3>
+                    <ul class="footer-links">
+                        <li><a href="mailto:hello@langpont.com">{{ labels.footer_contact }}</a></li>
+                        <li><a href="/help">Help</a></li>
+                        <li><a href="/faq">FAQ</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>{{ labels.footer_links_company }}</h3>
+                    <ul class="footer-links">
+                        <li><a href="/privacy">{{ labels.footer_privacy }}</a></li>
+                        <li><a href="/terms">{{ labels.footer_terms }}</a></li>
+                        <li><a href="/about">About</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 LangPont. All rights reserved. | Version {{ version_info.version }}</p>
+            </div>
+        </div>
+    </footer>
+    
+    <script>
+        // Language selector dropdown
+        function toggleLanguageDropdown() {
+            const dropdown = document.getElementById('languageDropdown');
+            dropdown.classList.toggle('show');
+        }
+        
+        // Close dropdown on outside click
+        document.addEventListener('click', function(event) {
+            const selector = document.querySelector('.language-selector');
+            if (!selector.contains(event.target)) {
+                document.getElementById('languageDropdown').classList.remove('show');
+            }
+        });
+        
+        // CTA tracking function
+        function trackCTA(action) {
+            // Google Analytics tracking
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'cta_click', {
+                    'action': action,
+                    'language': 'en'
+                });
+            }
+            
+            // LangPont internal analytics
+            fetch('/alpha/analytics', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    event_type: 'cta_click',
+                    action: action,
+                    timestamp: Date.now()
+                })
+            }).catch(console.error);
+        }
+        
+        // Smooth scrolling
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+        
+        // Page view tracking
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('/alpha/analytics', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    event_type: 'page_view',
+                    language: 'en',
+                    timestamp: Date.now()
+                })
+            }).catch(console.error);
+        });
+        
+        // Animation on scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.animation = 'fadeInUp 0.6s ease-out';
+                }
+            });
+        }, observerOptions);
+        
+        document.querySelectorAll('.feature-card, .testimonial-card, .pricing-card').forEach(card => {
+            observer.observe(card);
+        });
+    </script>
+</body>
+</html>

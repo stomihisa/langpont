@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- 🚀 管理者ダッシュボード - Task 2.9.2 Phase B-1 -->
+    <div class="admin-container">
+        
+        <!-- ヘッダー -->
+        <header class="admin-header">
+            <div class="header-left">
+                <h1>🚀 LangPont 管理者ダッシュボード</h1>
+                <span class="version-badge">Phase B-1</span>
+            </div>
+            <div class="header-right">
+                <div class="user-info">
+                    <span class="user-role {{ user_info.role }}">{{ user_info.role|upper }}</span>
+                    <span class="username">{{ user_info.username }}</span>
+                </div>
+                <a href="{{ url_for('index') }}" class="btn btn-secondary">メインアプリに戻る</a>
+                <a href="{{ url_for('logout') }}" class="btn btn-danger">ログアウト</a>
+            </div>
+        </header>
+
+        <!-- ナビゲーション -->
+        <nav class="admin-nav">
+            <a href="{{ url_for('admin.dashboard') }}" class="nav-item active">
+                📊 ダッシュボード
+            </a>
+            <a href="{{ url_for('admin.task292_monitor') }}" class="nav-item">
+                🔍 Task 2.9.2 監視
+            </a>
+            {% if user_info.role == 'admin' %}
+            <a href="{{ url_for('admin.users') }}" class="nav-item">
+                👥 ユーザー管理
+            </a>
+            {% endif %}
+            <a href="{{ url_for('admin.logs') }}" class="nav-item">
+                📋 システムログ
+            </a>
+            <a href="{{ url_for('admin.analytics') }}" class="nav-item">
+                📈 データ分析
+            </a>
+        </nav>
+
+        <!-- メインコンテンツ -->
+        <main class="admin-main">
+            
+            <!-- システム統計カード -->
+            <section class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">🔄</div>
+                    <div class="stat-content">
+                        <h3>総翻訳数</h3>
+                        <p class="stat-number">{{ system_stats.total_translations }}</p>
+                        <small>累計翻訳回数</small>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">🔗</div>
+                    <div class="stat-content">
+                        <h3>API呼び出し</h3>
+                        <p class="stat-number">{{ system_stats.total_api_calls }}</p>
+                        <small>総API使用回数</small>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-content">
+                        <h3>アクティブユーザー</h3>
+                        <p class="stat-number">{{ system_stats.active_users_count }}</p>
+                        <small>現在アクティブ</small>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">❌</div>
+                    <div class="stat-content">
+                        <h3>エラー数</h3>
+                        <p class="stat-number">{{ system_stats.error_count }}</p>
+                        <small>累計エラー発生</small>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">⚡</div>
+                    <div class="stat-content">
+                        <h3>平均レスポンス</h3>
+                        <p class="stat-number">{{ "%.0f"|format(system_stats.avg_response_time) }}ms</p>
+                        <small>平均応答時間</small>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 🚀 Task 2.9.2 統計セクション -->
+            <section class="task292-overview">
+                <div class="section-card task292">
+                    <div class="section-header">
+                        <h2>🎯 Task 2.9.2 推奨抽出システム</h2>
+                        <a href="{{ url_for('admin.task292_monitor') }}" class="btn btn-primary">詳細監視</a>
+                    </div>
+                    <div class="task292-stats-grid">
+                        <div class="task292-stat-card">
+                            <div class="stat-icon">🎯</div>
+                            <div class="stat-content">
+                                <h3>総抽出数</h3>
+                                <p class="stat-number" id="dashboardTotalExtractions">0</p>
+                                <small>累積推奨抽出</small>
+                            </div>
+                        </div>
+                        <div class="task292-stat-card">
+                            <div class="stat-icon">✅</div>
+                            <div class="stat-content">
+                                <h3>成功率</h3>
+                                <p class="stat-number" id="dashboardSuccessRate">0%</p>
+                                <small>抽出成功率</small>
+                            </div>
+                        </div>
+                        <div class="task292-stat-card">
+                            <div class="stat-icon">🤖</div>
+                            <div class="stat-content">
+                                <h3>LLM精度</h3>
+                                <p class="stat-number" id="dashboardLlmAccuracy">0%</p>
+                                <small>LLM判定精度</small>
+                            </div>
+                        </div>
+                        <div class="task292-stat-card">
+                            <div class="stat-icon">🚨</div>
+                            <div class="stat-content">
+                                <h3>アクティブアラート</h3>
+                                <p class="stat-number" id="dashboardActiveAlerts">0</p>
+                                <small>現在のアラート</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="task292-quick-actions">
+                        <a href="{{ url_for('admin.task292_monitor') }}" class="quick-action-btn">
+                            🔍 リアルタイム監視
+                        </a>
+                        <button onclick="generateTestData()" class="quick-action-btn secondary">
+                            🧪 テストデータ生成
+                        </button>
+                        <button onclick="runDiagnostics()" class="quick-action-btn secondary">
+                            🔧 システム診断
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Gemini推奨統計 -->
+            <section class="gemini-stats">
+                <div class="section-card">
+                    <h2>🧠 Gemini推奨統計</h2>
+                    <div class="gemini-chart-container">
+                        <canvas id="geminiRecommendationChart"></canvas>
+                    </div>
+                    <div class="gemini-stats-list">
+                        {% for engine, count in system_stats.gemini_recommendations.items() %}
+                        <div class="gemini-stat-item">
+                            <span class="engine-name">{{ engine }}</span>
+                            <span class="count-badge">{{ count }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </section>
+
+            <!-- 最新ログ -->
+            <section class="recent-logs">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>📋 最新システムログ</h2>
+                        <a href="{{ url_for('admin.logs') }}" class="btn btn-outline">すべて見る</a>
+                    </div>
+                    <div class="logs-container" id="recentLogsContainer">
+                        {% for log in recent_logs %}
+                        <div class="log-item {{ log.category }}">
+                            <span class="log-time">{{ log.timestamp.split('T')[1].split('.')[0] }}</span>
+                            <span class="log-category">{{ log.category|upper }}</span>
+                            <span class="log-action">{{ log.action }}</span>
+                            <span class="log-details">{{ log.details[:80] }}{% if log.details|length > 80 %}...{% endif %}</span>
+                            {% if log.username %}
+                            <span class="log-user">{{ log.username }}</span>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </section>
+
+            <!-- エラーサマリー -->
+            {% if error_summary.total_errors > 0 %}
+            <section class="error-summary">
+                <div class="section-card error">
+                    <h2>🚨 エラーサマリー (24時間)</h2>
+                    <div class="error-stats">
+                        <p class="total-errors">総エラー数: {{ error_summary.total_errors }}</p>
+                        <div class="error-types">
+                            {% for error in error_summary.error_types %}
+                            <div class="error-type-item">
+                                <span class="error-action">{{ error.action }}</span>
+                                <span class="error-count">{{ error.count }}回</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </section>
+            {% endif %}
+
+            <!-- 翻訳分析 -->
+            <section class="translation-analytics">
+                <div class="section-card">
+                    <h2>📈 翻訳分析 (7日間)</h2>
+                    <div class="analytics-grid">
+                        <div class="analytics-chart">
+                            <canvas id="dailyTranslationsChart"></canvas>
+                        </div>
+                        <div class="top-users">
+                            <h3>🏆 トップユーザー</h3>
+                            {% for user in translation_analytics.top_users %}
+                            <div class="top-user-item">
+                                <span class="user-name">{{ user.username }}</span>
+                                <span class="user-count">{{ user.count }}回</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- フッター -->
+        <footer class="admin-footer">
+            <p>最終更新: {{ last_updated }} | LangPont Admin Dashboard Phase B-1</p>
+            <div class="footer-actions">
+                <button onclick="refreshDashboard()" class="btn btn-small">🔄 更新</button>
+                <button onclick="testLogs()" class="btn btn-small">🧪 テストログ</button>
+            </div>
+        </footer>
+
+    </div>
+
+    <script>
+        // 🚀 管理者ダッシュボード JavaScript
+        
+        // Gemini推奨チャート
+        const geminiCtx = document.getElementById('geminiRecommendationChart').getContext('2d');
+        const geminiData = {{ system_stats.gemini_recommendations|tojson }};
+        
+        new Chart(geminiCtx, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(geminiData),
+                datasets: [{
+                    data: Object.values(geminiData),
+                    backgroundColor: ['#007AFF', '#FF9500', '#34C759', '#FF3B30'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        // 日別翻訳チャート
+        const dailyCtx = document.getElementById('dailyTranslationsChart').getContext('2d');
+        const dailyData = {{ translation_analytics.daily_translations|tojson }};
+        
+        new Chart(dailyCtx, {
+            type: 'line',
+            data: {
+                labels: dailyData.map(d => d.date),
+                datasets: [{
+                    label: '翻訳数',
+                    data: dailyData.map(d => d.count),
+                    borderColor: '#007AFF',
+                    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // ダッシュボード更新
+        function refreshDashboard() {
+            location.reload();
+        }
+
+        // テストログ生成
+        async function testLogs() {
+            try {
+                const response = await fetch('/admin/api/test_log', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    alert('テストログを生成しました');
+                    refreshDashboard();
+                } else {
+                    alert('テストログ生成に失敗しました');
+                }
+            } catch (error) {
+                alert('エラーが発生しました: ' + error.message);
+            }
+        }
+
+        // リアルタイム更新（30秒間隔）
+        setInterval(async () => {
+            try {
+                const response = await fetch('/admin/api/system_stats');
+                if (response.ok) {
+                    const data = await response.json();
+                    updateStats(data.data);
+                }
+            } catch (error) {
+                console.error('統計更新エラー:', error);
+            }
+        }, 30000);
+
+
+        // 🚀 Task 2.9.2 ダッシュボード機能
+        async function loadTask292Stats() {
+            try {
+                const response = await fetch('/admin/api/task292_metrics');
+                if (response.ok) {
+                    const data = await response.json();
+                    updateTask292Stats(data.data);
+                }
+            } catch (error) {
+                console.error('Task 2.9.2 統計更新エラー:', error);
+            }
+        }
+
+        function updateTask292Stats(metrics) {
+            // Task 2.9.2 統計更新
+            if (metrics.task292_metrics) {
+                const stats = metrics.task292_metrics;
+                document.getElementById('dashboardTotalExtractions').textContent = stats.total_extractions || 0;
+                document.getElementById('dashboardSuccessRate').textContent = (stats.success_rate || 0).toFixed(1) + '%';
+                document.getElementById('dashboardLlmAccuracy').textContent = (stats.llm_success_rate || 0).toFixed(1) + '%';
+            }
+            
+            if (metrics.active_alerts) {
+                document.getElementById('dashboardActiveAlerts').textContent = metrics.active_alerts.length || 0;
+            }
+        }
+
+        // Task 2.9.2 テストデータ生成
+        async function generateTestData() {
+            try {
+                const response = await fetch('/admin/api/test_log', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    alert('Task 2.9.2 テストデータを生成しました');
+                    loadTask292Stats(); // 統計更新
+                } else {
+                    alert('テストデータ生成に失敗しました');
+                }
+            } catch (error) {
+                alert('エラーが発生しました: ' + error.message);
+            }
+        }
+
+        // Task 2.9.2 システム診断
+        async function runDiagnostics() {
+            try {
+                const response = await fetch('/admin/api/task292_diagnostics', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    alert(`診断完了: ${data.message}\n\n詳細:\n${data.details.join('\n')}`);
+                } else {
+                    alert('診断に失敗しました');
+                }
+            } catch (error) {
+                alert('診断エラー: ' + error.message);
+            }
+        }
+
+        function updateStats(stats) {
+            // 統計数値更新
+            document.querySelector('.stat-card:nth-child(1) .stat-number').textContent = stats.total_translations;
+            document.querySelector('.stat-card:nth-child(2) .stat-number').textContent = stats.total_api_calls;
+            document.querySelector('.stat-card:nth-child(3) .stat-number').textContent = stats.active_users_count;
+            document.querySelector('.stat-card:nth-child(4) .stat-number').textContent = stats.error_count;
+            document.querySelector('.stat-card:nth-child(5) .stat-number').textContent = Math.round(stats.avg_response_time) + 'ms';
+        }
+
+        // 初期化時にTask 2.9.2統計を読み込み
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTask292Stats();
+            
+            // 30秒ごとにTask 2.9.2統計も更新
+            setInterval(loadTask292Stats, 30000);
+        });
+
+        // 初期化
+        console.log('🚀 LangPont管理者ダッシュボード Phase B-1 初期化完了');
+    </script>
+
+    <style>
+        /* Task 2.9.2 統計セクション専用スタイル */
+        .task292-overview {
+            margin: 2rem 0;
+        }
+
+        .section-card.task292 {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+        }
+
+        .section-card.task292 .section-header h2 {
+            color: white;
+            margin-bottom: 0;
+        }
+
+        .task292-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .task292-stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .task292-stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .task292-stat-card .stat-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .task292-stat-card .stat-content h3 {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .task292-stat-card .stat-number {
+            color: white;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .task292-stat-card small {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.75rem;
+        }
+
+        .task292-quick-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .quick-action-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .quick-action-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .quick-action-btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* レスポンシブ対応 */
+        @media (max-width: 768px) {
+            .task292-stats-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 0.75rem;
+            }
+
+            .task292-stat-card {
+                padding: 1rem;
+            }
+
+            .task292-stat-card .stat-number {
+                font-size: 1.5rem;
+            }
+
+            .task292-quick-actions {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .quick-action-btn {
+                text-align: center;
+                padding: 0.6rem 1rem;
+            }
+        }
+    </style>
+</body>
+</html>

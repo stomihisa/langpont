@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }} - LangPont 管理者</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head>
+<body>
+    <!-- 🚀 管理者ログ表示画面 - Task 2.9.2 Phase B-1 -->
+    <div class="admin-container">
+        
+        <!-- ヘッダー -->
+        <header class="admin-header">
+            <div class="header-left">
+                <h1>📋 システムログ</h1>
+                <span class="version-badge">Phase B-1</span>
+            </div>
+            <div class="header-right">
+                <div class="user-info">
+                    <span class="user-role {{ user_info.role }}">{{ user_info.role|upper }}</span>
+                    <span class="username">{{ user_info.username }}</span>
+                </div>
+                <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">📊 ダッシュボード</a>
+                <a href="{{ url_for('index') }}" class="btn btn-secondary">メインアプリ</a>
+            </div>
+        </header>
+
+        <!-- ナビゲーション -->
+        <nav class="admin-nav">
+            <a href="{{ url_for('admin.dashboard') }}" class="nav-item">
+                📊 ダッシュボード
+            </a>
+            <a href="{{ url_for('admin.task292_monitor') }}" class="nav-item">
+                🔍 Task 2.9.2 監視
+            </a>
+            {% if user_info.role == 'admin' %}
+            <a href="{{ url_for('admin.users') }}" class="nav-item">
+                👥 ユーザー管理
+            </a>
+            {% endif %}
+            <a href="{{ url_for('admin.logs') }}" class="nav-item active">
+                📋 システムログ
+            </a>
+            <a href="{{ url_for('admin.analytics') }}" class="nav-item">
+                📈 データ分析
+            </a>
+        </nav>
+
+        <!-- メインコンテンツ -->
+        <main class="admin-main">
+            
+            <!-- ログフィルター制御 -->
+            <section class="log-filters">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>🔍 ログフィルター</h2>
+                        <div class="filter-actions">
+                            <button onclick="clearFilters()" class="btn btn-outline btn-small">🗑️ クリア</button>
+                            <button onclick="refreshLogs()" class="btn btn-small">🔄 更新</button>
+                        </div>
+                    </div>
+                    
+                    <form method="GET" class="filter-form">
+                        <div class="filter-grid">
+                            <div class="filter-group">
+                                <label for="category">カテゴリ</label>
+                                <select id="category" name="category" onchange="this.form.submit()">
+                                    <option value="all" {{ 'selected' if category == 'all' }}>すべて</option>
+                                    <option value="translation" {{ 'selected' if category == 'translation' }}>翻訳</option>
+                                    <option value="gemini_analysis" {{ 'selected' if category == 'gemini_analysis' }}>Gemini分析</option>
+                                    <option value="user_auth" {{ 'selected' if category == 'user_auth' }}>ユーザー認証</option>
+                                    <option value="admin_access" {{ 'selected' if category == 'admin_access' }}>管理者アクセス</option>
+                                    <option value="api_call" {{ 'selected' if category == 'api_call' }}>API呼び出し</option>
+                                    <option value="error" {{ 'selected' if category == 'error' }}>エラー</option>
+                                    <option value="system" {{ 'selected' if category == 'system' }}>システム</option>
+                                </select>
+                            </div>
+                            
+                            <div class="filter-group">
+                                <label for="hours">期間</label>
+                                <select id="hours" name="hours" onchange="this.form.submit()">
+                                    <option value="1" {{ 'selected' if hours == 1 }}>過去1時間</option>
+                                    <option value="6" {{ 'selected' if hours == 6 }}>過去6時間</option>
+                                    <option value="24" {{ 'selected' if hours == 24 }}>過去24時間</option>
+                                    <option value="168" {{ 'selected' if hours == 168 }}>過去1週間</option>
+                                </select>
+                            </div>
+                            
+                            <div class="filter-group">
+                                <label for="limit">表示件数</label>
+                                <select id="limit" name="limit" onchange="this.form.submit()">
+                                    <option value="50" {{ 'selected' if limit == 50 }}>50件</option>
+                                    <option value="100" {{ 'selected' if limit == 100 }}>100件</option>
+                                    <option value="200" {{ 'selected' if limit == 200 }}>200件</option>
+                                    <option value="500" {{ 'selected' if limit == 500 }}>500件</option>
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- ログ統計サマリー -->
+            <section class="log-stats">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>📊 ログ統計 ({{ category if category != 'all' else 'すべてのカテゴリ' }})</h2>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">📝</div>
+                            <div class="stat-content">
+                                <h3>総ログ数</h3>
+                                <p class="stat-number">{{ logs|length }}</p>
+                                <small>表示中のログ件数</small>
+                            </div>
+                        </div>
+                        {% for cat, count in category_stats.items() %}
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                {% if cat == 'translation' %}🔄
+                                {% elif cat == 'gemini_analysis' %}🧠
+                                {% elif cat == 'error' %}❌
+                                {% elif cat == 'api_call' %}🔗
+                                {% elif cat == 'user_auth' %}🔐
+                                {% elif cat == 'admin_access' %}👑
+                                {% else %}📋{% endif %}
+                            </div>
+                            <div class="stat-content">
+                                <h3>{{ cat.replace('_', ' ').title() }}</h3>
+                                <p class="stat-number">{{ count }}</p>
+                                <small>{{ cat }}カテゴリ</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </section>
+
+            <!-- ログ表示エリア -->
+            <section class="logs-display">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>📋 ログエントリ</h2>
+                        <div class="log-actions">
+                            <button onclick="exportLogs()" class="btn btn-outline btn-small">📥 エクスポート</button>
+                            <button onclick="toggleAutoRefresh()" class="btn btn-small" id="autoRefreshBtn">
+                                ⏸️ 自動更新停止
+                            </button>
+                        </div>
+                    </div>
+                    
+                    {% if logs %}
+                    <div class="logs-container" id="logsContainer">
+                        {% for log in logs %}
+                        <div class="log-item {{ log.category }}" data-timestamp="{{ log.timestamp }}">
+                            <span class="log-time">{{ log.timestamp.split('T')[1].split('.')[0] if 'T' in log.timestamp else log.timestamp[-8:] }}</span>
+                            <span class="log-category {{ log.category }}">{{ log.category|upper }}</span>
+                            <span class="log-action">{{ log.action }}</span>
+                            <span class="log-details">{{ log.details[:100] }}{% if log.details|length > 100 %}...{% endif %}</span>
+                            {% if log.username %}
+                            <span class="log-user">{{ log.username }}</span>
+                            {% endif %}
+                            <div class="log-expand" onclick="expandLog(this)">
+                                <button class="btn btn-small btn-outline">詳細</button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="no-logs">
+                        <div class="text-center">
+                            <h3>📭 ログがありません</h3>
+                            <p style="color: var(--text-secondary); margin-top: 1rem;">
+                                指定した条件でのログエントリが見つかりません。<br>
+                                フィルター条件を変更して再度お試しください。
+                            </p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </section>
+
+            <!-- ログ詳細モーダル -->
+            <div id="logDetailModal" class="modal" style="display: none;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>📋 ログ詳細</h3>
+                        <button onclick="closeLogDetail()" class="modal-close">&times;</button>
+                    </div>
+                    <div class="modal-body" id="logDetailContent">
+                        <!-- JavaScript で動的に設定 -->
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- フッター -->
+        <footer class="admin-footer">
+            <p>システムログ表示: {{ logs|length }}件 ({{ category if category != 'all' else 'すべて' }}) | LangPont Admin Phase B-1</p>
+            <div class="footer-actions">
+                <button onclick="downloadLogFile()" class="btn btn-small">💾 ログファイル</button>
+                <button onclick="clearOldLogs()" class="btn btn-small">🧹 古いログ削除</button>
+            </div>
+        </footer>
+
+    </div>
+
+    <script>
+        // 🚀 管理者ログ表示画面 JavaScript
+        
+        let autoRefreshInterval = null;
+        let autoRefreshEnabled = true;
+        
+        // 自動更新の制御
+        function toggleAutoRefresh() {
+            const btn = document.getElementById('autoRefreshBtn');
+            
+            if (autoRefreshEnabled) {
+                // 自動更新を停止
+                if (autoRefreshInterval) {
+                    clearInterval(autoRefreshInterval);
+                    autoRefreshInterval = null;
+                }
+                autoRefreshEnabled = false;
+                btn.innerHTML = '▶️ 自動更新開始';
+                btn.classList.add('btn-outline');
+            } else {
+                // 自動更新を開始
+                startAutoRefresh();
+                autoRefreshEnabled = true;
+                btn.innerHTML = '⏸️ 自動更新停止';
+                btn.classList.remove('btn-outline');
+            }
+        }
+        
+        function startAutoRefresh() {
+            autoRefreshInterval = setInterval(async () => {
+                try {
+                    const response = await fetch('/admin/api/recent_logs?limit={{ limit }}&category={{ category }}');
+                    if (response.ok) {
+                        const data = await response.json();
+                        updateLogsDisplay(data.data);
+                    }
+                } catch (error) {
+                    console.error('自動更新エラー:', error);
+                }
+            }, 30000); // 30秒間隔
+        }
+        
+        function updateLogsDisplay(newLogs) {
+            const container = document.getElementById('logsContainer');
+            if (!container) return;
+            
+            // 新しいログがあるかチェック
+            const currentTopTimestamp = container.querySelector('.log-item')?.dataset.timestamp;
+            const newTopTimestamp = newLogs[0]?.timestamp;
+            
+            if (newTopTimestamp && newTopTimestamp !== currentTopTimestamp) {
+                // 新しいログを上部に追加
+                const newLogElements = newLogs.slice(0, 5).map(log => createLogElement(log));
+                newLogElements.forEach(element => {
+                    container.insertBefore(element, container.firstChild);
+                    element.style.backgroundColor = 'var(--bg-light)';
+                    setTimeout(() => {
+                        element.style.backgroundColor = '';
+                    }, 2000);
+                });
+                
+                // 古いログを削除（最大{{ limit }}件まで）
+                const allLogs = container.querySelectorAll('.log-item');
+                if (allLogs.length > {{ limit }}) {
+                    for (let i = {{ limit }}; i < allLogs.length; i++) {
+                        allLogs[i].remove();
+                    }
+                }
+            }
+        }
+        
+        function createLogElement(log) {
+            const div = document.createElement('div');
+            div.className = `log-item ${log.category}`;
+            div.dataset.timestamp = log.timestamp;
+            
+            const time = log.timestamp.includes('T') ? 
+                log.timestamp.split('T')[1].split('.')[0] : 
+                log.timestamp.slice(-8);
+            
+            div.innerHTML = `
+                <span class="log-time">${time}</span>
+                <span class="log-category ${log.category}">${log.category.toUpperCase()}</span>
+                <span class="log-action">${log.action}</span>
+                <span class="log-details">${log.details.substring(0, 100)}${log.details.length > 100 ? '...' : ''}</span>
+                ${log.username ? `<span class="log-user">${log.username}</span>` : ''}
+                <div class="log-expand" onclick="expandLog(this)">
+                    <button class="btn btn-small btn-outline">詳細</button>
+                </div>
+            `;
+            
+            return div;
+        }
+        
+        function refreshLogs() {
+            location.reload();
+        }
+        
+        function clearFilters() {
+            window.location.href = '/admin/logs';
+        }
+        
+        function expandLog(button) {
+            const logItem = button.closest('.log-item');
+            const timestamp = logItem.dataset.timestamp;
+            
+            // ログの詳細情報を構築
+            const details = {
+                timestamp: timestamp,
+                category: logItem.querySelector('.log-category').textContent,
+                action: logItem.querySelector('.log-action').textContent,
+                details: logItem.querySelector('.log-details').textContent,
+                username: logItem.querySelector('.log-user')?.textContent || 'N/A'
+            };
+            
+            showLogDetail(details);
+        }
+        
+        function showLogDetail(details) {
+            const modal = document.getElementById('logDetailModal');
+            const content = document.getElementById('logDetailContent');
+            
+            content.innerHTML = `
+                <div class="log-detail-grid">
+                    <div class="detail-item">
+                        <strong>タイムスタンプ:</strong>
+                        <span>${details.timestamp}</span>
+                    </div>
+                    <div class="detail-item">
+                        <strong>カテゴリ:</strong>
+                        <span class="log-category ${details.category.toLowerCase()}">${details.category}</span>
+                    </div>
+                    <div class="detail-item">
+                        <strong>アクション:</strong>
+                        <span>${details.action}</span>
+                    </div>
+                    <div class="detail-item">
+                        <strong>ユーザー:</strong>
+                        <span>${details.username}</span>
+                    </div>
+                    <div class="detail-item detail-full">
+                        <strong>詳細:</strong>
+                        <pre>${details.details}</pre>
+                    </div>
+                </div>
+            `;
+            
+            modal.style.display = 'block';
+        }
+        
+        function closeLogDetail() {
+            document.getElementById('logDetailModal').style.display = 'none';
+        }
+        
+        function exportLogs() {
+            const currentParams = new URLSearchParams(window.location.search);
+            const exportUrl = `/admin/api/recent_logs?${currentParams.toString()}&format=json`;
+            
+            fetch(exportUrl)
+                .then(response => response.blob())
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `langpont_logs_${new Date().toISOString().split('T')[0]}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                })
+                .catch(error => {
+                    console.error('エクスポートエラー:', error);
+                    alert('ログのエクスポートに失敗しました。');
+                });
+        }
+        
+        function downloadLogFile() {
+            alert('ログファイルダウンロード機能は開発中です。');
+            // 将来的には実際のログファイルダウンロード機能
+        }
+        
+        function clearOldLogs() {
+            if (confirm('30日以上古いログを削除しますか？この操作は取り消せません。')) {
+                fetch('/admin/api/cleanup_logs', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(`${data.deleted_count}件の古いログを削除しました。`);
+                        location.reload();
+                    } else {
+                        alert('ログ削除に失敗しました。');
+                    }
+                })
+                .catch(error => {
+                    console.error('削除エラー:', error);
+                    alert('ログ削除中にエラーが発生しました。');
+                });
+            }
+        }
+        
+        // モーダルの外側クリックで閉じる
+        window.onclick = function(event) {
+            const modal = document.getElementById('logDetailModal');
+            if (event.target === modal) {
+                closeLogDetail();
+            }
+        }
+        
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 LangPont管理者ログ表示画面 Phase B-1 初期化完了');
+            
+            // 自動更新開始
+            if (autoRefreshEnabled) {
+                startAutoRefresh();
+            }
+        });
+    </script>
+
+    <style>
+        /* ログ表示画面専用スタイル */
+        .filter-form {
+            margin-top: 1rem;
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .filter-group label {
+            font-weight: 500;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+
+        .filter-group select {
+            padding: 0.5rem;
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            background: var(--bg-white);
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .log-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .logs-container {
+            max-height: 600px;
+            overflow-y: auto;
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+        }
+
+        .log-item {
+            display: grid;
+            grid-template-columns: auto auto 1fr auto auto auto;
+            gap: 1rem;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-light);
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            align-items: center;
+            transition: background-color 0.2s ease;
+        }
+
+        .log-item:hover {
+            background: var(--bg-light);
+        }
+
+        .log-expand {
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .log-item:hover .log-expand {
+            opacity: 1;
+        }
+
+        /* モーダル */
+        .modal {
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background-color: var(--bg-white);
+            margin: 5% auto;
+            border-radius: 12px;
+            width: 80%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-heavy);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .log-detail-grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .detail-item {
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            gap: 1rem;
+            align-items: start;
+        }
+
+        .detail-full {
+            grid-template-columns: 1fr;
+        }
+
+        .detail-item strong {
+            color: var(--text-primary);
+        }
+
+        .detail-item pre {
+            background: var(--bg-light);
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: var(--font-mono);
+            font-size: 0.875rem;
+            white-space: pre-wrap;
+        }
+
+        /* レスポンシブ対応 */
+        @media (max-width: 768px) {
+            .filter-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .log-item {
+                grid-template-columns: 1fr;
+                gap: 0.25rem;
+                text-align: left;
+            }
+            
+            .log-expand {
+                opacity: 1;
+                margin-top: 0.5rem;
+            }
+            
+            .modal-content {
+                width: 95%;
+                margin: 2% auto;
+            }
+            
+            .detail-item {
+                grid-template-columns: 1fr;
+                gap: 0.25rem;
+            }
+        }
+    </style>
+</body>
+</html>

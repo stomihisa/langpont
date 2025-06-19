@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ログイン - LangPont</title>
+    <style>
+        body {
+            font-family: "Meiryo", sans-serif;
+            background-color: #f3f3f3;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .login-box {
+            background: #ffffff;
+            padding: 40px;
+            border-radius: 14px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 100%;
+            max-width: 420px;
+        }
+        .login-box img {
+            width: 120px;
+            margin-bottom: 20px;
+        }
+        .login-box h2 {
+            margin-bottom: 20px;
+            font-size: 18px;
+            color: #333;
+        }
+        .login-box input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+        .login-box button {
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .error-message {
+            color: red;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <form class="login-box" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}"/>
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="LangPont ロゴ">
+        <h2>🔐 パスワードを入力してください</h2>
+        <input type="password" name="password" placeholder="パスワード" required>
+        <button type="submit">ログイン</button>
+        {% if error %}
+            <div class="error-message">{{ error }}</div>
+        {% endif %}
+    </form>
+</body>
+</html>

@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task 2.9.2 専用監視 - LangPont 管理者</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+</head>
+<body>
+    <!-- 🚀 Task 2.9.2 専用監視ダッシュボード - Phase B-2 -->
+    <div class="admin-container">
+        
+        <!-- ヘッダー -->
+        <header class="admin-header">
+            <div class="header-left">
+                <h1>🔍 Task 2.9.2 システム監視</h1>
+                <span class="version-badge">Phase B-2</span>
+            </div>
+            <div class="header-right">
+                <div class="user-info">
+                    <span class="user-role {{ user_info.role }}">{{ user_info.role|upper }}</span>
+                    <span class="username">{{ user_info.username }}</span>
+                </div>
+                <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">📊 ダッシュボード</a>
+                <a href="{{ url_for('index') }}" class="btn btn-secondary">メインアプリ</a>
+            </div>
+        </header>
+
+        <!-- ナビゲーション -->
+        <nav class="admin-nav">
+            <a href="{{ url_for('admin.dashboard') }}" class="nav-item">
+                📊 ダッシュボード
+            </a>
+            <a href="{{ url_for('admin.task292_monitor') }}" class="nav-item active">
+                🔍 Task 2.9.2 監視
+            </a>
+            {% if user_info.role == 'admin' %}
+            <a href="{{ url_for('admin.users') }}" class="nav-item">
+                👥 ユーザー管理
+            </a>
+            {% endif %}
+            <a href="{{ url_for('admin.logs') }}" class="nav-item">
+                📋 システムログ
+            </a>
+            <a href="{{ url_for('admin.analytics') }}" class="nav-item">
+                📈 データ分析
+            </a>
+        </nav>
+
+        <!-- メインコンテンツ -->
+        <main class="admin-main">
+            
+            <!-- アラートバナー -->
+            {% if active_alerts %}
+            <section class="alert-banner">
+                <div class="alert-container">
+                    <h2>🚨 アクティブアラート ({{ active_alerts|length }}件)</h2>
+                    <div class="alerts-grid">
+                        {% for alert in active_alerts[:3] %}
+                        <div class="alert-item {{ alert.severity.lower() }}">
+                            <div class="alert-header">
+                                <span class="alert-time">{{ alert.timestamp.split('T')[1].split('.')[0] }}</span>
+                                <span class="alert-severity">{{ alert.severity }}</span>
+                            </div>
+                            <div class="alert-message">{{ alert.message }}</div>
+                            <div class="alert-metrics">
+                                実際値: {{ "%.2f"|format(alert.metric_value) }} / 閾値: {{ "%.2f"|format(alert.threshold_value) }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% if active_alerts|length > 3 %}
+                    <p class="more-alerts">... さらに {{ active_alerts|length - 3 }} 件のアラート</p>
+                    {% endif %}
+                </div>
+            </section>
+            {% endif %}
+
+            <!-- Task 2.9.2 推奨抽出統計 -->
+            <section class="task292-overview">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>🎯 Task 2.9.2 推奨抽出システム概要</h2>
+                        <div class="refresh-controls">
+                            <span class="last-update">最終更新: <span id="lastUpdateTime">{{ last_updated }}</span></span>
+                            <button onclick="refreshMetrics()" class="btn btn-small">🔄 更新</button>
+                        </div>
+                    </div>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">🎯</div>
+                            <div class="stat-content">
+                                <h3>総推奨抽出数</h3>
+                                <p class="stat-number" id="totalExtractions">{{ task292_metrics.total_extractions }}</p>
+                                <small>累計処理件数</small>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card success">
+                            <div class="stat-icon">✅</div>
+                            <div class="stat-content">
+                                <h3>成功率</h3>
+                                <p class="stat-number" id="successRate">{{ "%.1f"|format(task292_metrics.success_rate) }}%</p>
+                                <small>{{ task292_metrics.successful_extractions }}/{{ task292_metrics.total_extractions }} 成功</small>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card confidence">
+                            <div class="stat-icon">🎖️</div>
+                            <div class="stat-content">
+                                <h3>平均信頼度</h3>
+                                <p class="stat-number" id="avgConfidence">{{ "%.2f"|format(task292_metrics.average_confidence) }}</p>
+                                <small>LLM判定信頼度</small>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card llm">
+                            <div class="stat-icon">🤖</div>
+                            <div class="stat-content">
+                                <h3>LLM成功率</h3>
+                                <p class="stat-number" id="llmSuccessRate">{{ "%.1f"|format(task292_metrics.llm_success_rate) }}%</p>
+                                <small>LLMベース判定精度</small>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card error">
+                            <div class="stat-icon">❌</div>
+                            <div class="stat-content">
+                                <h3>API エラー数</h3>
+                                <p class="stat-number" id="apiErrors">{{ task292_metrics.api_errors }}</p>
+                                <small>API関連エラー</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 推奨エンジン分布と抽出メソッド -->
+            <section class="extraction-analysis">
+                <div class="analysis-grid">
+                    <div class="section-card">
+                        <h2>🧠 推奨エンジン分布</h2>
+                        <div class="chart-container">
+                            <canvas id="recommendationDistChart"></canvas>
+                        </div>
+                        <div class="recommendation-stats">
+                            {% for engine, count in task292_metrics.recommendations.items() %}
+                            <div class="rec-stat-item">
+                                <span class="engine-name">{{ engine.title() }}</span>
+                                <span class="count-value">{{ count }}</span>
+                                <span class="percentage">{{ "%.1f"|format(count / task292_metrics.total_extractions * 100) if task292_metrics.total_extractions > 0 else 0 }}%</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="section-card">
+                        <h2>⚙️ 抽出メソッド分析</h2>
+                        <div class="chart-container">
+                            <canvas id="methodDistChart"></canvas>
+                        </div>
+                        <div class="method-stats">
+                            {% for method, count in task292_metrics.extraction_methods.items() %}
+                            <div class="method-stat-item">
+                                <span class="method-name">{{ method }}</span>
+                                <span class="count-value">{{ count }}</span>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: {{ (count / task292_metrics.total_extractions * 100) if task292_metrics.total_extractions > 0 else 0 }}%"></div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- API監視統計 -->
+            <section class="api-monitoring">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>🔗 API監視統計</h2>
+                    </div>
+                    
+                    <div class="api-grid">
+                        <div class="api-panel openai">
+                            <div class="api-header">
+                                <h3>🤖 OpenAI API</h3>
+                                <span class="api-status {{ 'online' if api_stats.openai.success_rate > 90 else 'degraded' if api_stats.openai.success_rate > 70 else 'offline' }}">
+                                    {{ '🟢 正常' if api_stats.openai.success_rate > 90 else '🟡 低下' if api_stats.openai.success_rate > 70 else '🔴 異常' }}
+                                </span>
+                            </div>
+                            <div class="api-metrics">
+                                <div class="metric-item">
+                                    <span class="metric-label">総呼び出し:</span>
+                                    <span class="metric-value">{{ api_stats.openai.total_calls }}</span>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">成功率:</span>
+                                    <span class="metric-value">{{ "%.1f"|format(api_stats.openai.success_rate) }}%</span>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">平均応答時間:</span>
+                                    <span class="metric-value">{{ "%.0f"|format(api_stats.openai.average_response_time) }}ms</span>
+                                </div>
+                            </div>
+                            {% if api_stats.openai.error_types %}
+                            <div class="error-breakdown">
+                                <h4>エラー内訳:</h4>
+                                {% for error_type, count in api_stats.openai.error_types.items() %}
+                                <div class="error-item">
+                                    <span class="error-type">{{ error_type }}</span>
+                                    <span class="error-count">{{ count }}</span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="api-panel gemini">
+                            <div class="api-header">
+                                <h3>✨ Gemini API</h3>
+                                <span class="api-status {{ 'online' if api_stats.gemini.success_rate > 90 else 'degraded' if api_stats.gemini.success_rate > 70 else 'offline' }}">
+                                    {{ '🟢 正常' if api_stats.gemini.success_rate > 90 else '🟡 低下' if api_stats.gemini.success_rate > 70 else '🔴 異常' }}
+                                </span>
+                            </div>
+                            <div class="api-metrics">
+                                <div class="metric-item">
+                                    <span class="metric-label">総呼び出し:</span>
+                                    <span class="metric-value">{{ api_stats.gemini.total_calls }}</span>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">成功率:</span>
+                                    <span class="metric-value">{{ "%.1f"|format(api_stats.gemini.success_rate) }}%</span>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">平均応答時間:</span>
+                                    <span class="metric-value">{{ "%.0f"|format(api_stats.gemini.average_response_time) }}ms</span>
+                                </div>
+                            </div>
+                            {% if api_stats.gemini.error_types %}
+                            <div class="error-breakdown">
+                                <h4>エラー内訳:</h4>
+                                {% for error_type, count in api_stats.gemini.error_types.items() %}
+                                <div class="error-item">
+                                    <span class="error-type">{{ error_type }}</span>
+                                    <span class="error-count">{{ count }}</span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 多言語対応状況 -->
+            <section class="language-analysis">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>🌍 多言語対応状況</h2>
+                    </div>
+                    
+                    <div class="language-grid">
+                        <div class="language-chart">
+                            <canvas id="languageDistChart"></canvas>
+                        </div>
+                        <div class="language-stats">
+                            {% for language, count in task292_metrics.language_distribution.items() %}
+                            <div class="language-item">
+                                <div class="language-info">
+                                    <span class="language-name">{{ language }}</span>
+                                    <span class="language-count">{{ count }} 件</span>
+                                </div>
+                                <div class="language-bar">
+                                    <div class="language-fill" style="width: {{ (count / task292_metrics.total_extractions * 100) if task292_metrics.total_extractions > 0 else 0 }}%"></div>
+                                </div>
+                                <span class="language-percentage">{{ "%.1f"|format(count / task292_metrics.total_extractions * 100) if task292_metrics.total_extractions > 0 else 0 }}%</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- エラーパターン分析 -->
+            {% if task292_metrics.error_patterns %}
+            <section class="error-analysis">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>🚨 エラーパターン分析</h2>
+                    </div>
+                    
+                    <div class="error-patterns-grid">
+                        {% for error_pattern, count in task292_metrics.error_patterns.items() %}
+                        <div class="error-pattern-card">
+                            <div class="error-pattern-header">
+                                <span class="error-pattern-name">{{ error_pattern }}</span>
+                                <span class="error-pattern-count">{{ count }} 件</span>
+                            </div>
+                            <div class="error-pattern-details">
+                                <div class="error-frequency">
+                                    頻度: {{ "%.1f"|format(count / task292_metrics.failed_extractions * 100) if task292_metrics.failed_extractions > 0 else 0 }}%
+                                </div>
+                                <div class="error-impact">
+                                    影響度: {{ "高" if count / task292_metrics.failed_extractions > 0.3 else "中" if count / task292_metrics.failed_extractions > 0.1 else "低" }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </section>
+            {% endif %}
+
+            <!-- リアルタイム抽出ログ -->
+            <section class="realtime-logs">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>📋 リアルタイム抽出ログ</h2>
+                        <div class="log-controls">
+                            <button onclick="toggleAutoRefresh()" class="btn btn-small" id="autoRefreshBtn">⏸️ 自動更新停止</button>
+                            <button onclick="clearLogDisplay()" class="btn btn-small btn-outline">🗑️ 表示クリア</button>
+                        </div>
+                    </div>
+                    
+                    <div class="extraction-log-container" id="extractionLogContainer">
+                        {% for log in extraction_history[:10] %}
+                        <div class="extraction-log-item {{ 'success' if log.success else 'failure' }}">
+                            <div class="log-timestamp">{{ log.timestamp.split('T')[1].split('.')[0] if 'T' in log.timestamp else log.timestamp[-8:] }}</div>
+                            <div class="log-user">{{ log.user_id or 'anonymous' }}</div>
+                            <div class="log-language">{{ log.analysis_language }}</div>
+                            <div class="log-method">{{ log.extraction_method }}</div>
+                            <div class="log-recommendation">{{ log.recommendation or 'N/A' }}</div>
+                            <div class="log-confidence">{{ "%.2f"|format(log.confidence) if log.confidence else 'N/A' }}</div>
+                            <div class="log-time">{{ log.processing_time_ms }}ms</div>
+                            <div class="log-status">{{ '✅' if log.success else '❌' }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- フッター -->
+        <footer class="admin-footer">
+            <p>Task 2.9.2 監視ダッシュボード | 最終データ更新: {{ last_updated }} | Phase B-2</p>
+            <div class="footer-actions">
+                <button onclick="exportMetrics()" class="btn btn-small">📊 メトリクス出力</button>
+                <button onclick="downloadExtractionLog()" class="btn btn-small">📥 ログダウンロード</button>
+                <button onclick="runDiagnostics()" class="btn btn-small btn-outline">🔧 診断実行</button>
+            </div>
+        </footer>
+
+    </div>
+
+    <script>
+        // 🚀 Task 2.9.2 専用監視ダッシュボード JavaScript
+        
+        let autoRefreshEnabled = true;
+        let autoRefreshInterval = null;
+        
+        // 推奨エンジン分布チャート
+        const recCtx = document.getElementById('recommendationDistChart').getContext('2d');
+        const recData = {{ task292_metrics.recommendations|tojson }};
+        
+        new Chart(recCtx, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(recData).map(key => key.charAt(0).toUpperCase() + key.slice(1)),
+                datasets: [{
+                    data: Object.values(recData),
+                    backgroundColor: ['#007AFF', '#FF9500', '#34C759', '#FF3B30', '#5856D6'],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                return `${context.label}: ${context.parsed} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 抽出メソッド分布チャート
+        const methodCtx = document.getElementById('methodDistChart').getContext('2d');
+        const methodData = {{ task292_metrics.extraction_methods|tojson }};
+        
+        new Chart(methodCtx, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(methodData),
+                datasets: [{
+                    label: '抽出回数',
+                    data: Object.values(methodData),
+                    backgroundColor: 'rgba(0, 122, 255, 0.8)',
+                    borderColor: '#007AFF',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+
+        // 言語分布チャート
+        const langCtx = document.getElementById('languageDistChart').getContext('2d');
+        const langData = {{ task292_metrics.language_distribution|tojson }};
+        
+        new Chart(langCtx, {
+            type: 'pie',
+            data: {
+                labels: Object.keys(langData),
+                datasets: [{
+                    data: Object.values(langData),
+                    backgroundColor: ['#007AFF', '#FF9500', '#34C759', '#FF3B30'],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'right' }
+                }
+            }
+        });
+
+        // リアルタイム更新機能
+        function startAutoRefresh() {
+            autoRefreshInterval = setInterval(async () => {
+                try {
+                    const response = await fetch('/admin/api/task292_metrics');
+                    if (response.ok) {
+                        const data = await response.json();
+                        updateMetricsDisplay(data.data);
+                        updateTimestamp();
+                    }
+                } catch (error) {
+                    console.error('メトリクス更新エラー:', error);
+                }
+            }, 15000); // 15秒間隔
+        }
+
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+        }
+
+        function toggleAutoRefresh() {
+            const btn = document.getElementById('autoRefreshBtn');
+            
+            if (autoRefreshEnabled) {
+                stopAutoRefresh();
+                autoRefreshEnabled = false;
+                btn.innerHTML = '▶️ 自動更新開始';
+                btn.classList.add('btn-outline');
+            } else {
+                startAutoRefresh();
+                autoRefreshEnabled = true;
+                btn.innerHTML = '⏸️ 自動更新停止';
+                btn.classList.remove('btn-outline');
+            }
+        }
+
+        function updateMetricsDisplay(metrics) {
+            // 統計値更新
+            document.getElementById('totalExtractions').textContent = metrics.total_extractions;
+            document.getElementById('successRate').textContent = metrics.success_rate.toFixed(1) + '%';
+            document.getElementById('avgConfidence').textContent = metrics.average_confidence.toFixed(2);
+            document.getElementById('llmSuccessRate').textContent = metrics.llm_success_rate.toFixed(1) + '%';
+            document.getElementById('apiErrors').textContent = metrics.api_errors;
+        }
+
+        function updateTimestamp() {
+            const now = new Date();
+            document.getElementById('lastUpdateTime').textContent = 
+                now.toLocaleTimeString('ja-JP', { hour12: false });
+        }
+
+        function refreshMetrics() {
+            location.reload();
+        }
+
+        function clearLogDisplay() {
+            const container = document.getElementById('extractionLogContainer');
+            container.innerHTML = '<p class="no-logs">ログ表示をクリアしました。自動更新で新しいログが表示されます。</p>';
+        }
+
+        function exportMetrics() {
+            const metrics = {
+                task292_metrics: {{ task292_metrics|tojson }},
+                api_stats: {{ api_stats|tojson }},
+                active_alerts: {{ active_alerts|tojson }},
+                export_timestamp: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(metrics, null, 2)], { type: 'application/json' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `task292_metrics_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+
+        function downloadExtractionLog() {
+            window.location.href = '/admin/api/task292_extraction_log?format=csv';
+        }
+
+        function runDiagnostics() {
+            fetch('/admin/api/task292_diagnostics', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(`診断完了:\n${data.message}\n\n詳細:\n${data.details.join('\n')}`);
+                    } else {
+                        alert(`診断エラー: ${data.error}`);
+                    }
+                })
+                .catch(error => {
+                    alert(`診断実行エラー: ${error.message}`);
+                });
+        }
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Task 2.9.2 専用監視ダッシュボード Phase B-2 初期化完了');
+            
+            // 自動更新開始
+            if (autoRefreshEnabled) {
+                startAutoRefresh();
+            }
+            
+            // アラートの自動非表示（重要度低いもの）
+            setTimeout(() => {
+                const infoAlerts = document.querySelectorAll('.alert-item.info');
+                infoAlerts.forEach(alert => {
+                    alert.style.opacity = '0.7';
+                });
+            }, 30000);
+        });
+    </script>
+
+    <style>
+        /* Task 2.9.2 専用監視画面スタイル */
+        .alert-banner {
+            margin-bottom: 2rem;
+        }
+
+        .alert-container {
+            background: linear-gradient(135deg, #ff3b30, #ff9500);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow-medium);
+        }
+
+        .alerts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .alert-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+
+        .alert-item.critical {
+            border-left-color: #ff3b30;
+        }
+
+        .alert-item.warning {
+            border-left-color: #ff9500;
+        }
+
+        .alert-item.info {
+            border-left-color: #007aff;
+        }
+
+        .alert-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .alert-severity {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .alert-message {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .alert-metrics {
+            font-size: 0.875rem;
+            opacity: 0.9;
+        }
+
+        .more-alerts {
+            text-align: center;
+            margin-top: 1rem;
+            font-style: italic;
+        }
+
+        /* 統計カード拡張 */
+        .stat-card.success {
+            border-left: 4px solid #34c759;
+        }
+
+        .stat-card.confidence {
+            border-left: 4px solid #007aff;
+        }
+
+        .stat-card.llm {
+            border-left: 4px solid #5856d6;
+        }
+
+        .stat-card.error {
+            border-left: 4px solid #ff3b30;
+        }
+
+        /* 分析グリッド */
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-container {
+            height: 250px;
+            margin: 1rem 0;
+        }
+
+        .recommendation-stats, .method-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .rec-stat-item, .method-stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+            background: var(--bg-light);
+            border-radius: 6px;
+        }
+
+        .count-value {
+            font-weight: 600;
+            color: var(--primary-blue);
+        }
+
+        .percentage {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        /* API監視パネル */
+        .api-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .api-panel {
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 2px solid;
+        }
+
+        .api-panel.openai {
+            border-color: #34c759;
+            background: linear-gradient(135deg, rgba(52, 199, 89, 0.1), rgba(52, 199, 89, 0.05));
+        }
+
+        .api-panel.gemini {
+            border-color: #5856d6;
+            background: linear-gradient(135deg, rgba(88, 86, 214, 0.1), rgba(88, 86, 214, 0.05));
+        }
+
+        .api-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .api-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .api-metrics {
+            display: grid;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .metric-item {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .metric-label {
+            color: var(--text-secondary);
+        }
+
+        .metric-value {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .error-breakdown {
+            border-top: 1px solid var(--border-light);
+            padding-top: 1rem;
+        }
+
+        .error-breakdown h4 {
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .error-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.25rem 0;
+            font-size: 0.875rem;
+        }
+
+        .error-type {
+            color: var(--text-primary);
+        }
+
+        .error-count {
+            color: var(--danger-red);
+            font-weight: 600;
+        }
+
+        /* 言語分析 */
+        .language-grid {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        .language-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .language-item {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .language-info {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .language-name {
+            font-weight: 500;
+        }
+
+        .language-count {
+            color: var(--text-secondary);
+        }
+
+        .language-bar {
+            width: 100px;
+            height: 8px;
+            background: var(--border-light);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .language-fill {
+            height: 100%;
+            background: var(--primary-blue);
+            transition: width 0.3s ease;
+        }
+
+        .language-percentage {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            min-width: 40px;
+            text-align: right;
+        }
+
+        /* エラーパターン分析 */
+        .error-patterns-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .error-pattern-card {
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            padding: 1rem;
+            border-left: 4px solid var(--danger-red);
+        }
+
+        .error-pattern-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .error-pattern-name {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .error-pattern-count {
+            background: var(--danger-red);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .error-pattern-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .error-frequency, .error-impact {
+            color: var(--text-secondary);
+        }
+
+        /* リアルタイムログ */
+        .extraction-log-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+        }
+
+        .extraction-log-item {
+            display: grid;
+            grid-template-columns: auto auto auto auto auto auto auto auto;
+            gap: 1rem;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-light);
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            align-items: center;
+        }
+
+        .extraction-log-item:hover {
+            background: var(--bg-light);
+        }
+
+        .extraction-log-item.success {
+            border-left: 4px solid var(--success-green);
+        }
+
+        .extraction-log-item.failure {
+            border-left: 4px solid var(--danger-red);
+        }
+
+        .log-timestamp {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+        }
+
+        .log-user {
+            background: var(--primary-blue);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+        }
+
+        .log-method {
+            background: var(--bg-light);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+        }
+
+        .log-recommendation {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .log-confidence {
+            color: var(--success-green);
+            font-weight: 600;
+        }
+
+        .log-time {
+            color: var(--text-secondary);
+        }
+
+        .log-status {
+            font-size: 1.2rem;
+        }
+
+        .refresh-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .last-update {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .log-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* レスポンシブ対応 */
+        @media (max-width: 768px) {
+            .analysis-grid,
+            .api-grid,
+            .language-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .extraction-log-item {
+                grid-template-columns: 1fr;
+                gap: 0.25rem;
+                text-align: left;
+            }
+            
+            .alerts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .error-patterns-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</body>
+</html>

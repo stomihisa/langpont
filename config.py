@@ -34,3 +34,31 @@ USAGE_LIMITS = {
     "free_daily_limit": 10,
     "premium_daily_limit": 100
 }
+
+# 👥 ユーザー管理システム（暫定版）
+USERS = {
+    "admin": {
+        "password": "admin_langpont_2025",
+        "role": "admin",
+        "daily_limit": -1,  # -1 = 無制限
+        "description": "管理者アカウント"
+    },
+    "developer": {
+        "password": "dev_langpont_456",
+        "role": "developer", 
+        "daily_limit": 1000,
+        "description": "開発者アカウント"
+    },
+    "guest": {
+        "password": "guest_basic_123",
+        "role": "guest",
+        "daily_limit": 10,
+        "description": "ゲストアカウント"
+    }
+}
+
+# 🔒 後方互換性設定
+LEGACY_SETTINGS = {
+    "legacy_password": "linguru2025",  # 既存パスワード
+    "default_guest_username": "guest"  # 空ユーザー名時のデフォルト
+}

@@ -1,0 +1,736 @@
+{% extends "base.html" %}
+
+{% block title %}LangPont{% endblock %}
+
+{% block head %}
+<style>
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+        background: #f8f9fa;
+        margin: 0;
+        padding: 0;
+    }
+    
+    .profile-container {
+        max-width: 1200px;
+        margin: 40px auto;
+        padding: 0 20px;
+    }
+    
+    /* デスクトップ用の最適化 */
+    @media (min-width: 1024px) {
+        .profile-container {
+            max-width: 1400px;
+            padding: 0 40px;
+        }
+        
+        .profile-content {
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 40px;
+        }
+        
+        .profile-header {
+            padding: 50px;
+        }
+    }
+    
+    .profile-header {
+        background: var(--gradient-primary);
+        color: white;
+        padding: 25px 30px;
+        border-radius: 20px;
+        margin-bottom: 30px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* 🆕 ヘッダー要素を横並びコンパクト配置 */
+    .profile-info {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+    }
+    
+    .profile-left {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+    
+    .profile-avatar {
+        width: 60px;
+        height: 60px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        flex-shrink: 0;
+    }
+    
+    .profile-details {
+        text-align: left;
+    }
+    
+    .profile-name {
+        font-size: 24px;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+    
+    .profile-email {
+        font-size: 14px;
+        opacity: 0.9;
+        margin: 0;
+    }
+    
+    .profile-badges {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    
+    .badge {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 6px 12px;
+        border-radius: 16px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    
+    .badge-early-access {
+        background: #f59e0b;
+    }
+    
+    .badge-premium {
+        background: #8b5cf6;
+    }
+    
+    .profile-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+    }
+    
+    .profile-section {
+        background: white;
+        border-radius: 16px;
+        padding: 30px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+        border: 1px solid rgba(0, 0, 0, 0.06);
+    }
+    
+    .section-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #1a1a1a;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .section-icon {
+        font-size: 24px;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-label {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 8px;
+    }
+    
+    .form-input {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: all 0.2s ease;
+        box-sizing: border-box;
+    }
+    
+    .form-input:focus {
+        outline: none;
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+    }
+    
+    .form-select {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 14px;
+        background: white;
+        transition: all 0.2s ease;
+        box-sizing: border-box;
+        cursor: pointer;
+    }
+    
+    .form-select:focus {
+        outline: none;
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+    }
+    
+    .btn-primary {
+        background: var(--gradient-primary);
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 16px rgba(0, 122, 255, 0.4);
+    }
+    
+    .btn-secondary {
+        background: #f3f4f6;
+        color: #374151;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .btn-secondary:hover {
+        background: #e5e7eb;
+    }
+    
+    .btn-danger {
+        background: #ef4444;
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .btn-danger:hover {
+        background: #dc2626;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+    
+    .stat-card {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 12px;
+        text-align: center;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .stat-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--color-primary);
+        margin-bottom: 4px;
+    }
+    
+    .stat-label {
+        font-size: 12px;
+        color: #6b7280;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .info-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid #f3f4f6;
+    }
+    
+    .info-item:last-child {
+        border-bottom: none;
+    }
+    
+    .info-label {
+        font-size: 14px;
+        color: #6b7280;
+        font-weight: 500;
+    }
+    
+    .info-value {
+        font-size: 14px;
+        color: #1a1a1a;
+        font-weight: 600;
+    }
+    
+    .alert {
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-size: 14px;
+        font-weight: 500;
+    }
+    
+    .alert-success {
+        background: #d1fae5;
+        color: #065f46;
+        border: 1px solid #a7f3d0;
+    }
+    
+    .alert-error {
+        background: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #fca5a5;
+    }
+    
+    .password-section {
+        border-top: 1px solid #f3f4f6;
+        margin-top: 24px;
+        padding-top: 24px;
+    }
+    
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+    
+    .logout-section {
+        grid-column: 1 / -1;
+        border-top: 1px solid #f3f4f6;
+        margin-top: 20px;
+        padding-top: 20px;
+        text-align: center;
+    }
+    
+    .logout-warning {
+        background: #fef3c7;
+        border: 1px solid #f59e0b;
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin: 0 auto 16px;
+        max-width: 600px;
+        text-align: left;
+    }
+    
+    /* 🆕 フッターボタンを横並びに配置 */
+    .footer-buttons {
+        display: flex;
+        gap: 16px;
+        justify-content: center;
+        align-items: center;
+        margin-top: 16px;
+    }
+    
+    .logout-warning h4 {
+        font-size: 14px;
+        font-weight: 600;
+        color: #92400e;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .logout-warning p {
+        font-size: 13px;
+        color: #b45309;
+        margin: 0;
+    }
+    
+    @media (max-width: 768px) {
+        .profile-container {
+            margin: 20px auto;
+            padding: 0 16px;
+        }
+        
+        .profile-header {
+            padding: 20px 16px;
+            border-radius: 16px;
+        }
+        
+        /* モバイルでは縦並びに変更 */
+        .profile-info {
+            flex-direction: column;
+            text-align: center;
+            gap: 12px;
+        }
+        
+        .profile-left {
+            flex-direction: column;
+            text-align: center;
+            gap: 12px;
+        }
+        
+        .profile-details {
+            text-align: center;
+        }
+        
+        .footer-buttons {
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .profile-content {
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        
+        .profile-section {
+            padding: 24px 20px;
+        }
+        
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+        
+        .profile-name {
+            font-size: 24px;
+        }
+        
+        .section-title {
+            font-size: 18px;
+        }
+        
+        /* 🆕 モバイル用の翻訳履歴ボタン配置 */
+        .profile-section div[style*="display: flex"] {
+            flex-direction: column !important;
+            gap: 8px !important;
+        }
+        
+        .profile-section a.btn-primary,
+        .profile-section a.btn-secondary,
+        .profile-section button.btn-secondary {
+            width: 100%;
+            text-align: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <!-- Profile Header -->
+    <div class="profile-header">
+        <div class="profile-info">
+            <div class="profile-left">
+                <div class="profile-avatar">👤</div>
+                <div class="profile-details">
+                    <h1 class="profile-name">{{ user.username }}</h1>
+                    <p class="profile-email">{{ user.email }}</p>
+                </div>
+            </div>
+            <div class="profile-badges">
+                <span class="badge">{{ labels[user.account_type + "_account"] }}</span>
+                {% if user.early_access %}
+                <span class="badge badge-early-access">⭐ {{ labels["early_access"] }}</span>
+                {% endif %}
+                {% if user.email_verified %}
+                <span class="badge">✅ {{ labels["email_verified"] }}</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ 'success' if category == 'success' else 'error' }}">
+        {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+    
+    <div class="profile-content">
+        <!-- Account Information -->
+        <div class="profile-section">
+            <h2 class="section-title">
+                <span class="section-icon">📊</span>
+                {{ labels["account_stats"] }}
+            </h2>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value">{{ user_statistics['daily_usage'] or 0 }}</div>
+                    <div class="stat-label">{{ labels["today_usage"] }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">
+                        {% if user_statistics['daily_limit'] == -1 %}
+                            無制限
+                        {% elif user_statistics['daily_limit'] == '無制限' %}
+                            無制限
+                        {% else %}
+                            {{ user_statistics['daily_limit'] }}
+                        {% endif %}
+                    </div>
+                    <div class="stat-label">{{ labels["daily_limit"] }}</div>
+                </div>
+            </div>
+            
+            <div class="info-item">
+                <span class="info-label">{{ labels["member_since"] }}</span>
+                <span class="info-value">{{ user.created_at[:10] if user.created_at else 'N/A' }}</span>
+            </div>
+            
+            <div class="info-item">
+                <span class="info-label">{{ labels["last_login"] }}</span>
+                <span class="info-value">{{ user.last_login[:10] if user.last_login else labels["never"] }}</span>
+            </div>
+            
+            <div class="info-item">
+                <span class="info-label">{{ labels["account_status"] }}</span>
+                <span class="info-value">{{ labels["active"] if user.is_active else labels["inactive"] }}</span>
+            </div>
+        </div>
+        
+        <!-- 🆕 Translation History Section -->
+        <div class="profile-section">
+            <h2 class="section-title">
+                <span class="section-icon">📚</span>
+                {{ labels["translation_history"] or "翻訳履歴" }}
+            </h2>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value">{{ user_statistics.get('total_translations', 0) }}</div>
+                    <div class="stat-label">{{ labels["total_translations"] or "総翻訳数" }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ user_statistics.get('bookmarked', 0) }}</div>
+                    <div class="stat-label">{{ labels["bookmarked"] or "ブックマーク" }}</div>
+                </div>
+            </div>
+            
+            <div class="info-item">
+                <span class="info-label">{{ labels["recent_activity"] or "最近の活動" }}</span>
+                <span class="info-value">{{ labels["view_details"] or "詳細を表示" }}</span>
+            </div>
+            
+            <!-- Translation History Actions -->
+            <div style="margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap;">
+                <a href="{{ url_for('auth.detailed_translation_history') }}" class="btn-primary">
+                    📊 {{ labels["view_detailed_history"] or "詳細履歴を見る" }}
+                </a>
+                <a href="{{ url_for('auth.translation_analytics') }}" class="btn-secondary">
+                    📈 {{ labels["view_analytics"] or "分析を見る" }}
+                </a>
+                <button onclick="exportHistory()" class="btn-secondary">
+                    📤 {{ labels["export_history"] or "履歴をエクスポート" }}
+                </button>
+            </div>
+            
+            <div style="margin-top: 16px; padding: 12px; background: #f0f9ff; border-radius: 8px; border-left: 4px solid #0ea5e9;">
+                <p style="margin: 0; font-size: 13px; color: #0c4a6e;">
+                    💡 {{ labels["history_feature_info"] or "翻訳履歴機能では、過去の翻訳を検索・フィルタ・評価でき、翻訳品質の向上に役立ちます。" }}
+                </p>
+            </div>
+        </div>
+        
+        <!-- Profile Settings -->
+        <div class="profile-section">
+            <h2 class="section-title">
+                <span class="section-icon">⚙️</span>
+                {{ labels["profile_settings"] }}
+            </h2>
+            
+            <form method="POST" action="{{ url_for('auth.update_profile') }}" id="profileForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                
+                <div class="form-group">
+                    <label class="form-label" for="email">{{ labels["email"] }}</label>
+                    <input type="email" 
+                           class="form-input" 
+                           id="email" 
+                           name="email" 
+                           value="{{ user.email }}"
+                           required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="preferred_lang">{{ labels["preferred_language"] }}</label>
+                    <select class="form-select" id="preferred_lang" name="preferred_lang">
+                        <option value="jp" {% if user.preferred_lang == 'jp' %}selected{% endif %}>🇯🇵 {{ labels["label_ja"] }}</option>
+                        <option value="en" {% if user.preferred_lang == 'en' %}selected{% endif %}>🇺🇸 {{ labels["label_en"] }}</option>
+                        <option value="fr" {% if user.preferred_lang == 'fr' %}selected{% endif %}>🇫🇷 {{ labels["label_fr"] }}</option>
+                        <option value="es" {% if user.preferred_lang == 'es' %}selected{% endif %}>🇪🇸 {{ labels["label_es"] }}</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn-primary">
+                    💾 {{ labels["save_changes"] }}
+                </button>
+            </form>
+            
+            <!-- Password Change Section -->
+            <div class="password-section">
+                <h3>{{ labels["change_password"] }}</h3>
+                
+                <form method="POST" action="{{ url_for('auth.change_password') }}" id="passwordForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="current_password">{{ labels["current_password"] }}</label>
+                        <input type="password" 
+                               class="form-input" 
+                               id="current_password" 
+                               name="current_password" 
+                               required>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="new_password">{{ labels["new_password"] }}</label>
+                            <input type="password" 
+                                   class="form-input" 
+                                   id="new_password" 
+                                   name="new_password" 
+                                   required
+                                   minlength="8">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="confirm_password">{{ labels["confirm_password"] }}</label>
+                            <input type="password" 
+                                   class="form-input" 
+                                   id="confirm_password" 
+                                   name="confirm_password" 
+                                   required
+                                   minlength="8">
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn-secondary">
+                        🔒 {{ labels["update_password"] }}
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Logout Section -->
+        <div class="logout-section">
+            <div class="logout-warning">
+                <h4>⚠️ {{ labels["logout_warning_title"] }}</h4>
+                <p>{{ labels["logout_warning_text"] }}</p>
+            </div>
+            
+            <div class="footer-buttons">
+                <a href="{{ url_for('index') }}" class="btn-secondary">
+                    ← {{ labels["back_to_app"] }}
+                </a>
+                <a href="{{ url_for('auth.logout') }}" class="btn-danger" onclick="return confirm('本当にログアウトしますか？')">
+                    🚪 {{ labels["logout"] }}
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Password confirmation validation
+document.getElementById('passwordForm').addEventListener('submit', function(e) {
+    const newPassword = document.getElementById('new_password').value;
+    const confirmPassword = document.getElementById('confirm_password').value;
+    
+    if (newPassword !== confirmPassword) {
+        e.preventDefault();
+        alert('{{ labels["password_mismatch"] }}');
+        return false;
+    }
+    
+    // Password strength validation
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{}|;:,.<>?])/;
+    if (!passwordRegex.test(newPassword)) {
+        e.preventDefault();
+        alert('{{ labels["password_strength_error"] }}');
+        return false;
+    }
+});
+
+// Real-time password confirmation
+document.getElementById('confirm_password').addEventListener('input', function() {
+    const newPassword = document.getElementById('new_password').value;
+    const confirmPassword = this.value;
+    
+    if (confirmPassword && newPassword !== confirmPassword) {
+        this.style.borderColor = '#ef4444';
+    } else {
+        this.style.borderColor = '#e5e7eb';
+    }
+});
+
+// Form submission feedback
+document.getElementById('profileForm').addEventListener('submit', function() {
+    const submitBtn = this.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.textContent = '{{ labels["saving"] }}...';
+});
+
+document.getElementById('passwordForm').addEventListener('submit', function() {
+    const submitBtn = this.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.textContent = '{{ labels["updating"] }}...';
+});
+
+// 🆕 Translation History Export Function
+function exportHistory() {
+    if (confirm('翻訳履歴をJSONファイルとしてエクスポートしますか？')) {
+        // CSRFトークンを取得
+        const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+        
+        // フォームを作成してPOSTリクエスト送信
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ url_for("auth.export_detailed_history") }}';
+        form.style.display = 'none';
+        
+        // CSRFトークンを追加
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrf_token';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
+        
+        // フォーマット指定
+        const formatInput = document.createElement('input');
+        formatInput.type = 'hidden';
+        formatInput.name = 'format';
+        formatInput.value = 'json';
+        form.appendChild(formatInput);
+        
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
+    }
+}
+</script>
+{% endblock %}

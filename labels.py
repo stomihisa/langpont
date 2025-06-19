@@ -33,6 +33,7 @@ labels = {
         "label_ja": "日本語",
         "label_fr": "フランス語",
         "label_en": "英語",
+        "label_es": "スペイン語",
         # 🆕 インタラクティブ機能用ラベル
         "interactive_title": "追加の質問・リクエスト",
         "interactive_placeholder": "例：「もう少し親近感のある表現にしてください」「1番目の翻訳のXXXはどういう意味ですか？」",
@@ -47,8 +48,251 @@ labels = {
         "chat_cleared": "履歴をクリアしました",
         "question_generated": "質問への回答を生成しました",
         "error_occurred": "エラーが発生しました",
+        
+        # 🌍 チャット履歴ラベル（多言語対応）
+        "chat_question_label": "質問",
+        "chat_answer_label": "回答",
+        
+        # 🌍 ニュアンス分析エンジンラベル（多言語対応）
+        "nuance_engine_title": "ニュアンス分析エンジン選択",
+        "engine_chatgpt": "ChatGPT分析",
+        "engine_chatgpt_desc": "論理的分析",
+        "engine_gemini": "Gemini分析", 
+        "engine_gemini_desc": "丁寧な説明",
+        "engine_claude": "Claude分析",
+        "engine_claude_desc": "準備中",
+        
+        # 🌍 展開ボタンとUIメッセージ（多言語対応）
+        "expand_full_text": "▼ 全文を表示",
+        "collapse_text": "▲ 折りたたむ",
+        "processing_text": "処理中...",
+        "success_text": "成功しました",
+        "error_text": "エラーが発生しました",
+        "loading_text": "読み込み中...",
+        "saved_text": "保存しました",
+        "deleted_text": "削除しました",
+        
+        # 🌍 アラート・確認メッセージ（多言語対応）
+        "enter_translation_text": "翻訳するテキストを入力してください",
+        "question_min_length": "質問は5文字以上入力してください", 
+        "confirm_clear_history": "チャット履歴をクリアしますか？",
+        "history_cleared_success": "チャット履歴をクリアしました",
+        "history_clear_error": "チャット履歴のクリア中にエラーが発生しました",
+        "unknown_error": "不明なエラー",
+        "no_translation_result": "(翻訳結果なし)",
+        "no_reverse_result": "(逆翻訳結果なし)",
+        "translation_error_occurred": "[翻訳処理中にエラーが発生しました]",
+        "improved_translation_generating": "改善翻訳を生成中...",
+        "reverse_translating": "逆翻訳中...",
+        "analyzing_with_engine": "分析中...",
+        "copy_tooltip": "コピー",
         "processing": "処理中",
-        "enter_question": "質問を入力してください"
+        "enter_question": "質問を入力してください",
+        # 🆕 使用状況ラベル
+        "usage_unlimited": "無制限利用可能",
+        "usage_unlimited_desc": "制限なしでご利用いただけます",
+        "usage_count_times": "回",
+        "usage_remaining_prefix": "残り",
+        "usage_remaining_suffix": "回利用可能",
+        "usage_remaining_warning_suffix": "回です",
+        "usage_limit_reached": "本日の制限に達しました（明日00:00にリセット）",
+        "usage_upgrade_exceeded": "Early Access版を試す",
+        "usage_upgrade_warning": "制限解除版を見る",
+        # 🆕 言語選択ラベル
+        "from_language": "翻訳元",
+        "to_language": "翻訳先",
+        "language_arrow": "→",
+        "swap_languages": "言語を入れ替え",
+        # 🆕 エラーメッセージ
+        "validation_error_empty": "が入力されていません",
+        "validation_error_short": "が短すぎます",
+        "validation_error_long": "が長すぎます",
+        "api_error_network": "ネットワークエラーが発生しました",
+        "api_error_timeout": "APIがタイムアウトしました",
+        "api_error_general": "API呼び出しでエラーが発生しました",
+        "usage_limit_message": "1日の利用制限({limit}回)に達しました。",
+        "usage_reset_time": "明日の00:00(日本時間)",
+        "usage_upgrade_message": "制限なしで利用したい場合は、Early Access版をお試しください。",
+        # 🆕 認証システム関連ラベル
+        "user_registration": "ユーザー登録",
+        "login": "ログイン",
+        "logout": "ログアウト",
+        "username": "ユーザー名",
+        "email": "メールアドレス",
+        "password": "パスワード",
+        "confirm_password": "パスワード確認",
+        "create_account": "アカウントを作成",
+        "login_here": "こちらからログイン",
+        "register_here": "新規登録はこちら",
+        "already_have_account": "すでにアカウントをお持ちですか？",
+        "no_account_yet": "アカウントをお持ちでないですか？",
+        "welcome_back": "おかえりなさい",
+        "registration_subtitle": "LangPontに新規登録して、より多くの翻訳機能をご利用ください",
+        "login_subtitle": "アカウントにログインして翻訳を開始しましょう",
+        "username_or_email": "ユーザー名またはメールアドレス",
+        "remember_me": "ログイン状態を保持する",
+        "forgot_password": "パスワードを忘れた方",
+        "back_to_app": "アプリに戻る",
+        # パスワード要件
+        "password_requirements_title": "パスワード要件",
+        "password_req_length": "8文字以上",
+        "password_req_uppercase": "大文字を含む",
+        "password_req_lowercase": "小文字を含む",
+        "password_req_number": "数字を含む",
+        "password_req_special": "特殊文字を含む",
+        "password_strength_error": "パスワードが要件を満たしていません",
+        "password_mismatch": "パスワードが一致しません",
+        # アカウントタイプ
+        "account_type": "アカウントタイプ",
+        "account_basic": "ベーシック（10回/日）",
+        "account_premium": "プレミアム（100回/日）",
+        "basic_account": "ベーシック",
+        "premium_account": "プレミアム",
+        # Early Access
+        "early_access": "Early Access",
+        "early_access_title": "Early Accessアカウント",
+        "early_access_description": "制限なしの翻訳機能と新機能の先行利用が可能です",
+        "early_access_checkbox": "Early Accessアカウントを申請する",
+        # デモアカウント
+        "demo_accounts_title": "テストアカウント",
+        "admin_account": "管理者アカウント",
+        "developer_account": "開発者アカウント",
+        "guest_account": "ゲストアカウント",
+        "admin_description": "無制限利用・全機能アクセス",
+        "developer_description": "1000回/日・開発機能アクセス",
+        "guest_description": "10回/日・基本機能",
+        # セキュリティ
+        "security_notice_title": "セキュリティ通知",
+        "security_notice_text": "このは開発版です。本番環境では強化されたセキュリティ対策を実装予定です。",
+        # プロフィール
+        "user_profile": "ユーザープロフィール",
+        "profile_settings": "プロフィール設定",
+        "account_stats": "アカウント統計",
+        "save_changes": "変更を保存",
+        "change_password": "パスワード変更",
+        "current_password": "現在のパスワード",
+        "new_password": "新しいパスワード",
+        "update_password": "パスワードを更新",
+        "preferred_language": "表示言語",
+        "member_since": "登録日",
+        "last_login": "最終ログイン",
+        "account_status": "アカウント状態",
+        "active": "アクティブ",
+        "inactive": "非アクティブ",
+        "today_usage": "本日の利用",
+        "daily_limit": "日次制限",
+        "never": "なし",
+        "email_verified": "メール認証済み",
+        # フォーム関連
+        "username_placeholder": "半角英数字とアンダースコア（3文字以上）",
+        "email_placeholder": "your.email@example.com",
+        "password_placeholder": "8文字以上の安全なパスワード",
+        "confirm_password_placeholder": "パスワードを再入力",
+        "login_identifier_placeholder": "ユーザー名またはメールアドレス",
+        "username_requirements": "3文字以上の半角英数字とアンダースコア",
+        # 処理中メッセージ
+        "creating_account": "アカウント作成中",
+        "logging_in": "ログイン中",
+        "saving": "保存中",
+        "updating": "更新中",
+        # 成功・エラーメッセージ
+        "registration_success": "ユーザー登録が完了しました",
+        "login_success": "ログインしました",
+        "logout_success": "ログアウトしました",
+        "profile_updated": "プロフィールを更新しました",
+        "password_changed": "パスワードを変更しました",
+        "registration_error": "登録処理中にエラーが発生しました",
+        "login_error": "ログイン処理中にエラーが発生しました",
+        "logout_error": "ログアウト処理中にエラーが発生しました",
+        "profile_error": "プロフィール表示でエラーが発生しました",
+        "profile_update_error": "プロフィール更新でエラーが発生しました",
+        "password_change_error": "パスワード変更でエラーが発生しました",
+        "csrf_error": "セキュリティエラーが発生しました。ページを更新してください",
+        "rate_limit_register": "登録試行回数が上限に達しました。しばらくお待ちください",
+        "rate_limit_login": "ログイン試行回数が上限に達しました。しばらくお待ちください",
+        "login_required_fields": "ユーザー名とパスワードを入力してください",
+        "session_creation_error": "セッション作成でエラーが発生しました",
+        "user_not_found": "ユーザーが見つかりません",
+        "email_required": "メールアドレスが必要です",
+        "password_change_required": "全フィールドを入力してください",
+        # ログアウト警告
+        "logout_warning_title": "ログアウトについて",
+        "logout_warning_text": "ログアウトすると、保存されていない作業内容が失われる可能性があります。",
+        "logout_confirm": "本当にログアウトしますか？",
+        
+        # 🆕 プロフィール追加ラベル
+        "detailed_history": "詳細履歴",
+        "analytics": "分析データ",
+        "translation_history": "翻訳履歴",
+        "export_data": "データエクスポート",
+        "security": "セキュリティ",
+        "view_detailed_history": "詳細履歴を見る",
+        "view_analytics": "分析を見る",
+        "export_history": "履歴をエクスポート",
+        "total_translations": "総翻訳数",
+        "bookmarked": "ブックマーク",
+        "recent_activity": "最近の活動",
+        "view_details": "詳細を表示",
+        "history_feature_info": "翻訳履歴機能では、過去の翻訳を検索・フィルタ・評価でき、翻訳品質の向上に役立ちます。",
+        "history_subtitle": "過去の翻訳履歴を検索・管理できます",
+        "this_week": "今週の翻訳",
+        "avg_rating": "平均評価",
+        
+        # 🆕 Task 2.7.1 翻訳履歴システム関連ラベル
+        "history_title": "翻訳履歴",
+        "history_search": "履歴を検索",
+        "history_search_placeholder": "翻訳内容で検索...",
+        "history_filter": "フィルタ",
+        "history_language_pair": "言語ペア",
+        "history_date_from": "開始日",
+        "history_date_to": "終了日",
+        "history_rating_filter": "評価フィルタ",
+        "history_bookmarked_only": "ブックマークのみ",
+        "history_export": "エクスポート",
+        "history_export_json": "JSON形式",
+        "history_export_csv": "CSV形式",
+        "history_clear_filters": "フィルタをクリア",
+        "history_no_results": "該当する履歴がありません",
+        "history_loading": "履歴を読み込み中...",
+        "history_error": "履歴の取得に失敗しました",
+        
+        # 履歴エントリ詳細
+        "history_entry_source": "翻訳元",
+        "history_entry_chatgpt": "ChatGPT翻訳",
+        "history_entry_gemini": "Gemini翻訳",
+        "history_entry_enhanced": "改善翻訳",
+        "history_entry_date": "翻訳日時",
+        "history_entry_languages": "言語",
+        "history_entry_context": "背景情報",
+        "history_entry_partner": "会話履歴",
+        "history_entry_rating": "評価",
+        "history_entry_feedback": "フィードバック",
+        "history_entry_bookmark": "ブックマーク",
+        "history_entry_unbookmark": "ブックマーク解除",
+        
+        # 評価・フィードバック
+        "rating_title": "この翻訳を評価",
+        "rating_excellent": "優秀",
+        "rating_good": "良い",
+        "rating_average": "普通",
+        "rating_poor": "悪い",
+        "rating_very_poor": "非常に悪い",
+        "feedback_placeholder": "フィードバックを入力してください（任意）",
+        "rating_submit": "評価を送信",
+        "rating_success": "評価を保存しました",
+        "rating_error": "評価の保存に失敗しました",
+        
+        # 統計・分析
+        "analytics_title": "翻訳統計",
+        "analytics_period": "分析期間",
+        "analytics_total_translations": "総翻訳数",
+        "analytics_avg_length": "平均文字数",
+        "analytics_avg_processing_time": "平均処理時間",
+        "analytics_language_pairs": "言語ペア統計",
+        "analytics_daily_usage": "日別利用状況",
+        "analytics_engine_comparison": "エンジン比較",
+        "analytics_bookmarked": "ブックマーク数",
+        "analytics_avg_rating": "平均評価"
     },
     "en": {
         "title": "LangPont Translator",
@@ -84,6 +328,7 @@ labels = {
         "label_ja": "Japanese",
         "label_fr": "French",
         "label_en": "English",
+        "label_es": "Spanish",
         # 🆕 Interactive feature labels
         "interactive_title": "Additional Questions & Requests",
         "interactive_placeholder": "e.g., \"Make it more friendly\" \"What does XXX in the 1st translation mean?\"",
@@ -99,7 +344,250 @@ labels = {
         "question_generated": "Response generated successfully",
         "error_occurred": "An error occurred",
         "processing": "Processing",
-        "enter_question": "Please enter a question"
+        "enter_question": "Please enter a question",
+        
+        # 🌍 チャット履歴ラベル（多言語対応）
+        "chat_question_label": "Question",
+        "chat_answer_label": "Answer",
+        
+        # 🌍 ニュアンス分析エンジンラベル（多言語対応）
+        "nuance_engine_title": "Nuance Analysis Engine",
+        "engine_chatgpt": "ChatGPT Analysis",
+        "engine_chatgpt_desc": "Logical Analysis",
+        "engine_gemini": "Gemini Analysis",
+        "engine_gemini_desc": "Detailed Explanation",
+        "engine_claude": "Claude Analysis",
+        "engine_claude_desc": "Coming Soon",
+        
+        # 🌍 展開ボタンとUIメッセージ（多言語対応）
+        "expand_full_text": "▼ Show full text",
+        "collapse_text": "▲ Collapse",
+        "processing_text": "Processing...",
+        "success_text": "Success",
+        "error_text": "Error occurred",
+        "loading_text": "Loading...",
+        "saved_text": "Saved",
+        "deleted_text": "Deleted",
+        
+        # 🌍 アラート・確認メッセージ（多言語対応）
+        "enter_translation_text": "Please enter text to translate",
+        "question_min_length": "Please enter a question with at least 5 characters",
+        "confirm_clear_history": "Are you sure you want to clear chat history?",
+        "history_cleared_success": "Chat history cleared",
+        "history_clear_error": "Error occurred while clearing chat history",
+        "unknown_error": "Unknown error",
+        "no_translation_result": "(No translation result)",
+        "no_reverse_result": "(No reverse translation result)",
+        "translation_error_occurred": "[Error occurred during translation processing]",
+        "improved_translation_generating": "Generating improved translation...",
+        "reverse_translating": "Reverse translating...",
+        "analyzing_with_engine": "Analyzing...",
+        "copy_tooltip": "Copy",
+        # 🆕 Usage status labels
+        "usage_unlimited": "unlimited access available",
+        "usage_unlimited_desc": "Unlimited usage available",
+        "usage_count_times": "uses",
+        "usage_remaining_prefix": "",
+        "usage_remaining_suffix": "uses remaining",
+        "usage_remaining_warning_suffix": "uses left",
+        "usage_limit_reached": "Daily limit reached (resets at midnight)",
+        "usage_upgrade_exceeded": "Try Early Access",
+        "usage_upgrade_warning": "See unlimited version",
+        # 🆕 Language selection labels
+        "from_language": "From",
+        "to_language": "To",
+        "language_arrow": "→",
+        "swap_languages": "Swap languages",
+        # 🆕 Error messages
+        "validation_error_empty": " is required",
+        "validation_error_short": " is too short",
+        "validation_error_long": " is too long",
+        "api_error_network": "Network error occurred",
+        "api_error_timeout": "API request timed out",
+        "api_error_general": "API call failed",
+        "usage_limit_message": "Daily limit ({limit} uses) reached.",
+        "usage_reset_time": "Resets at midnight (JST)",
+        "usage_upgrade_message": "Try Early Access for unlimited usage.",
+        # 🆕 Authentication system labels
+        "user_registration": "User Registration",
+        "login": "Login",
+        "logout": "Logout",
+        "username": "Username",
+        "email": "Email",
+        "password": "Password",
+        "confirm_password": "Confirm Password",
+        "create_account": "Create Account",
+        "login_here": "Login here",
+        "register_here": "Register here",
+        "already_have_account": "Already have an account?",
+        "no_account_yet": "Don't have an account yet?",
+        "welcome_back": "Welcome back",
+        "registration_subtitle": "Register with LangPont to access more translation features",
+        "login_subtitle": "Login to your account and start translating",
+        "username_or_email": "Username or Email",
+        "remember_me": "Remember me",
+        "forgot_password": "Forgot password?",
+        "back_to_app": "Back to app",
+        # Password requirements
+        "password_requirements_title": "Password Requirements",
+        "password_req_length": "At least 8 characters",
+        "password_req_uppercase": "Include uppercase letter",
+        "password_req_lowercase": "Include lowercase letter",
+        "password_req_number": "Include number",
+        "password_req_special": "Include special character",
+        "password_strength_error": "Password does not meet requirements",
+        "password_mismatch": "Passwords do not match",
+        # Account types
+        "account_type": "Account Type",
+        "account_basic": "Basic (10 uses/day)",
+        "account_premium": "Premium (100 uses/day)",
+        "basic_account": "Basic",
+        "premium_account": "Premium",
+        # Early Access
+        "early_access": "Early Access",
+        "early_access_title": "Early Access Account",
+        "early_access_description": "Unlimited translation features and early access to new features",
+        "early_access_checkbox": "Request Early Access account",
+        # Demo accounts
+        "demo_accounts_title": "Test Accounts",
+        "admin_account": "Admin Account",
+        "developer_account": "Developer Account",
+        "guest_account": "Guest Account",
+        "admin_description": "Unlimited usage・Full feature access",
+        "developer_description": "1000 uses/day・Development feature access",
+        "guest_description": "10 uses/day・Basic features",
+        # Security
+        "security_notice_title": "Security Notice",
+        "security_notice_text": "This is a development version. Enhanced security measures will be implemented in production.",
+        # Profile
+        "user_profile": "User Profile",
+        "profile_settings": "Profile Settings",
+        "account_stats": "Account Statistics",
+        "save_changes": "Save Changes",
+        "change_password": "Change Password",
+        "current_password": "Current Password",
+        "new_password": "New Password",
+        "update_password": "Update Password",
+        "preferred_language": "Preferred Language",
+        "member_since": "Member Since",
+        "last_login": "Last Login",
+        "account_status": "Account Status",
+        "active": "Active",
+        "inactive": "Inactive",
+        "today_usage": "Today's Usage",
+        "daily_limit": "Daily Limit",
+        "never": "Never",
+        "email_verified": "Email Verified",
+        # Form related
+        "username_placeholder": "Alphanumeric and underscore (3+ chars)",
+        "email_placeholder": "your.email@example.com",
+        "password_placeholder": "Secure password (8+ chars)",
+        "confirm_password_placeholder": "Re-enter password",
+        "login_identifier_placeholder": "Username or email address",
+        "username_requirements": "3+ characters: alphanumeric and underscore only",
+        # Processing messages
+        "creating_account": "Creating account",
+        "logging_in": "Logging in",
+        "saving": "Saving",
+        "updating": "Updating",
+        # Success/Error messages
+        "registration_success": "User registration completed",
+        "login_success": "Logged in successfully",
+        "logout_success": "Logged out successfully",
+        "profile_updated": "Profile updated successfully",
+        "password_changed": "Password changed successfully",
+        "registration_error": "Error occurred during registration",
+        "login_error": "Error occurred during login",
+        "logout_error": "Error occurred during logout",
+        "profile_error": "Error occurred while displaying profile",
+        "profile_update_error": "Error occurred while updating profile",
+        "password_change_error": "Error occurred while changing password",
+        "csrf_error": "Security error occurred. Please refresh the page",
+        "rate_limit_register": "Registration attempt limit reached. Please wait",
+        "rate_limit_login": "Login attempt limit reached. Please wait",
+        "login_required_fields": "Please enter username and password",
+        "session_creation_error": "Error occurred during session creation",
+        "user_not_found": "User not found",
+        "email_required": "Email address is required",
+        "password_change_required": "Please fill in all fields",
+        # Logout warning
+        "logout_warning_title": "About Logout",
+        "logout_warning_text": "Logging out may cause loss of unsaved work.",
+        "logout_confirm": "Are you sure you want to logout?",
+        
+        # 🆕 Profile additional labels
+        "detailed_history": "Detailed History",
+        "analytics": "Analytics",
+        "translation_history": "Translation History",
+        "export_data": "Export Data",
+        "security": "Security",
+        "view_detailed_history": "View Detailed History",
+        "view_analytics": "View Analytics",
+        "export_history": "Export History",
+        "total_translations": "Total Translations",
+        "bookmarked": "Bookmarked",
+        "recent_activity": "Recent Activity",
+        "view_details": "View Details",
+        "history_feature_info": "The translation history feature allows you to search, filter, and rate your past translations to improve translation quality.",
+        "history_subtitle": "Search and manage your past translation history",
+        "this_week": "This Week",
+        "avg_rating": "Average Rating",
+        
+        # 🆕 Task 2.7.1 Translation History System Labels
+        "history_title": "Translation History",
+        "history_search": "Search History",
+        "history_search_placeholder": "Search translation content...",
+        "history_filter": "Filter",
+        "history_language_pair": "Language Pair",
+        "history_date_from": "From Date",
+        "history_date_to": "To Date",
+        "history_rating_filter": "Rating Filter",
+        "history_bookmarked_only": "Bookmarked Only",
+        "history_export": "Export",
+        "history_export_json": "JSON Format",
+        "history_export_csv": "CSV Format",
+        "history_clear_filters": "Clear Filters",
+        "history_no_results": "No matching history found",
+        "history_loading": "Loading history...",
+        "history_error": "Failed to retrieve history",
+        
+        # History entry details
+        "history_entry_source": "Source Text",
+        "history_entry_chatgpt": "ChatGPT Translation",
+        "history_entry_gemini": "Gemini Translation",
+        "history_entry_enhanced": "Enhanced Translation",
+        "history_entry_date": "Translation Date",
+        "history_entry_languages": "Languages",
+        "history_entry_context": "Context",
+        "history_entry_partner": "Conversation",
+        "history_entry_rating": "Rating",
+        "history_entry_feedback": "Feedback",
+        "history_entry_bookmark": "Bookmark",
+        "history_entry_unbookmark": "Remove Bookmark",
+        
+        # Rating & Feedback
+        "rating_title": "Rate this translation",
+        "rating_excellent": "Excellent",
+        "rating_good": "Good",
+        "rating_average": "Average",
+        "rating_poor": "Poor",
+        "rating_very_poor": "Very Poor",
+        "feedback_placeholder": "Enter feedback (optional)",
+        "rating_submit": "Submit Rating",
+        "rating_success": "Rating saved successfully",
+        "rating_error": "Failed to save rating",
+        
+        # Statistics & Analytics
+        "analytics_title": "Translation Analytics",
+        "analytics_period": "Analysis Period",
+        "analytics_total_translations": "Total Translations",
+        "analytics_avg_length": "Average Length",
+        "analytics_avg_processing_time": "Average Processing Time",
+        "analytics_language_pairs": "Language Pair Statistics",
+        "analytics_daily_usage": "Daily Usage",
+        "analytics_engine_comparison": "Engine Comparison",
+        "analytics_bookmarked": "Bookmarked",
+        "analytics_avg_rating": "Average Rating"
     },
     "fr": {
         "title": "LangPont Traducteur",
@@ -135,6 +623,7 @@ labels = {
         "label_ja": "le japonais",
         "label_fr": "le français",
         "label_en": "l'anglais",
+        "label_es": "l'espagnol",
         # 🆕 Étiquettes des fonctionnalités interactives
         "interactive_title": "Questions et Demandes Supplémentaires",
         "interactive_placeholder": "ex: \"Rendez-le plus amical\" \"Que signifie XXX dans la 1ère traduction?\"",
@@ -150,6 +639,854 @@ labels = {
         "question_generated": "Réponse générée avec succès",
         "error_occurred": "Une erreur s'est produite",
         "processing": "En cours de traitement",
-        "enter_question": "Veuillez saisir une question"
+        "enter_question": "Veuillez saisir une question",
+        
+        # 🌍 Étiquettes d'historique de chat (support multilingue)
+        "chat_question_label": "Question",
+        "chat_answer_label": "Réponse",
+        
+        # 🌍 Étiquettes de moteur d'analyse de nuances (support multilingue)
+        "nuance_engine_title": "Moteur d'Analyse de Nuances",
+        "engine_chatgpt": "Analyse ChatGPT",
+        "engine_chatgpt_desc": "Analyse Logique",
+        "engine_gemini": "Analyse Gemini",
+        "engine_gemini_desc": "Explication Détaillée",
+        "engine_claude": "Analyse Claude",
+        "engine_claude_desc": "Bientôt Disponible",
+        
+        # 🌍 Boutons d'expansion et messages UI (support multilingue)
+        "expand_full_text": "▼ Afficher le texte complet",
+        "collapse_text": "▲ Réduire",
+        "processing_text": "Traitement en cours...",
+        "success_text": "Succès",
+        "error_text": "Erreur survenue",
+        "loading_text": "Chargement...",
+        "saved_text": "Sauvegardé",
+        "deleted_text": "Supprimé",
+        
+        # 🌍 Messages d'alerte et de confirmation (support multilingue)
+        "enter_translation_text": "Veuillez saisir le texte à traduire",
+        "question_min_length": "Veuillez saisir une question d'au moins 5 caractères",
+        "confirm_clear_history": "Êtes-vous sûr de vouloir effacer l'historique du chat?",
+        "history_cleared_success": "Historique du chat effacé",
+        "history_clear_error": "Erreur lors de l'effacement de l'historique du chat",
+        "unknown_error": "Erreur inconnue",
+        "no_translation_result": "(Aucun résultat de traduction)",
+        "no_reverse_result": "(Aucun résultat de traduction inverse)",
+        "translation_error_occurred": "[Erreur survenue lors du traitement de la traduction]",
+        "improved_translation_generating": "Génération d'une traduction améliorée...",
+        "reverse_translating": "Traduction inverse...",
+        "analyzing_with_engine": "Analyse en cours...",
+        "copy_tooltip": "Copier",
+        # 🆕 Étiquettes de statut d'utilisation
+        "usage_unlimited": "accès illimité disponible",
+        "usage_unlimited_desc": "Utilisation illimitée disponible",
+        "usage_count_times": "utilisations",
+        "usage_remaining_prefix": "",
+        "usage_remaining_suffix": "utilisations restantes",
+        "usage_remaining_warning_suffix": "utilisations restantes",
+        "usage_limit_reached": "Limite quotidienne atteinte (renouvellement à minuit)",
+        "usage_upgrade_exceeded": "Essayer Early Access",
+        "usage_upgrade_warning": "Voir la version illimitée",
+        # 🆕 Étiquettes de sélection de langue
+        "from_language": "De",
+        "to_language": "Vers",
+        "language_arrow": "→",
+        "swap_languages": "Échanger les langues",
+        # 🆕 Messages d'erreur
+        "validation_error_empty": " est requis",
+        "validation_error_short": " est trop court",
+        "validation_error_long": " est trop long",
+        "api_error_network": "Erreur réseau s'est produite",
+        "api_error_timeout": "Délai d'attente API expiré",
+        "api_error_general": "Échec de l'appel API",
+        "usage_limit_message": "Limite quotidienne ({limit} utilisations) atteinte.",
+        "usage_reset_time": "Se renouvelle à minuit (JST)",
+        "usage_upgrade_message": "Essayez Early Access pour un usage illimité.",
+        # 🆕 Système d'authentification
+        "user_registration": "Inscription utilisateur",
+        "login": "Connexion",
+        "logout": "Déconnexion",
+        "username": "Nom d'utilisateur",
+        "email": "Adresse e-mail",
+        "password": "Mot de passe",
+        "confirm_password": "Confirmer le mot de passe",
+        "create_account": "Créer un compte",
+        "login_here": "Se connecter ici",
+        "register_here": "S'inscrire ici",
+        "already_have_account": "Vous avez déjà un compte ?",
+        "no_account_yet": "Vous n'avez pas encore de compte ?",
+        "welcome_back": "Bon retour",
+        "registration_subtitle": "Inscrivez-vous à LangPont pour accéder à plus de fonctionnalités de traduction",
+        "login_subtitle": "Connectez-vous à votre compte et commencez à traduire",
+        "username_or_email": "Nom d'utilisateur ou e-mail",
+        "remember_me": "Se souvenir de moi",
+        "forgot_password": "Mot de passe oublié ?",
+        "back_to_app": "Retour à l'application",
+        # Exigences de mot de passe
+        "password_requirements_title": "Exigences du mot de passe",
+        "password_req_length": "Au moins 8 caractères",
+        "password_req_uppercase": "Inclure une majuscule",
+        "password_req_lowercase": "Inclure une minuscule",
+        "password_req_number": "Inclure un chiffre",
+        "password_req_special": "Inclure un caractère spécial",
+        "password_strength_error": "Le mot de passe ne respecte pas les exigences",
+        "password_mismatch": "Les mots de passe ne correspondent pas",
+        # Types de compte
+        "account_type": "Type de compte",
+        "account_basic": "Basique (10 utilisations/jour)",
+        "account_premium": "Premium (100 utilisations/jour)",
+        "basic_account": "Basique",
+        "premium_account": "Premium",
+        # Early Access
+        "early_access": "Accès anticipé",
+        "early_access_title": "Compte d'accès anticipé",
+        "early_access_description": "Fonctionnalités de traduction illimitées et accès anticipé aux nouvelles fonctionnalités",
+        "early_access_checkbox": "Demander un compte d'accès anticipé",
+        # Comptes de démo
+        "demo_accounts_title": "Comptes de test",
+        "admin_account": "Compte administrateur",
+        "developer_account": "Compte développeur",
+        "guest_account": "Compte invité",
+        "admin_description": "Utilisation illimitée・Accès à toutes les fonctionnalités",
+        "developer_description": "1000 utilisations/jour・Accès aux fonctionnalités de développement",
+        "guest_description": "10 utilisations/jour・Fonctionnalités de base",
+        # Sécurité
+        "security_notice_title": "Avis de sécurité",
+        "security_notice_text": "Ceci est une version de développement. Des mesures de sécurité renforcées seront mises en place en production.",
+        # Profil
+        "user_profile": "Profil utilisateur",
+        "profile_settings": "Paramètres du profil",
+        "account_stats": "Statistiques du compte",
+        "save_changes": "Enregistrer les modifications",
+        "change_password": "Changer le mot de passe",
+        "current_password": "Mot de passe actuel",
+        "new_password": "Nouveau mot de passe",
+        "update_password": "Mettre à jour le mot de passe",
+        "preferred_language": "Langue préférée",
+        "member_since": "Membre depuis",
+        "last_login": "Dernière connexion",
+        "account_status": "Statut du compte",
+        "active": "Actif",
+        "inactive": "Inactif",
+        "today_usage": "Utilisation d'aujourd'hui",
+        "daily_limit": "Limite quotidienne",
+        "never": "Jamais",
+        "email_verified": "E-mail vérifié",
+        # Formulaires
+        "username_placeholder": "Alphanumérique et tiret bas (3+ caractères)",
+        "email_placeholder": "votre.email@exemple.com",
+        "password_placeholder": "Mot de passe sécurisé (8+ caractères)",
+        "confirm_password_placeholder": "Ressaisir le mot de passe",
+        "login_identifier_placeholder": "Nom d'utilisateur ou adresse e-mail",
+        "username_requirements": "3+ caractères : alphanumérique et tiret bas uniquement",
+        # Messages de traitement
+        "creating_account": "Création du compte",
+        "logging_in": "Connexion en cours",
+        "saving": "Enregistrement",
+        "updating": "Mise à jour",
+        # Messages de succès/erreur
+        "registration_success": "Inscription utilisateur terminée",
+        "login_success": "Connexion réussie",
+        "logout_success": "Déconnexion réussie",
+        "profile_updated": "Profil mis à jour avec succès",
+        "password_changed": "Mot de passe modifié avec succès",
+        "registration_error": "Erreur lors de l'inscription",
+        "login_error": "Erreur lors de la connexion",
+        "logout_error": "Erreur lors de la déconnexion",
+        "profile_error": "Erreur lors de l'affichage du profil",
+        "profile_update_error": "Erreur lors de la mise à jour du profil",
+        "password_change_error": "Erreur lors du changement de mot de passe",
+        "csrf_error": "Erreur de sécurité. Veuillez actualiser la page",
+        "rate_limit_register": "Limite de tentatives d'inscription atteinte. Veuillez attendre",
+        "rate_limit_login": "Limite de tentatives de connexion atteinte. Veuillez attendre",
+        "login_required_fields": "Veuillez saisir le nom d'utilisateur et le mot de passe",
+        "session_creation_error": "Erreur lors de la création de session",
+        "user_not_found": "Utilisateur non trouvé",
+        "email_required": "Adresse e-mail requise",
+        "password_change_required": "Veuillez remplir tous les champs",
+        # Avertissement de déconnexion
+        "logout_warning_title": "À propos de la déconnexion",
+        "logout_warning_text": "La déconnexion peut entraîner la perte de travail non sauvegardé.",
+        "logout_confirm": "Êtes-vous sûr de vouloir vous déconnecter ?",
+        
+        # 🆕 Task 2.7.1 Système d'historique de traduction
+        "history_title": "Historique des traductions",
+        "history_search": "Rechercher l'historique",
+        "history_search_placeholder": "Rechercher le contenu des traductions...",
+        "history_filter": "Filtre",
+        "history_language_pair": "Paire de langues",
+        "history_date_from": "Date de début",
+        "history_date_to": "Date de fin",
+        "history_rating_filter": "Filtre de notation",
+        "history_bookmarked_only": "Favoris uniquement",
+        "history_export": "Exporter",
+        "history_export_json": "Format JSON",
+        "history_export_csv": "Format CSV",
+        "history_clear_filters": "Effacer les filtres",
+        "history_no_results": "Aucun historique correspondant trouvé",
+        "history_loading": "Chargement de l'historique...",
+        "history_error": "Échec de la récupération de l'historique",
+        
+        # Détails de l'entrée d'historique
+        "history_entry_source": "Texte source",
+        "history_entry_chatgpt": "Traduction ChatGPT",
+        "history_entry_gemini": "Traduction Gemini",
+        "history_entry_enhanced": "Traduction améliorée",
+        "history_entry_date": "Date de traduction",
+        "history_entry_languages": "Langues",
+        "history_entry_context": "Contexte",
+        "history_entry_partner": "Conversation",
+        "history_entry_rating": "Notation",
+        "history_entry_feedback": "Commentaires",
+        "history_entry_bookmark": "Favori",
+        "history_entry_unbookmark": "Supprimer des favoris",
+        
+        # Notation et commentaires
+        "rating_title": "Noter cette traduction",
+        "rating_excellent": "Excellent",
+        "rating_good": "Bon",
+        "rating_average": "Moyen",
+        "rating_poor": "Mauvais",
+        "rating_very_poor": "Très mauvais",
+        "feedback_placeholder": "Entrez vos commentaires (optionnel)",
+        "rating_submit": "Soumettre la notation",
+        "rating_success": "Notation sauvegardée avec succès",
+        "rating_error": "Échec de sauvegarde de la notation",
+        
+        # Statistiques et analyses
+        "analytics_title": "Analyses de traduction",
+        "analytics_period": "Période d'analyse",
+        "analytics_total_translations": "Total des traductions",
+        "analytics_avg_length": "Longueur moyenne",
+        "analytics_avg_processing_time": "Temps de traitement moyen",
+        "analytics_language_pairs": "Statistiques de paires de langues",
+        "analytics_daily_usage": "Utilisation quotidienne",
+        "analytics_engine_comparison": "Comparaison des moteurs",
+        "analytics_bookmarked": "Favoris",
+        "analytics_avg_rating": "Notation moyenne"
     }
 }
+
+
+# =============================================================================
+# 🌍 ランディングページ専用ラベル
+# =============================================================================
+
+# 既存の labels 辞書に LP用データを追加
+# 新しい日本語版 labels.py（完全リライト版）
+# 日本語版ランディングページラベル（刷新版）
+labels["jp"].update({
+    # ブランド・メタ情報
+    "brand_name": "LangPont",
+    "meta_title": "LangPont - 素敵な言葉で人生を豊かに。伝える翻訳。",
+    "meta_description": "伝えたかった気持ちが、誤解に変わってしまったことはありませんか？正しいだけじゃ、伝わらない言葉がある。LangPontなら、心が通う翻訳をお届けします。",
+    
+    # ヒーローセクション（完全刷新）
+    "hero_title": "素敵な言葉で人生を豊かに",
+    "hero_subtitle": "伝えたかった気持ちが、誤解に変わってしまったことはありませんか？正しいだけじゃ、伝わらない言葉がある。伝える翻訳を。",
+    "hero_catchphrase": "「これで伝わるかな？」その不安に、LangPont。",
+    "hero_cta_primary": "今すぐ始める",
+    "hero_cta_secondary": "事例を見る",
+    
+    # 事例セクション（刷新版）
+    "examples_title": "同じ言葉でも、伝わり方が変わる。その違いを体験してみませんか？",
+    "examples_subtitle": "よくあるコミュニケーションの「すれ違い」事例と、LangPontが実現する安心の対話を、ぜひご覧ください。",
+    
+    # カードラベル（統一版）
+    "card_label_before": "これまで",
+    "card_label_after": "LangPontなら（例）",
+    
+    # 6つのカード事例（順序：依頼→提案→ビジネス意思表示→感謝→パーティー→謝罪）
+    
+    # カード1: 依頼
+    "card_1_title": "お願い・依頼",
+    "card_1_context": "レポート作成依頼",
+    "card_1_before": "Please send me the report by tomorrow.",
+    "card_1_options": [
+        "フォーマル: Could you please send me the report by tomorrow?",
+        "急ぎ: I'd really appreciate the report by tomorrow if possible.", 
+        "カジュアル: Can you get me that report by tomorrow?",
+        "親しみやすく: Would you mind sending me the report by tomorrow?"
+    ],
+    
+    # カード2: 提案
+    "card_2_title": "提案・アイデア",
+    "card_2_context": "チームミーティングでの提案",
+    "card_2_before": "I have an idea for the project",
+    "card_2_options": [
+        "勢いよく: I have a great idea for the project!",
+        "会議での発言: I'd like to propose an idea for the project.",
+        "カジュアル: What if we tried this for the project?",
+        "控えめに: I was thinking we could try something for the project."
+    ],
+    
+    # カード3: ビジネスにおける意思表示
+    "card_3_title": "ビジネスにおける意思表示",
+    "card_3_context": "重要な商談での意思決定",
+    "card_3_before": "I will consider it.",
+    "card_3_options": [
+        "フォーマル: We will give this matter our careful consideration",
+        "ビジネス: I'll need some time to review this proposal thoroughly",
+        "カジュアル: Let me think this over and get back to you",
+        "親しみやすく: This looks interesting - I'd like to discuss it with my team"
+    ],
+    
+    # カード4: 感謝
+    "card_4_title": "感謝・お礼",
+    "card_4_context": "プロジェクトを任せてもらった感謝",
+    "card_4_before": "Thank you for choosing us.",
+    "card_4_options": [
+        "フォーマル: We are honored to have been selected for this project.",
+        "ビジネス: Thank you so much for trusting us with this.",
+        "温かく: We're really grateful you chose to work with us.",
+        "親しみやすく: Thanks for giving us this opportunity!"
+    ],
+    
+    # カード5: パーティー・社交
+    "card_5_title": "パーティー・社交場面",
+    "card_5_context": "友人を自宅パーティーに誘う",
+    "card_5_before": "Would you like to come to my party?",
+    "card_5_options": [
+        "ていねい: I'm having a party and would love for you to join us.",
+        "友人に: I'm throwing a party - you should totally come!",
+        "カジュアル: Want to come to my party this weekend?",
+        "親友（熱く）: You HAVE to come to my party - it won't be the same without you!"
+    ],
+    
+    # カード6: 謝罪
+    "card_6_title": "謝罪・お詫び",
+    "card_6_context": "ミスをした際のお詫び",
+    "card_6_before": "I'm so sorry.",
+    "card_6_options": [
+        "フォーマル: I deeply apologize for this oversight and take full responsibility",
+        "ビジネス一般: I sincerely apologize for the mistake and any inconvenience caused",
+        "カジュアル: I'm really sorry about this mix-up",
+    ],
+    
+    # 機能セクション
+    "features_title": "LangPontの3つの特徴",
+    "feature_1_title": "コンテキスト理解",
+    "feature_1_desc": "相手との関係性や場面を理解して、最適な表現を選択",
+    "feature_2_title": "感情ニュアンス", 
+    "feature_2_desc": "喜び、困惑、感謝など、気持ちまで正確に伝える翻訳",
+    "feature_3_title": "選択肢提示",
+    "feature_3_desc": "1つではなく、複数の表現選択肢でより良いコミュニケーション",
+    
+    # 証言セクション
+    "testimonials_title": "ユーザーの声",
+    "testimonial_1": "同じ『ありがとう』でも、場面に応じて適切な表現を提案してくれるので、相手に誤解されることがなくなりました。",
+    "testimonial_1_author": "田中様 - 営業部",
+    "testimonial_2": "ビジネスメールで、いつも気になっていました。丁寧すぎないか？親しみやすすぎないか？絶妙なトーンで書けるようになりました。",
+    "testimonial_2_author": "佐藤様 - 国際部",
+    "testimonial_3": "選択肢があることやおすすめを示してくれるので、自分の気持ちに一番近い表現を選べるのが嬉しいです。",
+    "testimonial_3_author": "山田様 - フリーランス",
+    
+    # 料金セクション
+    "pricing_title": "料金プラン",
+    "pricing_free_title": "ベーシック",
+    "pricing_free_price": "¥0",
+    "pricing_free_desc": "まずはお試しください",
+    "pricing_pro_title": "アドバンス",
+    "pricing_pro_price": "¥680",
+    "pricing_pro_desc": "ビジネス利用に最適",
+    
+    # CTAセクション
+    "cta_title": "心が通う翻訳を、今すぐ体験してみませんか？",
+    "cta_subtitle": "「これで伝わるかな？」その不安を、安心に変えてみてください。",
+    "cta_button": "無料で始める",
+    "cta_note": "※ 3分で開始。クレジットカード不要",
+    
+    # フッター
+    "footer_description": "LangPontは、言葉の向こうにある気持ちを大切にする翻訳サービスです。",
+    "footer_links_product": "サービス",
+    "footer_links_support": "サポート",
+    "footer_links_company": "会社情報",
+    "footer_contact": "お問い合わせ",
+    "footer_privacy": "プライバシーポリシー",
+    "footer_terms": "利用規約",
+    
+    # 言語切替
+    "switch_to_english": "English",
+    "switch_to_french": "Français",
+    "switch_to_spanish": "Español"
+})
+
+# 英語版LP専用ラベル
+labels["en"].update({
+    # Hero section - 新しいバージョン
+    "hero_title": "Are Your Words Truly Understood?",
+    "hero_subtitle": "Go beyond literal translation. LangPont helps you deliver what you really mean.",
+    "hero_description": "Stop guessing in global communication. Get context-aware translations that capture every nuance, build trust, and drive meaningful connections.",
+    "hero_cta_primary": "Experience the Difference: Start Free Trial",
+    "hero_cta_secondary": "Watch Quick Demo",
+    
+    # Examples section - 新しいセクション
+    "examples_title": "Beyond Literal Translation: How Context Transforms Communication",
+    "examples_subtitle": "Words alone aren't enough. The same phrase can be respectful or rude, formal or casual, depending on who you're talking to and why. LangPont understands these critical subtleties, ensuring your message always lands exactly as intended.",
+    
+    # 機能セクション - 更新版
+    "features_title": "Why Choose LangPont",
+    "feature_1_title": "Compare Translations Instantly",
+    "feature_1_desc": "LangPont uses powerful AI engines side-by-side, so you can choose the best fit for your message.",
+    "feature_2_title": "Translations That Understand Context",
+    "feature_2_desc": "Your messages flow naturally — not just grammatically, but relationally and culturally.",
+    "feature_3_title": "Adjust in Real Time",
+    "feature_3_desc": "Tailor your message as you go. Add nuance, soften tone, or make it more formal for ultimate impact.",
+    "feature_4_title": "See the Subtle Differences",
+    "feature_4_desc": "Get a clear breakdown of nuanced expressions to find the perfect words that truly resonate.",
+    
+    # 証言セクション
+    "testimonials_title": "What Our Users Say",
+    "testimonial_1": "Business email translation quality has improved dramatically. Context-aware translations ensure my intentions are accurately conveyed.",
+    "testimonial_1_author": "John Smith - International Trade",
+    "testimonial_2": "Perfect for language learning! Comparing three translations helps me understand subtle differences.",
+    "testimonial_2_author": "Sarah Johnson - University Student",
+    "testimonial_3": "Achieves nuanced expressions that were impossible with traditional translation tools.",
+    "testimonial_3_author": "Mike Davis - Freelance Translator",
+    
+    # 料金セクション
+    "pricing_title": "Simple, Transparent Pricing",
+    "pricing_free_title": "Free",
+    "pricing_free_price": "$0",
+    "pricing_free_desc": "Perfect for personal use",
+    "pricing_pro_title": "Pro",
+    "pricing_pro_price": "$9.99",
+    "pricing_pro_desc": "per month - For business use",
+    
+    # CTA セクション - 更新版
+    "cta_title": "Ready to communicate with confidence?",
+    "cta_subtitle": "Start your free trial today — no credit card required.",
+    "cta_button": "Experience the Difference: Start Free Trial",
+    "cta_note": "✅ No Credit Card Required • ⚡ 3-Minute Setup",
+    
+    # フッター
+    "footer_description": "LangPont revolutionizes translation quality through advanced AI technology.",
+    "footer_links_product": "Product",
+    "footer_links_company": "Company",
+    "footer_links_support": "Support",
+    "footer_contact": "Contact",
+    "footer_privacy": "Privacy Policy",
+    "footer_terms": "Terms of Service",
+    
+    # メタデータ
+    "meta_title": "LangPont - AI Dual Engine Translation Platform",
+    "meta_description": "Experience superior translation quality with ChatGPT×Gemini dual engines. Context-aware, nuance analysis, and interactive improvement features."
+})
+
+# フランス語版LP専用ラベル（フランスのエレガンスと洗練性を重視）
+labels["fr"].update({
+    # ブランド・メタ情報
+    "brand_name": "LangPont",
+    "meta_title": "LangPont - L'élégance de la communication multilingue",
+    "meta_description": "Vos mots reflètent-ils vraiment votre pensée ? LangPont transforme vos intentions en communication parfaite, avec la subtilité et l'élégance que mérite votre message.",
+    
+    # Section héros - sophistication française
+    "hero_title": "Vos mots sont-ils compris comme vous le souhaitez ?",
+    "hero_subtitle": "LangPont traduit plus que des mots : il transmet votre intention avec nuance.",
+    "hero_description": "Fini les doutes sur vos formulations. Grâce à ses traductions contextuelles, LangPont capte les subtilités, renforce la confiance et fluidifie vos échanges professionnels.",
+    "hero_cta_primary": "Essayez gratuitement dès maintenant",
+    "hero_cta_secondary": "Voir des exemples concrets",
+    
+    # Section exemples - titre avec emojis français
+    "examples_title": "🌍 Communiquez au-delà des mots",
+    "examples_subtitle": "Une même phrase peut sembler polie ou déplacée selon le contexte. LangPont maîtrise ces nuances pour que vos messages atteignent leur cible — avec précision, élégance, et justesse.",
+    
+    # Section fonctionnalités
+    "features_title": "Pourquoi LangPont ?",
+    "feature_1_title": "Comparaison instantanée",
+    "feature_1_desc": "✔️ Comparez plusieurs traductions générées par les meilleures IA — choisissez celle qui vous convient.",
+    "feature_2_title": "Traductions contextuelles", 
+    "feature_2_desc": "✔️ Vos messages tiennent compte du contexte, du ton, de la relation et du but.",
+    "feature_3_title": "Ajustement en temps réel",
+    "feature_3_desc": "✔️ Ajustez votre expression en temps réel, selon vos besoins.",
+    "feature_4_title": "Analyse des subtilités",
+    "feature_4_desc": "✔️ Analysez les subtilités pour exprimer exactement ce que vous ressentez.",
+    
+    # Section témoignages
+    "testimonials_title": "Ce que disent nos utilisateurs",
+    "testimonial_1": "La qualité de mes emails professionnels s'est considérablement améliorée. Les traductions contextuelles garantissent que mes intentions sont transmises avec précision et élégance.",
+    "testimonial_1_author": "Marie Dubois - Commerce International",
+    "testimonial_2": "Parfait pour perfectionner mon anglais ! Comparer plusieurs traductions m'aide à saisir les différences subtiles et à choisir l'expression la plus appropriée.",
+    "testimonial_2_author": "Pierre Laurent - Directeur Marketing",
+    "testimonial_3": "LangPont permet d'atteindre des expressions nuancées qui étaient impossibles avec les outils de traduction traditionnels. Un véritable atout pour la communication internationale.",
+    "testimonial_3_author": "Sophie Martin - Consultante",
+    
+    # Section tarification
+    "pricing_title": "Tarification simple et transparente",
+    "pricing_free_title": "Découverte",
+    "pricing_free_price": "0€",
+    "pricing_free_desc": "Parfait pour débuter",
+    "pricing_pro_title": "Professionnel",
+    "pricing_pro_price": "9,99€",
+    "pricing_pro_desc": "par mois - Usage professionnel",
+    
+    # Section CTA
+    "cta_title": "🎯 Êtes-vous prêt(e) à transformer votre manière de communiquer ?",
+    "cta_subtitle": "Essayez LangPont dès aujourd'hui – sans engagement.",
+    "cta_button": "Essayez gratuitement dès maintenant",
+    "cta_note": "💳 Sans carte bancaire • ⏱️ En 3 minutes • ✨ Sans engagement",
+    
+    # Pied de page
+    "footer_description": "LangPont révolutionne la qualité des traductions grâce à une technologie d'intelligence artificielle avancée et une compréhension fine des nuances culturelles.",
+    "footer_links_product": "Produit",
+    "footer_links_company": "Entreprise", 
+    "footer_links_support": "Support",
+    "footer_contact": "Contact",
+    "footer_privacy": "Politique de confidentialité",
+    "footer_terms": "Conditions d'utilisation"
+})
+
+labels["es"] = {
+    "title": "LangPont Traductor",
+    "translate_button": "Traducir",
+    "reset_button": "Reiniciar",
+    "input_label": "Texto a traducir",
+    "placeholder_input": "Ingrese el texto a traducir aquí",
+    "placeholder_context": "Ingrese información de contexto",
+    "default_context": "Estoy haciendo negocios con franceses, y son mis clientes.",
+    "additional_question": "Ingrese una pregunta de seguimiento:",
+    "placeholder_followup": "Ingrese su pregunta de seguimiento",
+    "button_submit_question": "Enviar Pregunta",
+    "answer_title": "Respuesta de ChatGPT:",
+    "history_title": "Historial de P&R:",
+    "toast_copied": "¡Copiado!",
+    "toggle_details_open": "▼ Mostrar entrada detallada",
+    "toggle_details_close": "▲ Ocultar entrada detallada",
+    "section_chatgpt": "Traducción de ChatGPT",
+    "section_better": "Traducción mejorada (ChatGPT)",
+    "section_gemini": "Traducción de Gemini",
+    "gemini_nuance_title": "Análisis de matices de Gemini (3 oraciones):",
+    "gemini_loading": "🧠 Obteniendo análisis de matices...",
+    "gemini_failed": "⚠️ Falló el análisis de Gemini",
+    "label_french": "Francés",
+    "label_japanese": "Japonés",
+    "label_partner_message": "Intercambio de conversación anterior (opcional)",
+    "label_context_info": "Información de contexto",
+    "button_gemini": "🧠 Obtener Análisis de Gemini",
+    "logout": "Cerrar sesión",
+    "lang_switch": "Cambio de idioma",
+    "page_title": "LangPont App de Traducción",
+    "loading_message": "Traduciendo... Por favor espere.",
+    "label_ja": "japonés",
+    "label_fr": "francés",
+    "label_en": "inglés",
+    "label_es": "español",
+    # 🆕 Etiquetas de funciones interactivas
+    "interactive_title": "Preguntas y solicitudes adicionales",
+    "interactive_placeholder": "Ej: \"Hazlo más amigable\" \"¿Qué significa XXX en la 1ra traducción?\"",
+    "interactive_button": "Preguntar",
+    "chat_history_title": "Historial de preguntas y respuestas",
+    "chat_clear_button": "Limpiar historial",
+    "quick_friendly": "Más amigable",
+    "quick_formal": "Más formal",
+    "quick_combine": "Combinar traducciones",
+    "quick_natural": "¿Cuál es natural?",
+    "quick_business": "Orientado a negocios",
+    "chat_cleared": "Historial limpiado",
+    "question_generated": "Respuesta generada exitosamente",
+    "error_occurred": "Ocurrió un error",
+    "processing": "Procesando",
+    "enter_question": "Por favor ingrese una pregunta",
+    
+    # 🌍 Etiquetas de historial de chat (soporte multilingüe)
+    "chat_question_label": "Pregunta",
+    "chat_answer_label": "Respuesta",
+    
+    # 🌍 Etiquetas de motor de análisis de matices (soporte multilingüe)
+    "nuance_engine_title": "Motor de Análisis de Matices",
+    "engine_chatgpt": "Análisis ChatGPT",
+    "engine_chatgpt_desc": "Análisis Lógico",
+    "engine_gemini": "Análisis Gemini",
+    "engine_gemini_desc": "Explicación Detallada",
+    "engine_claude": "Análisis Claude",
+    "engine_claude_desc": "Próximamente",
+    
+    # 🌍 Botones de expansión y mensajes UI (soporte multilingüe)
+    "expand_full_text": "▼ Mostrar texto completo",
+    "collapse_text": "▲ Contraer",
+    "processing_text": "Procesando...",
+    "success_text": "Éxito",
+    "error_text": "Error ocurrido",
+    "loading_text": "Cargando...",
+    "saved_text": "Guardado",
+    "deleted_text": "Eliminado",
+    
+    # 🌍 Mensajes de alerta y confirmación (soporte multilingüe)
+    "enter_translation_text": "Por favor ingrese el texto a traducir",
+    "question_min_length": "Por favor ingrese una pregunta de al menos 5 caracteres",
+    "confirm_clear_history": "¿Está seguro de que desea borrar el historial del chat?",
+    "history_cleared_success": "Historial del chat borrado",
+    "history_clear_error": "Error al borrar el historial del chat",
+    "unknown_error": "Error desconocido",
+    "no_translation_result": "(Sin resultado de traducción)",
+    "no_reverse_result": "(Sin resultado de traducción inversa)",
+    "translation_error_occurred": "[Error ocurrido durante el procesamiento de traducción]",
+    "improved_translation_generating": "Generando traducción mejorada...",
+    "reverse_translating": "Traducción inversa...",
+    "analyzing_with_engine": "Analizando...",
+    "copy_tooltip": "Copiar",
+    # 🆕 Etiquetas de estado de uso
+    "usage_unlimited": "acceso ilimitado disponible",
+    "usage_unlimited_desc": "Uso ilimitado disponible",
+    "usage_count_times": "usos",
+    "usage_remaining_prefix": "",
+    "usage_remaining_suffix": "usos restantes",
+    "usage_remaining_warning_suffix": "usos restantes",
+    "usage_limit_reached": "Límite diario alcanzado (se renueva a medianoche)",
+    "usage_upgrade_exceeded": "Probar Early Access",
+    "usage_upgrade_warning": "Ver versión ilimitada",
+    # 🆕 Etiquetas de selección de idioma
+    "from_language": "Desde",
+    "to_language": "Hacia",
+    "language_arrow": "→",
+    "swap_languages": "Intercambiar idiomas",
+    # 🆕 Mensajes de error
+    "validation_error_empty": " es requerido",
+    "validation_error_short": " es demasiado corto",
+    "validation_error_long": " es demasiado largo",
+    "api_error_network": "Error de red ocurrido",
+    "api_error_timeout": "Tiempo de espera de API agotado",
+    "api_error_general": "Fallo en llamada API",
+    "usage_limit_message": "Límite diario ({limit} usos) alcanzado.",
+    "usage_reset_time": "Se renueva a medianoche (JST)",
+    "usage_upgrade_message": "Pruebe Early Access para uso ilimitado.",
+    # 🆕 Sistema de autenticación
+    "user_registration": "Registro de usuario",
+    "login": "Iniciar sesión",
+    "logout": "Cerrar sesión",
+    "username": "Nombre de usuario",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "confirm_password": "Confirmar contraseña",
+    "create_account": "Crear cuenta",
+    "login_here": "Iniciar sesión aquí",
+    "register_here": "Registrarse aquí",
+    "already_have_account": "¿Ya tienes una cuenta?",
+    "no_account_yet": "¿Aún no tienes cuenta?",
+    "welcome_back": "Bienvenido de nuevo",
+    "registration_subtitle": "Regístrate en LangPont para acceder a más funciones de traducción",
+    "login_subtitle": "Inicia sesión en tu cuenta y comienza a traducir",
+    "username_or_email": "Nombre de usuario o correo electrónico",
+    "remember_me": "Recordarme",
+    "forgot_password": "¿Olvidaste tu contraseña?",
+    "back_to_app": "Volver a la aplicación",
+    # Requisitos de contraseña
+    "password_requirements_title": "Requisitos de contraseña",
+    "password_req_length": "Al menos 8 caracteres",
+    "password_req_uppercase": "Incluir mayúscula",
+    "password_req_lowercase": "Incluir minúscula",
+    "password_req_number": "Incluir número",
+    "password_req_special": "Incluir carácter especial",
+    "password_strength_error": "La contraseña no cumple los requisitos",
+    "password_mismatch": "Las contraseñas no coinciden",
+    # Tipos de cuenta
+    "account_type": "Tipo de cuenta",
+    "account_basic": "Básica (10 usos/día)",
+    "account_premium": "Premium (100 usos/día)",
+    "basic_account": "Básica",
+    "premium_account": "Premium",
+    # Early Access
+    "early_access": "Acceso anticipado",
+    "early_access_title": "Cuenta de acceso anticipado",
+    "early_access_description": "Funciones de traducción ilimitadas y acceso anticipado a nuevas características",
+    "early_access_checkbox": "Solicitar cuenta de acceso anticipado",
+    # Cuentas demo
+    "demo_accounts_title": "Cuentas de prueba",
+    "admin_account": "Cuenta de administrador",
+    "developer_account": "Cuenta de desarrollador",
+    "guest_account": "Cuenta de invitado",
+    "admin_description": "Uso ilimitado・Acceso a todas las funciones",
+    "developer_description": "1000 usos/día・Acceso a funciones de desarrollo",
+    "guest_description": "10 usos/día・Funciones básicas",
+    # Seguridad
+    "security_notice_title": "Aviso de seguridad",
+    "security_notice_text": "Esta es una versión de desarrollo. Se implementarán medidas de seguridad mejoradas en producción.",
+    # Perfil
+    "user_profile": "Perfil de usuario",
+    "profile_settings": "Configuración del perfil",
+    "account_stats": "Estadísticas de la cuenta",
+    "save_changes": "Guardar cambios",
+    "change_password": "Cambiar contraseña",
+    "current_password": "Contraseña actual",
+    "new_password": "Nueva contraseña",
+    "update_password": "Actualizar contraseña",
+    "preferred_language": "Idioma preferido",
+    "member_since": "Miembro desde",
+    "last_login": "Último inicio de sesión",
+    "account_status": "Estado de la cuenta",
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "today_usage": "Uso de hoy",
+    "daily_limit": "Límite diario",
+    "never": "Nunca",
+    "email_verified": "Correo electrónico verificado",
+    # Formularios
+    "username_placeholder": "Alfanumérico y guión bajo (3+ caracteres)",
+    "email_placeholder": "tu.correo@ejemplo.com",
+    "password_placeholder": "Contraseña segura (8+ caracteres)",
+    "confirm_password_placeholder": "Volver a ingresar contraseña",
+    "login_identifier_placeholder": "Nombre de usuario o correo electrónico",
+    "username_requirements": "3+ caracteres: alfanumérico y guión bajo únicamente",
+    # Mensajes de procesamiento
+    "creating_account": "Creando cuenta",
+    "logging_in": "Iniciando sesión",
+    "saving": "Guardando",
+    "updating": "Actualizando",
+    # Mensajes de éxito/error
+    "registration_success": "Registro de usuario completado",
+    "login_success": "Inicio de sesión exitoso",
+    "logout_success": "Cierre de sesión exitoso",
+    "profile_updated": "Perfil actualizado exitosamente",
+    "password_changed": "Contraseña cambiada exitosamente",
+    "registration_error": "Error durante el registro",
+    "login_error": "Error durante el inicio de sesión",
+    "logout_error": "Error durante el cierre de sesión",
+    "profile_error": "Error al mostrar el perfil",
+    "profile_update_error": "Error al actualizar el perfil",
+    "password_change_error": "Error al cambiar la contraseña",
+    "csrf_error": "Error de seguridad. Por favor actualiza la página",
+    "rate_limit_register": "Límite de intentos de registro alcanzado. Por favor espera",
+    "rate_limit_login": "Límite de intentos de inicio de sesión alcanzado. Por favor espera",
+    "login_required_fields": "Por favor ingresa nombre de usuario y contraseña",
+    "session_creation_error": "Error al crear la sesión",
+    "user_not_found": "Usuario no encontrado",
+    "email_required": "Correo electrónico requerido",
+    "password_change_required": "Por favor completa todos los campos",
+    # Advertencia de cierre de sesión
+    "logout_warning_title": "Acerca del cierre de sesión",
+    "logout_warning_text": "Cerrar sesión puede causar la pérdida de trabajo no guardado.",
+    "logout_confirm": "¿Estás seguro de que quieres cerrar sesión?",
+    
+    # Etiquetas de página de destino
+    "brand_name": "LangPont",
+    "hero_catchphrase": "\"¿Se entenderá esto?\" Esa inquietud, LangPont la resuelve.",
+    "card_label_before": "Hasta ahora",
+    "card_label_after": "Con LangPont (ejemplo)",
+    
+    # 6 ejemplos de tarjetas
+    "card_1_title": "Solicitud · Petición",
+    "card_1_context": "Solicitud de creación de informe",
+    "card_1_before": "Please send me the report by tomorrow.",
+    "card_1_options": [
+        "Formal: Could you please send me the report by tomorrow?",
+        "Urgente: I'd really appreciate the report by tomorrow if possible.", 
+        "Casual: Can you get me that report by tomorrow?",
+        "Amigable: Would you mind sending me the report by tomorrow?"
+    ],
+    
+    "card_2_title": "Propuesta · Idea",
+    "card_2_context": "Propuesta en reunión de equipo",
+    "card_2_before": "I have an idea for the project",
+    "card_2_options": [
+        "Con energía: I have a great idea for the project!",
+        "En reunión: I'd like to propose an idea for the project.",
+        "Casual: What if we tried this for the project?",
+        "Modesto: I was thinking we could try something for the project."
+    ],
+    
+    "card_3_title": "Expresión de intención en negocios",
+    "card_3_context": "Toma de decisiones en negociación importante",
+    "card_3_before": "I will consider it.",
+    "card_3_options": [
+        "Formal: We will give this matter our careful consideration",
+        "Negocios: I'll need some time to review this proposal thoroughly",
+        "Casual: Let me think this over and get back to you",
+        "Amigable: This looks interesting - I'd like to discuss it with my team"
+    ],
+    
+    "card_4_title": "Gratitud · Agradecimiento",
+    "card_4_context": "Agradecimiento por confiar un proyecto",
+    "card_4_before": "Thank you for choosing us.",
+    "card_4_options": [
+        "Formal: We are honored to have been selected for this project.",
+        "Negocios: Thank you so much for trusting us with this.",
+        "Cálido: We're really grateful you chose to work with us.",
+        "Amigable: Thanks for giving us this opportunity!"
+    ],
+    
+    "card_5_title": "Fiesta · Situación social",
+    "card_5_context": "Invitar a un amigo a una fiesta en casa",
+    "card_5_before": "Would you like to come to my party?",
+    "card_5_options": [
+        "Cortés: I'm having a party and would love for you to join us.",
+        "A amigo: I'm throwing a party - you should totally come!",
+        "Casual: Want to come to my party this weekend?",
+        "Amigo íntimo: You HAVE to come to my party - it won't be the same without you!"
+    ],
+    
+    "card_6_title": "Disculpa · Perdón",
+    "card_6_context": "Disculpa por un error",
+    "card_6_before": "I'm so sorry.",
+    "card_6_options": [
+        "Formal: I deeply apologize for this oversight and take full responsibility",
+        "Negocios general: I sincerely apologize for the mistake and any inconvenience caused",
+        "Casual: I'm really sorry about this mix-up"
+    ],
+    
+    # Enlaces de cambio de idioma
+    "switch_to_english": "English",
+    "switch_to_french": "Français",
+    "switch_to_spanish": "Español"
+}
+
+labels["es"].update({
+    # Sección hero - Updated with formal "usted" tone and business focus
+    "hero_title": "¿Está seguro de que sus palabras dicen lo que realmente quiere expresar?",
+    "hero_subtitle": "LangPont no solo traduce: comprende su intención, el contexto y la relación con su interlocutor.",
+    "hero_description": "Diga adiós a las dudas al comunicarse en inglés. Traducciones inteligentes que captan cada matiz cultural, fortalecen la confianza y crean conexiones auténticas.",
+    "hero_cta_primary": "✨ Empiece a comunicar con confianza hoy mismo — ¡Pruebe LangPont gratis!",
+    "hero_cta_secondary": "📖 Ver ejemplos reales",
+    
+    # Examples section
+    "examples_title": "Del español al inglés: Cómo el contexto transforma su comunicación",
+    "examples_subtitle": "Una misma frase en español puede sonar perfecta o extraña en inglés, dependiendo de la situación. LangPont domina estas sutilezas para que sus mensajes lleguen exactamente como los imagina.",
+    
+    # Sección características
+    "features_title": "¿Por qué LangPont marca la diferencia?",
+    "feature_1_title": "Doble Motor de IA",
+    "feature_1_desc": "ChatGPT y Gemini trabajan juntos para ofrecerle múltiples opciones de traducción, permitiéndole elegir la que mejor exprese su intención en cada situación.",
+    "feature_2_title": "Comprende las Relaciones",
+    "feature_2_desc": "Entiende si está hablando con su jefe, un amigo cercano o un cliente importante, adaptando el tono para cada situación.",
+    "feature_3_title": "Ajuste en Tiempo Real",
+    "feature_3_desc": "Ajusta el tono, el nivel de formalidad o la urgencia de su mensaje en tiempo real.",
+    "feature_4_title": "Explica las Diferencias",
+    "feature_4_desc": "Le muestra por qué una opción es más apropiada que otra, ayudándole a aprender y mejorar su comunicación en inglés.",
+    
+    # Sección testimonios
+    "testimonials_title": "Lo que dicen nuestros usuarios",
+    "testimonial_1": "Como directora de marketing, necesito comunicarme con clientes internacionales constantemente. LangPont me ayuda a encontrar el tono perfecto para cada situación, desde emails formales hasta conversaciones más cercanas.",
+    "testimonial_1_author": "María José Hernández - Directora de Marketing, México",
+    "testimonial_2": "Trabajo en comercio internacional y las diferencias culturales son clave. Con LangPont, mis emails en inglés suenan naturales y profesionales, sin perder la calidez latina que nos caracteriza.",
+    "testimonial_2_author": "Carlos Mendoza - Especialista en Comercio, Argentina",
+    "testimonial_3": "Como freelancer, trabajo con clientes de todo el mundo. LangPont me da la confianza de que mis mensajes transmiten exactamente lo que quiero decir, manteniendo mi personalidad auténtica.",
+    "testimonial_3_author": "Ana Lucía Vargas - Traductora Freelance, Colombia",
+    
+    # Sección precios
+    "pricing_title": "Planes simples y transparentes",
+    "pricing_free_title": "Descubrimiento",
+    "pricing_free_price": "$0",
+    "pricing_free_desc": "Perfecto para empezar",
+    "pricing_pro_title": "Profesional",
+    "pricing_pro_price": "$9.99",
+    "pricing_pro_desc": "por mes - Para uso empresarial",
+    
+    # Sección CTA
+    "cta_title": "¿Listo para transformar la forma en que se comunica?",
+    "cta_subtitle": "Comience ahora con una prueba gratuita. Sin tarjeta de crédito. Sin compromiso.",
+    "cta_button": "🚀 Experimente la diferencia: ¡Prueba gratuita!",
+    "cta_note": "✅ Sin tarjeta de crédito • ⚡ Configuración en 3 minutos • 🌟 Sin compromiso",
+    
+    # Pie de página
+    "footer_description": "Más que traducción: LangPont entiende lo que quiere decir.",
+    "footer_links_product": "Producto",
+    "footer_links_company": "Empresa",
+    "footer_links_support": "Soporte",
+    "footer_contact": "Contacto",
+    "footer_privacy": "Política de Privacidad",
+    "footer_terms": "Términos de Servicio",
+    
+    # Metadatos
+    "meta_title": "LangPont - ¿Tus palabras realmente transmiten lo que sientes?",
+    "meta_description": "LangPont no solo traduce: comprende tus emociones, el contexto y las relaciones que importan. Traducciones inteligentes del español al inglés que capturan cada matiz cultural."
+})
