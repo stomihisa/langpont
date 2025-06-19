@@ -1323,7 +1323,7 @@ labels["es"] = {
     "email_verified": "Correo electrónico verificado",
     # Formularios
     "username_placeholder": "Alfanumérico y guión bajo (3+ caracteres)",
-    "email_placeholder": "tu.correo@ejemplo.com",
+    "email_placeholder": "usuario@example.com",
     "password_placeholder": "Contraseña segura (8+ caracteres)",
     "confirm_password_placeholder": "Volver a ingresar contraseña",
     "login_identifier_placeholder": "Nombre de usuario o correo electrónico",
