@@ -18,6 +18,16 @@ import gc
 import threading
 import time
 
+# 🆕 Task 2.9.2 Phase B-3.5.10: 統合活動ログシステム
+try:
+    from activity_logger import log_analysis_activity
+    print("✅ Activity Logger imported successfully")
+except ImportError as e:
+    print(f"⚠️ Activity Logger import failed: {e}")
+    # フォールバック：ダミー関数
+    def log_analysis_activity(data):
+        pass
+
 print("🚨 FORCE DEBUG: 基本モジュールインポート完了")
 
 # Configuration import
@@ -88,9 +98,10 @@ VERSION_INFO = {
 # .env を読み込む
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 
-from flask import Flask, render_template, request, session, redirect, url_for, jsonify, abort
+from flask import Flask, render_template, request, session, redirect, url_for, jsonify, abort, make_response
 from werkzeug.exceptions import RequestEntityTooLarge
 from openai import OpenAI
+from anthropic import Anthropic
 import requests
 import time
 import re
@@ -194,6 +205,19 @@ app.secret_key = os.environ.get("FLASK_SECRET_KEY", secrets.token_hex(32))
 # OpenAI client
 client = OpenAI(api_key=api_key)
 
+# 🆕 Claude API client (Task 2.9.2 Phase B-3.5.7)
+claude_api_key = os.getenv("CLAUDE_API_KEY")
+if not claude_api_key:
+    app_logger.warning("CLAUDE_API_KEY not found - Claude analysis will be disabled")
+    claude_client = None
+else:
+    try:
+        claude_client = Anthropic(api_key=claude_api_key)
+        app_logger.info("Claude API client initialized successfully")
+    except Exception as e:
+        app_logger.error(f"Failed to initialize Claude client: {e}")
+        claude_client = None
+
 # 🚀 Task 2.9.2 Phase B-1: 管理者システム統合
 print("🚀 Phase B-1: 管理者システム統合開始")
 try:
@@ -295,7 +319,7 @@ def add_comprehensive_security_headers(response) -> Any:
     # 🆕 包括的なCSP設定
     csp_directives = [
         "default-src 'self'",
-        "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com",
+        "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net",
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
         "font-src 'self' https://fonts.gstatic.com",
         "img-src 'self' data:",
@@ -310,8 +334,11 @@ def add_comprehensive_security_headers(response) -> Any:
     ]
     
     if ENVIRONMENT == "development":
-        # 開発環境では少し緩和
-        csp_directives.append("script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com")
+        # 開発環境では'unsafe-eval'を追加（script-srcを置換して重複回避）
+        for i, directive in enumerate(csp_directives):
+            if directive.startswith("script-src"):
+                csp_directives[i] = "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net"
+                break
     
     response.headers['Content-Security-Policy'] = "; ".join(csp_directives)
     
@@ -818,6 +845,23 @@ def require_analytics_rate_limit(f):
                 'WARNING'
             )
             abort(429)
+        
+        return f(*args, **kwargs)
+    return decorated_function
+
+def require_login(f):
+    """ログイン認証が必要なエンドポイント用デコレータ"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # 新旧認証システムの統合チェック
+        new_auth = session.get('authenticated') and session.get('user_id')
+        legacy_auth = session.get('logged_in')
+        
+        if not new_auth and not legacy_auth:
+            log_security_event('UNAUTHORIZED_ACCESS', 
+                             f'Attempted access to protected endpoint: {request.endpoint}', 
+                             'WARNING')
+            return redirect(url_for('login'))
         
         return f(*args, **kwargs)
     return decorated_function
@@ -2012,29 +2056,71 @@ Responda solo con el nombre de la traducción recomendada."""
         
         recommendation_text = response.choices[0].message.content.strip()
         
-        # 推奨結果の正規化
-        recommendation_lower = recommendation_text.lower()
-        if "enhanced" in recommendation_lower:
+        # 🆕 デバッグログ追加（Task 2.9.2 Phase B-3.5.7 Final Integration）
+        app_logger.info(f"🔍 DEBUG - Raw response: '{recommendation_text}'")
+        app_logger.info(f"🔍 DEBUG - Engine analyzed: '{engine_name}'")
+        
+        # 推奨結果の正規化（簡素化・安定化）
+        recommendation_lower = recommendation_text.strip().lower()
+        app_logger.info(f"🔍 DEBUG - Cleaned: '{recommendation_lower}'")
+        
+        # 🆕 単語境界を考慮した判定ロジック（安定化）
+        import re
+        
+        # 完全一致を最優先
+        if recommendation_lower == 'enhanced':
+            recommendation = "Enhanced"
+            confidence = 0.95
+            method = "exact_match"
+        elif recommendation_lower == 'chatgpt':
+            recommendation = "ChatGPT"
+            confidence = 0.95
+            method = "exact_match"
+        elif recommendation_lower == 'gemini':
+            recommendation = "Gemini"
+            confidence = 0.95
+            method = "exact_match"
+        # 単語境界での部分マッチ
+        elif re.search(r'\benhanced\b', recommendation_lower):
             recommendation = "Enhanced"
             confidence = 0.9
-        elif "chatgpt" in recommendation_lower or "chat" in recommendation_lower:
+            method = "word_boundary_match"
+        elif re.search(r'\bchatgpt\b', recommendation_lower):
             recommendation = "ChatGPT"
             confidence = 0.9
-        elif "gemini" in recommendation_lower:
+            method = "word_boundary_match"
+        elif re.search(r'\bgemini\b', recommendation_lower):
             recommendation = "Gemini"
             confidence = 0.9
+            method = "word_boundary_match"
+        # フォールバック：含有チェック
+        elif "enhanced" in recommendation_lower:
+            recommendation = "Enhanced"
+            confidence = 0.8
+            method = "substring_match"
+        elif "chatgpt" in recommendation_lower or "chat" in recommendation_lower:
+            recommendation = "ChatGPT"
+            confidence = 0.8
+            method = "substring_match"
+        elif "gemini" in recommendation_lower:
+            recommendation = "Gemini"
+            confidence = 0.8
+            method = "substring_match"
         else:
             recommendation = "none"
             confidence = 0.0
+            method = "no_match"
         
+        app_logger.info(f"🔍 DEBUG - Final result: '{recommendation}' (method: {method})")
         app_logger.info(f"🎯 推奨抽出成功: {engine_name} → {recommendation} (信頼度: {confidence})")
         
         return {
             "recommendation": recommendation,
             "confidence": confidence,
-            "method": f"chatgpt_extraction_from_{engine_name}",
+            "method": f"chatgpt_extraction_from_{engine_name}_{method}",
             "raw_response": recommendation_text,
-            "engine_analyzed": engine_name
+            "engine_analyzed": engine_name,
+            "extraction_method": method
         }
         
     except Exception as e:
@@ -2074,11 +2160,11 @@ class AnalysisEngineManager:
                 "description": "丁寧な説明"
             }
         elif engine == "claude":
-            api_key = os.getenv("CLAUDE_API_KEY")
+            # 🆕 Claude client の実際の可用性をチェック
             return {
-                "available": bool(api_key),
-                "status": "ready" if api_key else "api_key_pending",
-                "description": "深いニュアンス" if api_key else "準備中"
+                "available": bool(claude_client),
+                "status": "ready" if claude_client else "api_key_missing",
+                "description": "深いニュアンス" if claude_client else "API設定必要"
             }
         else:
             return {
@@ -2285,49 +2371,177 @@ Por favor proporcione un análisis lógico desde las siguientes perspectivas:
             }
     
     def _claude_analysis(self, chatgpt_trans: str, enhanced_trans: str, gemini_trans: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
-        """Claudeによる分析（準備実装 - APIキー待ち）"""
+        """🆕 Claude API による分析実装 (Task 2.9.2 Phase B-3.5.7)"""
         
-        # Claude API設定チェック
-        claude_api_key = os.getenv("CLAUDE_API_KEY")
+        # 🔍 Claude API設定チェック（Task 2.9.2 Phase B-3.5.7 Final Integration）
+        app_logger.info(f"🎭 Claude analysis requested - Client available: {bool(claude_client)}")
         
-        if not claude_api_key:
+        if not claude_client:
             # APIキー未設定時の代替メッセージ
             display_lang = session.get("lang", "jp")
             if display_lang == "en":
-                message = "🚧 Claude analysis will be available soon. API key configuration pending."
+                message = "🚧 Claude analysis unavailable. Please check API key configuration."
             elif display_lang == "fr":
-                message = "🚧 L'analyse Claude sera bientôt disponible. Configuration de la clé API en attente."
+                message = "🚧 Analyse Claude indisponible. Veuillez vérifier la configuration de la clé API."
             elif display_lang == "es":
-                message = "🚧 El análisis de Claude estará disponible pronto. Configuración de clave API pendiente."
+                message = "🚧 Análisis Claude no disponible. Por favor verifique la configuración de la clave API."
             else:
-                message = "🚧 Claude分析は準備中です。APIキー設定後に利用可能になります。"
+                message = "🚧 Claude分析が利用できません。APIキー設定を確認してください。"
             
+            app_logger.error(f"❌ Claude client not available - returning error message")
             return {
                 "success": False,
                 "analysis_text": message,
                 "engine": "claude",
-                "status": "api_key_pending"
+                "status": "api_key_missing"
             }
         
-        # 実際のClaude API実装はAPIキー取得後に追加
-        # TODO: Claude API実装
-        
         try:
-            # Claude特化プロンプト（深いニュアンス分析）
-            # [実際のClaude API実装コードはここに]
+            # 言語設定取得
+            display_lang = session.get("lang", "jp")
+            source_lang = context.get("source_lang", "ja") if context else "ja"
+            target_lang = context.get("target_lang", "en") if context else "en"
+            input_text = context.get("input_text", "") if context else ""
             
-            # 現在は準備段階のため模擬実装
+            # 言語ラベルマッピング
+            lang_labels = {
+                "ja": "Japanese", "en": "English", 
+                "fr": "French", "es": "Spanish"
+            }
+            source_label = lang_labels.get(source_lang, source_lang)
+            target_label = lang_labels.get(target_lang, target_lang)
+            
+            # Claude特化プロンプト（深いニュアンス分析とコンテキスト理解）
+            if display_lang == "en":
+                prompt = f"""As Claude, provide a thoughtful and nuanced analysis of these three {target_label} translations of the given {source_label} text.
+
+ORIGINAL TEXT ({source_label}): {input_text[:1000]}
+
+LANGUAGE PAIR: {source_label} → {target_label}
+
+TRANSLATIONS TO COMPARE:
+1. ChatGPT Translation: {chatgpt_trans}
+2. Enhanced Translation: {enhanced_trans}  
+3. Gemini Translation: {gemini_trans}
+
+Please provide a comprehensive analysis focusing on:
+- Cultural nuances and appropriateness
+- Emotional tone and subtle implications
+- Contextual accuracy and natural flow
+- Which translation best captures the speaker's intent
+- Detailed reasoning for your recommendation
+
+Respond in English with thoughtful insights."""
+
+            elif display_lang == "fr":
+                prompt = f"""En tant que Claude, fournissez une analyse réfléchie et nuancée de ces trois traductions {target_label} du texte {source_label} donné.
+
+TEXTE ORIGINAL ({source_label}): {input_text[:1000]}
+
+PAIRE LINGUISTIQUE: {source_label} → {target_label}
+
+TRADUCTIONS À COMPARER:
+1. Traduction ChatGPT: {chatgpt_trans}
+2. Traduction Améliorée: {enhanced_trans}  
+3. Traduction Gemini: {gemini_trans}
+
+Veuillez fournir une analyse complète en vous concentrant sur:
+- Les nuances culturelles et l'appropriation
+- Le ton émotionnel et les implications subtiles
+- La précision contextuelle et le flux naturel
+- Quelle traduction capture le mieux l'intention du locuteur
+- Raisonnement détaillé pour votre recommandation
+
+Répondez en français avec des insights réfléchis."""
+
+            elif display_lang == "es":
+                prompt = f"""Como Claude, proporcione un análisis reflexivo y matizado de estas tres traducciones al {target_label} del texto {source_label} dado.
+
+TEXTO ORIGINAL ({source_label}): {input_text[:1000]}
+
+PAR LINGÜÍSTICO: {source_label} → {target_label}
+
+TRADUCCIONES A COMPARAR:
+1. Traducción ChatGPT: {chatgpt_trans}
+2. Traducción Mejorada: {enhanced_trans}  
+3. Traducción Gemini: {gemini_trans}
+
+Por favor proporcione un análisis completo enfocándose en:
+- Matices culturales y apropiación
+- Tono emocional e implicaciones sutiles
+- Precisión contextual y flujo natural
+- Qué traducción captura mejor la intención del hablante
+- Razonamiento detallado para su recomendación
+
+Responda en español con insights reflexivos."""
+
+            else:  # Japanese
+                prompt = f"""Claudeとして、与えられた{source_label}テキストの以下3つの{target_label}翻訳について、思慮深く、ニュアンスに富んだ分析を提供してください。
+
+元のテキスト（{source_label}）: {input_text[:1000]}
+
+言語ペア: {source_label} → {target_label}
+
+比較する翻訳:
+1. ChatGPT翻訳: {chatgpt_trans}
+2. 改善翻訳: {enhanced_trans}  
+3. Gemini翻訳: {gemini_trans}
+
+以下に焦点を当てた包括的な分析を提供してください:
+- 文化的ニュアンスと適切性
+- 感情的なトーンと微妙な含意
+- 文脈の正確性と自然な流れ
+- どの翻訳が話者の意図を最もよく捉えているか
+- 推奨事項の詳細な理由づけ
+
+思慮深い洞察とともに日本語で回答してください。"""
+
+            # 🎭 Claude API リクエスト（Task 2.9.2 Phase B-3.5.7 Final Integration）
+            app_logger.info(f"🎭 Calling Claude API with prompt length: {len(prompt)} chars")
+            
+            response = claude_client.messages.create(
+                model="claude-3-5-sonnet-20241022",
+                max_tokens=1500,
+                temperature=0.3,
+                messages=[{
+                    "role": "user",
+                    "content": prompt
+                }]
+            )
+            
+            analysis_text = response.content[0].text.strip()
+            
+            # 成功ログ
+            app_logger.info(f"✅ Claude分析成功: 言語={display_lang}, 文字数={len(analysis_text)}")
+            app_logger.info(f"🎭 Claude analysis preview: {analysis_text[:200]}...")
+            
             return {
-                "success": False,
-                "analysis_text": "🚧 Claude分析機能は実装準備中です。",
+                "success": True,
+                "analysis_text": analysis_text,
                 "engine": "claude",
-                "status": "implementation_pending"
+                "model": "claude-3-5-sonnet-20241022",
+                "status": "completed",
+                "prompt_used": prompt[:500] + "..." if len(prompt) > 500 else prompt
             }
             
         except Exception as e:
+            error_msg = str(e)
+            app_logger.error(f"Claude分析エラー: {error_msg}")
+            
+            # エラーメッセージの多言語対応
+            if display_lang == "en":
+                error_response = f"⚠️ Claude analysis failed: {error_msg[:100]}..."
+            elif display_lang == "fr":
+                error_response = f"⚠️ Échec de l'analyse Claude: {error_msg[:100]}..."
+            elif display_lang == "es":
+                error_response = f"⚠️ Falló el análisis de Claude: {error_msg[:100]}..."
+            else:
+                error_response = f"⚠️ Claude分析に失敗しました: {error_msg[:100]}..."
+            
             return {
                 "success": False,
-                "error": f"Claude分析エラー: {str(e)}",
+                "analysis_text": error_response,
+                "error": error_msg,
                 "engine": "claude"
             }
 
@@ -3875,6 +4089,42 @@ def save_gemini_analysis_to_db(session_id: str, analysis_result: str, recommenda
     except Exception as e:
         app_logger.error(f"Failed to save Gemini analysis: {str(e)}")
 
+@app.route("/set_analysis_engine", methods=["POST"])
+@require_rate_limit
+def set_analysis_engine():
+    """分析エンジンを設定するエンドポイント"""
+    try:
+        data = request.get_json() or {}
+        engine = data.get("engine", "gemini")
+        
+        # 有効なエンジンのリスト
+        valid_engines = ["gemini", "claude", "gpt4", "openai", "chatgpt"]
+        
+        if engine not in valid_engines:
+            return jsonify({
+                "success": False,
+                "error": f"無効なエンジン: {engine}. 有効なエンジン: {', '.join(valid_engines)}"
+            }), 400
+        
+        # セッションにエンジンを保存
+        session["analysis_engine"] = engine
+        
+        app_logger.info(f"Analysis engine set to: {engine}")
+        log_access_event(f'Analysis engine changed to: {engine}')
+        
+        return jsonify({
+            "success": True,
+            "engine": engine,
+            "message": f"分析エンジンを{engine}に設定しました"
+        })
+        
+    except Exception as e:
+        app_logger.error(f"Set analysis engine error: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
 @app.route("/get_nuance", methods=["POST"])
 @require_rate_limit
 def get_nuance():
@@ -3889,7 +4139,14 @@ def get_nuance():
             return {"error": "必要な翻訳データが不足しています"}, 400
 
         # 🧠 Task 2.9.2 Phase B-3.5.2: 選択された分析エンジンで実行
-        selected_engine = session.get('analysis_engine', 'gemini')
+        # POSTリクエストボディからエンジン情報を取得（優先）
+        data = request.get_json() or {}
+        selected_engine = data.get('engine', session.get('analysis_engine', 'gemini'))
+        
+        # エンジン情報をセッションに保存（次回の呼び出しのため）
+        if 'engine' in data:
+            session['analysis_engine'] = selected_engine
+            app_logger.info(f"Analysis engine updated in session: {selected_engine}")
         
         if selected_engine == 'gemini':
             # 従来のGemini分析（既存実装）
@@ -3989,6 +4246,42 @@ def get_nuance():
             # 🔍 デバッグ: セッションID取得の改善（翻訳保存時と同じロジックを使用）
             session_id = session.get("session_id") or session.get("csrf_token", "")[:16]
             app_logger.info(f"🔍 セッションID取得: session_id={session_id}")
+            
+            # 🆕 Task 2.9.2 Phase B-3.5.10: 統合活動ログ記録
+            try:
+                activity_data = {
+                    'activity_type': 'normal_use',
+                    'session_id': session_id,
+                    'user_id': session.get('username', 'anonymous'),
+                    'japanese_text': session.get("input_text", ""),
+                    'target_language': session.get("language_pair", "ja-en").split("-")[1],
+                    'language_pair': session.get("language_pair", "ja-en"),
+                    'partner_message': session.get("partner_message", ""),
+                    'context_info': session.get("context_info", ""),
+                    'chatgpt_translation': translated_text,
+                    'enhanced_translation': better_translation,
+                    'gemini_translation': gemini_translation,
+                    'button_pressed': selected_engine,
+                    'actual_analysis_llm': selected_engine,  # 実際のエンジン
+                    'recommendation_result': final_recommendation,
+                    'confidence': final_confidence,
+                    'processing_method': final_strength,
+                    'extraction_method': recommendation_result.get('extraction_method', ''),
+                    'full_analysis_text': result,
+                    'terminal_logs': '',  # 必要に応じて追加
+                    'debug_logs': f"Engine: {selected_engine}, Method: {final_strength}",
+                    'error_occurred': False,
+                    'processing_duration': time.time() - start_time if 'start_time' in locals() else None,
+                    'ip_address': request.environ.get('HTTP_X_FORWARDED_FOR') or request.environ.get('REMOTE_ADDR'),
+                    'user_agent': request.environ.get('HTTP_USER_AGENT', ''),
+                    'notes': f'Analysis via {selected_engine} engine'
+                }
+                
+                log_id = log_analysis_activity(activity_data)
+                app_logger.info(f"✅ Activity logged to comprehensive system: ID={log_id}")
+                
+            except Exception as log_error:
+                app_logger.warning(f"⚠️ Failed to log to comprehensive system: {str(log_error)}")
             
             app_logger.info(f"🔍 Gemini分析保存開始: session_id={session_id}")
             
@@ -4981,46 +5274,7 @@ def clear_monitoring_data():
         "timestamp": datetime.now().isoformat()
     })
 
-# =============================================================================
-# Task 2.9.2 Phase B-3.5.2: 分析エンジン選択システム
-# =============================================================================
-
-@app.route("/set_analysis_engine", methods=["POST"])
-@require_rate_limit
-def set_analysis_engine():
-    """分析エンジンの設定"""
-    try:
-        data = request.get_json()
-        if not data or 'engine' not in data:
-            return jsonify({"success": False, "error": "Invalid request"}), 400
-        
-        engine = data['engine']
-        valid_engines = ['chatgpt', 'gemini', 'claude']
-        
-        if engine not in valid_engines:
-            return jsonify({"success": False, "error": "Invalid engine"}), 400
-        
-        # Claude は準備中
-        if engine == 'claude':
-            return jsonify({
-                "success": False, 
-                "error": "Claude engine is not available yet"
-            }), 400
-        
-        # セッションに保存
-        session['analysis_engine'] = engine
-        
-        log_access_event(f'Analysis engine set: {engine}')
-        
-        return jsonify({
-            "success": True,
-            "engine": engine,
-            "message": f"分析エンジンを{engine}に設定しました"
-        })
-        
-    except Exception as e:
-        log_access_event(f'Error setting analysis engine: {str(e)}')
-        return jsonify({"success": False, "error": str(e)}), 500
+# 🗑️ 重複削除: set_analysis_engineは4062行目で既に定義済み
 
 @app.route("/get_analysis_with_recommendation", methods=["POST"])
 @require_rate_limit
@@ -5101,6 +5355,416 @@ def get_analysis_with_recommendation():
             "success": False,
             "error": str(e)
         }), 500
+
+# =============================================================================
+# 🆕 Task 2.9.2 Phase B-3.5.10: 統合活動ダッシュボード API
+# =============================================================================
+
+@app.route("/admin/comprehensive_dashboard")
+@require_login
+def admin_comprehensive_dashboard():
+    """統合活動ダッシュボード（管理者専用）"""
+    # デバッグ情報
+    logged_in = session.get('logged_in', False)
+    user_role = session.get('user_role', 'guest')
+    username = session.get('username', 'unknown')
+    
+    app_logger.info(f"Comprehensive dashboard access: logged_in={logged_in}, role={user_role}, user={username}")
+    
+    # 管理者権限チェック
+    if user_role not in ['admin', 'developer']:
+        app_logger.warning(f"Unauthorized comprehensive dashboard access: role={user_role}")
+        return jsonify({
+            "error": "アクセス権限がありません",
+            "error_code": "UNAUTHORIZED",
+            "success": False,
+            "required_role": "admin or developer",
+            "current_role": user_role
+        }), 403
+    
+    try:
+        # CSRFトークンを生成・セッションに保存
+        import secrets
+        csrf_token = secrets.token_urlsafe(32)
+        session['csrf_token'] = csrf_token
+        
+        return render_template('unified_comprehensive_dashboard.html', csrf_token=csrf_token)
+    except Exception as e:
+        app_logger.error(f"Comprehensive dashboard template error: {str(e)}")
+        return jsonify({
+            "error": "テンプレートエラー",
+            "error_code": "TEMPLATE_ERROR",
+            "success": False,
+            "details": str(e)
+        }), 500
+
+@app.route("/admin/api/activity_stats", methods=["GET"])
+@require_login
+def get_activity_stats():
+    """活動統計API（期間フィルター対応）"""
+    user_role = session.get('user_role', 'guest')
+    if user_role not in ['admin', 'developer']:
+        return jsonify({"error": "Unauthorized"}), 403
+    
+    try:
+        from activity_logger import activity_logger, get_jst_today
+        from datetime import datetime, timedelta
+        
+        # 期間フィルター処理
+        period = request.args.get('period', 'all')
+        filters = {}
+        
+        # JST基準で期間を設定
+        today = get_jst_today()
+        
+        if period == 'today':
+            filters['date_from'] = today.strftime('%Y-%m-%d')
+            filters['date_to'] = today.strftime('%Y-%m-%d')
+        elif period == 'week':
+            week_ago = today - timedelta(days=7)
+            filters['date_from'] = week_ago.strftime('%Y-%m-%d')
+            filters['date_to'] = today.strftime('%Y-%m-%d')
+        elif period == 'month':
+            month_start = today.replace(day=1)
+            filters['date_from'] = month_start.strftime('%Y-%m-%d')
+            filters['date_to'] = today.strftime('%Y-%m-%d')
+        # 'all' の場合はフィルターなし
+        
+        # 追加フィルター取得
+        additional_filters = {
+            'activity_type': request.args.get('activity_type'),
+            'user_id': request.args.get('user_id'),
+            'button_pressed': request.args.get('button_pressed'),
+            'date_from': request.args.get('date_from'),  # 手動指定があれば上書き
+            'date_to': request.args.get('date_to')
+        }
+        
+        # 手動指定の日付があれば期間設定を上書き
+        for key, value in additional_filters.items():
+            if value:
+                filters[key] = value
+        
+        # None値を削除
+        filters = {k: v for k, v in filters.items() if v}
+        
+        stats = activity_logger.get_activity_stats(filters)
+        return jsonify(stats)
+        
+    except Exception as e:
+        app_logger.error(f"Activity stats error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/admin/api/activity_log", methods=["GET"])
+@require_login
+def get_activity_log():
+    """活動ログAPI（期間フィルター対応）"""
+    user_role = session.get('user_role', 'guest')
+    if user_role not in ['admin', 'developer']:
+        return jsonify({"error": "Unauthorized"}), 403
+    
+    try:
+        from activity_logger import activity_logger, get_jst_today
+        from datetime import datetime, timedelta
+        
+        # パラメータ取得
+        page = int(request.args.get('page', 1))
+        limit = min(int(request.args.get('limit', 50)), 100)  # 最大100件
+        offset = (page - 1) * limit
+        
+        # 期間フィルター処理
+        period = request.args.get('period', 'all')
+        filters = {}
+        
+        # JST基準で期間を設定
+        today = get_jst_today()
+        
+        if period == 'today':
+            filters['date_from'] = today.strftime('%Y-%m-%d')
+            filters['date_to'] = today.strftime('%Y-%m-%d')
+        elif period == 'week':
+            week_ago = today - timedelta(days=7)
+            filters['date_from'] = week_ago.strftime('%Y-%m-%d')
+            filters['date_to'] = today.strftime('%Y-%m-%d')
+        elif period == 'month':
+            month_start = today.replace(day=1)
+            filters['date_from'] = month_start.strftime('%Y-%m-%d')
+            filters['date_to'] = today.strftime('%Y-%m-%d')
+        # 'all' の場合はフィルターなし
+        
+        # 追加フィルター取得
+        additional_filters = {
+            'activity_type': request.args.get('activity_type'),
+            'user_id': request.args.get('user_id'),
+            'button_pressed': request.args.get('button_pressed'),
+            'date_from': request.args.get('date_from'),  # 手動指定があれば上書き
+            'date_to': request.args.get('date_to'),
+            'error_only': request.args.get('error_only') == 'true',
+            'llm_mismatch_only': request.args.get('llm_mismatch_only') == 'true'
+        }
+        
+        # 手動指定の日付があれば期間設定を上書き
+        for key, value in additional_filters.items():
+            if value is not None and value != '':
+                filters[key] = value
+        
+        result = activity_logger.get_activities(filters, limit, offset)
+        return jsonify(result)
+        
+    except Exception as e:
+        app_logger.error(f"Activity log error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/admin/api/activity_detail/<int:activity_id>", methods=["GET"])
+@require_login
+def get_activity_detail(activity_id):
+    """活動詳細API"""
+    user_role = session.get('user_role', 'guest')
+    if user_role not in ['admin', 'developer']:
+        return jsonify({"error": "Unauthorized"}), 403
+    
+    try:
+        from activity_logger import activity_logger
+        
+        detail = activity_logger.get_activity_detail(activity_id)
+        if not detail:
+            return jsonify({"error": "Activity not found"}), 404
+        
+        return jsonify(detail)
+        
+    except Exception as e:
+        app_logger.error(f"Activity detail error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/admin/api/export_activity_log", methods=["GET"])
+@require_login
+def export_activity_log():
+    """活動ログCSV出力API"""
+    user_role = session.get('user_role', 'guest')
+    if user_role not in ['admin', 'developer']:
+        return jsonify({"error": "Unauthorized"}), 403
+    
+    try:
+        from activity_logger import activity_logger
+        import csv
+        import io
+        
+        export_type = request.args.get('type', 'filtered')
+        
+        # フィルター取得
+        if export_type == 'filtered':
+            filters = {
+                'activity_type': request.args.get('activity_type'),
+                'user_id': request.args.get('user_id'),
+                'button_pressed': request.args.get('button_pressed'),
+                'date_from': request.args.get('date_from'),
+                'date_to': request.args.get('date_to')
+            }
+            filters = {k: v for k, v in filters.items() if v}
+        else:
+            filters = {}
+        
+        # 大量データ取得（最大10000件）
+        result = activity_logger.get_activities(filters, limit=10000, offset=0)
+        activities = result['activities']
+        
+        # CSV生成
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # ヘッダー（推奨抽出検証用の詳細情報を含む）
+        writer.writerow([
+            'ID', '活動タイプ', 'ユーザー', '実行日時', '日本語文章',
+            '言語ペア', '押下ボタン', '実際LLM', 'LLM一致', '推奨結果',
+            '信頼度', '処理時間', 'エラー発生', 'エラーメッセージ',
+            'ChatGPT翻訳', 'Enhanced翻訳', 'Gemini翻訳',
+            'ニュアンス分析結果全文', '分析プレビュー',
+            'ターミナルログ', 'デバッグログ', 'IP', 'User Agent',
+            'セッションID', 'サンプル名', 'テストセッションID', 
+            '作成日時', '年', '月', '日', '時間', 'メモ', 'タグ'
+        ])
+        
+        # データ行
+        for activity in activities:
+            # 詳細データ取得
+            detail = activity_logger.get_activity_detail(activity['id'])
+            if detail:
+                writer.writerow([
+                    detail['id'],
+                    detail['activity_type'],
+                    detail['user_id'],
+                    detail['created_at'],
+                    detail['japanese_text'],
+                    detail['language_pair'],
+                    detail['button_pressed'],
+                    detail['actual_analysis_llm'],
+                    '一致' if detail['llm_match'] else '不一致',
+                    detail['recommendation_result'],
+                    detail['confidence'],
+                    detail['processing_duration'],
+                    'エラー' if detail['error_occurred'] else '正常',
+                    detail['error_message'],
+                    # 推奨抽出検証用の詳細情報
+                    detail['chatgpt_translation'] or '',
+                    detail['enhanced_translation'] or '',
+                    detail['gemini_translation'] or '',
+                    detail['full_analysis_text'] or '',  # ニュアンス分析結果全文（最重要）
+                    detail['analysis_preview'] or '',
+                    detail['terminal_logs'] or '',
+                    detail['debug_logs'] or '',
+                    detail['ip_address'] or '',
+                    detail['user_agent'] or '',
+                    detail['session_id'],
+                    detail['sample_name'],
+                    detail['test_session_id'],
+                    detail['created_at'],
+                    detail['year'],
+                    detail['month'],
+                    detail['day'],
+                    detail['hour'],
+                    detail['notes'] or '',
+                    detail['tags'] or ''
+                ])
+        
+        # レスポンス生成（Excel対応のBOM付きUTF-8）
+        csv_data = output.getvalue()
+        output.close()
+        
+        # Excel用にBOM（Byte Order Mark）を追加
+        csv_data_with_bom = '\ufeff' + csv_data
+        
+        response = make_response(csv_data_with_bom.encode('utf-8'))
+        response.headers['Content-Type'] = 'text/csv; charset=utf-8-sig'
+        response.headers['Content-Disposition'] = f'attachment; filename=langpont_activities_{export_type}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+        
+        return response
+        
+    except Exception as e:
+        app_logger.error(f"CSV export error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/admin/api/reset_all_data", methods=["POST"])
+@require_login
+@csrf_protect
+def reset_all_data():
+    """全データリセットAPI（統合ダッシュボード用）"""
+    user_role = session.get('user_role', 'guest')
+    username = session.get('username', 'unknown')
+    
+    # 管理者のみアクセス可能
+    if user_role != 'admin':
+        app_logger.warning(f"Unauthorized data reset attempt by {username} ({user_role})")
+        return jsonify({"error": "管理者権限が必要です"}), 403
+    
+    try:
+        from activity_logger import activity_logger
+        import os
+        
+        # アクティビティログデータベースの削除
+        if os.path.exists(activity_logger.db_path):
+            os.remove(activity_logger.db_path)
+            app_logger.info(f"Activity log database deleted: {activity_logger.db_path}")
+        
+        # 翻訳履歴データベースの削除
+        if os.path.exists("langpont_translation_history.db"):
+            os.remove("langpont_translation_history.db")
+            app_logger.info("Translation history database deleted")
+        
+        # 使用統計ファイルの削除
+        if os.path.exists("usage_data.json"):
+            os.remove("usage_data.json")
+            app_logger.info("Usage data file deleted")
+        
+        # データベースの再初期化
+        activity_logger.init_database()
+        
+        # セキュリティログに記録
+        log_security_event(
+            'DATA_RESET', 
+            f'All data reset by admin user: {username}',
+            'CRITICAL'
+        )
+        
+        app_logger.info(f"✅ All data reset completed by admin: {username}")
+        
+        return jsonify({
+            "success": True,
+            "message": "全データが正常に削除され、システムがリセットされました",
+            "reset_by": username,
+            "timestamp": datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        app_logger.error(f"Data reset error: {str(e)}")
+        log_security_event(
+            'DATA_RESET_ERROR', 
+            f'Data reset failed for admin {username}: {str(e)}',
+            'ERROR'
+        )
+        return jsonify({"error": f"データリセットに失敗しました: {str(e)}"}), 500
+
+@app.route("/admin/api/system_logs", methods=["GET"])
+@require_login
+def get_system_logs():
+    """システムログAPI（統合ダッシュボード用）"""
+    user_role = session.get('user_role', 'guest')
+    if user_role not in ['admin', 'developer']:
+        return jsonify({"error": "Unauthorized"}), 403
+    
+    try:
+        import os
+        import json
+        from datetime import datetime
+        
+        logs = []
+        limit = min(int(request.args.get('limit', 50)), 200)  # 最大200件
+        
+        # アプリケーションログの読み込み
+        log_files = [
+            ("logs/app.log", "アプリケーション"),
+            ("logs/security.log", "セキュリティ"),
+            ("logs/access.log", "アクセス")
+        ]
+        
+        for log_file, log_type in log_files:
+            if os.path.exists(log_file):
+                try:
+                    with open(log_file, 'r', encoding='utf-8') as f:
+                        lines = f.readlines()
+                        # 最新のログを取得
+                        for line in lines[-limit//3:]:  # 各ファイルから同じ数だけ取得
+                            line = line.strip()
+                            if line:
+                                # ログレベルの推定
+                                level = 'info'
+                                if 'ERROR' in line or 'Failed' in line or 'エラー' in line:
+                                    level = 'error'
+                                elif 'WARNING' in line or 'WARN' in line or '警告' in line:
+                                    level = 'warning'
+                                
+                                logs.append({
+                                    'timestamp': datetime.now().isoformat(),
+                                    'level': level,
+                                    'source': log_type,
+                                    'message': line[:200]  # 200文字まで
+                                })
+                except Exception as e:
+                    app_logger.error(f"Error reading log file {log_file}: {str(e)}")
+        
+        # タイムスタンプでソート（新しい順）
+        logs.sort(key=lambda x: x['timestamp'], reverse=True)
+        
+        # 制限数まで絞る
+        logs = logs[:limit]
+        
+        return jsonify({
+            'logs': logs,
+            'total_count': len(logs),
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        app_logger.error(f"System logs error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 # =============================================================================
 # アプリケーション起動とセキュリティ最終設定

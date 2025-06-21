@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LangPont Dashboard Access Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; }
+        .test-link { display: block; margin: 10px 0; padding: 10px; background: #f0f0f0; text-decoration: none; border-radius: 5px; }
+        .test-link:hover { background: #e0e0e0; }
+        .port-8080 { background: #e8f5e8; }
+        .port-5000 { background: #e8e8f5; }
+        .comprehensive { background: #f5e8e8; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>🔧 LangPont Dashboard Access Test</h1>
+    <p>以下のリンクをクリックして、どれがアクセス可能か確認してください：</p>
+    
+    <h2>📊 通常の管理者ダッシュボード</h2>
+    <a href="http://localhost:8080/admin/dashboard" class="test-link port-8080">
+        🔗 http://localhost:8080/admin/dashboard (Port 8080)
+    </a>
+    <a href="http://localhost:5000/admin/dashboard" class="test-link port-5000">
+        🔗 http://localhost:5000/admin/dashboard (Port 5000)
+    </a>
+    
+    <h2>📋 統合活動ダッシュボード（CSVボタンがあるページ）</h2>
+    <a href="http://localhost:8080/admin/comprehensive_dashboard" class="test-link port-8080 comprehensive">
+        🎯 http://localhost:8080/admin/comprehensive_dashboard (Port 8080) 
+    </a>
+    <a href="http://localhost:5000/admin/comprehensive_dashboard" class="test-link port-5000 comprehensive">
+        🎯 http://localhost:5000/admin/comprehensive_dashboard (Port 5000)
+    </a>
+    
+    <h2>🔐 ログインページ</h2>
+    <a href="http://localhost:8080/login" class="test-link port-8080">
+        🔑 http://localhost:8080/login (Port 8080)
+    </a>
+    <a href="http://localhost:5000/login" class="test-link port-5000">
+        🔑 http://localhost:5000/login (Port 5000)
+    </a>
+    
+    <h2>📝 チェックリスト</h2>
+    <div style="background: #f9f9f9; padding: 15px; border-radius: 5px;">
+        <h3>✅ 統合ダッシュボードの確認ポイント：</h3>
+        <ul>
+            <li>ページタイトル：「📊 LangPont 統合活動ダッシュボード」</li>
+            <li>統計カード：「総活動数」「今日の活動」「エラー率」「LLM一致率」「平均処理時間」</li>
+            <li>🔍 フィルターセクション（活動タイプ、ユーザー、エンジン等）</li>
+            <li>📋 活動履歴テーブル</li>
+            <li><strong>📥 全データCSV</strong> と <strong>📥 フィルター結果CSV</strong> ボタン</li>
+        </ul>
+        
+        <h3>🚨 通常ダッシュボードとの違い：</h3>
+        <ul>
+            <li>通常：「総翻訳数・API呼び出し・アクティブユーザー・エラー数・平均レスポンス」</li>
+            <li>統合：「総活動数・今日の活動・エラー率・LLM一致率・平均処理時間」</li>
+        </ul>
+    </div>
+    
+    <h2>💡 アクセス手順</h2>
+    <ol>
+        <li>上記リンクでアクセス可能なポートを特定</li>
+        <li>まずログインページでadmin/developerアカウントでログイン</li>
+        <li>統合ダッシュボードのリンクをクリック</li>
+        <li>CSVボタンの存在を確認</li>
+    </ol>
+</body>
+</html>

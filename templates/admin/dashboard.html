@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ page_title }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js" onerror="handleChartJsError()"></script>
 </head>
 <body>
     <!-- 🚀 管理者ダッシュボード - Task 2.9.2 Phase B-1 -->
@@ -31,6 +31,9 @@
         <nav class="admin-nav">
             <a href="{{ url_for('admin.dashboard') }}" class="nav-item active">
                 📊 ダッシュボード
+            </a>
+            <a href="{{ url_for('admin_comprehensive_dashboard') }}" class="nav-item">
+                📋 統合活動ログ
             </a>
             <a href="{{ url_for('admin.task292_monitor') }}" class="nav-item">
                 🔍 Task 2.9.2 監視
@@ -252,57 +255,124 @@
     <script>
         // 🚀 管理者ダッシュボード JavaScript
         
-        // Gemini推奨チャート
-        const geminiCtx = document.getElementById('geminiRecommendationChart').getContext('2d');
-        const geminiData = {{ system_stats.gemini_recommendations|tojson }};
+        // Chart.js フォールバック機能
+        let chartJsLoaded = false;
+        let chartJsError = false;
         
-        new Chart(geminiCtx, {
-            type: 'doughnut',
-            data: {
-                labels: Object.keys(geminiData),
-                datasets: [{
-                    data: Object.values(geminiData),
-                    backgroundColor: ['#007AFF', '#FF9500', '#34C759', '#FF3B30'],
-                    borderWidth: 2,
-                    borderColor: '#fff'
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
-                }
+        function handleChartJsError() {
+            chartJsError = true;
+            console.warn('Chart.js の読み込みに失敗しました。フォールバック表示を有効化します。');
+            showChartFallbacks();
+        }
+        
+        function showChartFallbacks() {
+            // Gemini推奨チャートのフォールバック
+            const geminiChart = document.getElementById('geminiRecommendationChart');
+            if (geminiChart) {
+                geminiChart.style.display = 'none';
+                const geminiContainer = geminiChart.parentElement;
+                geminiContainer.innerHTML = `
+                    <div class="chart-fallback">
+                        <div class="fallback-icon">📊</div>
+                        <h3>Gemini推奨統計</h3>
+                        <div class="fallback-data">
+                            <div class="data-item"><span>ChatGPT:</span> <span>${geminiData.chatgpt || 0}</span></div>
+                            <div class="data-item"><span>Gemini:</span> <span>${geminiData.gemini || 0}</span></div>
+                            <div class="data-item"><span>Enhanced:</span> <span>${geminiData.enhanced || 0}</span></div>
+                        </div>
+                        <small class="fallback-note">Chart.js を読み込めませんでした</small>
+                    </div>
+                `;
             }
-        });
+            
+            // 日別翻訳チャートのフォールバック
+            const dailyChart = document.getElementById('dailyTranslationsChart');
+            if (dailyChart) {
+                dailyChart.style.display = 'none';
+                const dailyContainer = dailyChart.parentElement;
+                dailyContainer.innerHTML = `
+                    <div class="chart-fallback">
+                        <div class="fallback-icon">📈</div>
+                        <h3>日別翻訳統計</h3>
+                        <div class="fallback-data">
+                            ${dailyData.map(d => `<div class="data-item"><span>${d.date}:</span> <span>${d.count}件</span></div>`).join('')}
+                        </div>
+                        <small class="fallback-note">Chart.js を読み込めませんでした</small>
+                    </div>
+                `;
+            }
+        }
+        
+        function initializeCharts() {
+            if (typeof Chart === 'undefined') {
+                console.warn('Chart.js が利用できません。フォールバック表示を使用します。');
+                chartJsError = true;
+                showChartFallbacks();
+                return;
+            }
+            
+            chartJsLoaded = true;
+            
+            try {
+                // Gemini推奨チャート
+                const geminiCtx = document.getElementById('geminiRecommendationChart').getContext('2d');
+                const geminiData = {{ system_stats.gemini_recommendations|tojson }};
+                
+                new Chart(geminiCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(geminiData),
+                        datasets: [{
+                            data: Object.values(geminiData),
+                            backgroundColor: ['#007AFF', '#FF9500', '#34C759', '#FF3B30'],
+                            borderWidth: 2,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
 
-        // 日別翻訳チャート
-        const dailyCtx = document.getElementById('dailyTranslationsChart').getContext('2d');
-        const dailyData = {{ translation_analytics.daily_translations|tojson }};
-        
-        new Chart(dailyCtx, {
-            type: 'line',
-            data: {
-                labels: dailyData.map(d => d.date),
-                datasets: [{
-                    label: '翻訳数',
-                    data: dailyData.map(d => d.count),
-                    borderColor: '#007AFF',
-                    backgroundColor: 'rgba(0, 122, 255, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true
+                // 日別翻訳チャート
+                const dailyCtx = document.getElementById('dailyTranslationsChart').getContext('2d');
+                const dailyData = {{ translation_analytics.daily_translations|tojson }};
+                
+                new Chart(dailyCtx, {
+                    type: 'line',
+                    data: {
+                        labels: dailyData.map(d => d.date),
+                        datasets: [{
+                            label: '翻訳数',
+                            data: dailyData.map(d => d.count),
+                            borderColor: '#007AFF',
+                            backgroundColor: 'rgba(0, 122, 255, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
                     }
-                }
+                });
+                
+                console.log('✅ Chart.js グラフが正常に初期化されました');
+                
+            } catch (error) {
+                console.error('Chart.js 初期化エラー:', error);
+                showChartFallbacks();
             }
-        });
+        }
 
         // ダッシュボード更新
         function refreshDashboard() {
@@ -426,6 +496,11 @@
         document.addEventListener('DOMContentLoaded', function() {
             loadTask292Stats();
             
+            // Chart.js の初期化（遅延実行でフォールバック対応）
+            setTimeout(() => {
+                initializeCharts();
+            }, 100);
+            
             // 30秒ごとにTask 2.9.2統計も更新
             setInterval(loadTask292Stats, 30000);
         });
@@ -527,6 +602,80 @@
             border-color: rgba(255, 255, 255, 0.2);
         }
 
+        /* Chart.js フォールバック表示スタイル */
+        .chart-fallback {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 250px;
+            background: var(--bg-light);
+            border: 2px dashed var(--border-light);
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .fallback-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.6;
+        }
+        
+        .chart-fallback h3 {
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+            font-size: 1.25rem;
+        }
+        
+        .fallback-data {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            width: 100%;
+            max-width: 300px;
+        }
+        
+        .data-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid var(--border-light);
+        }
+        
+        .data-item span:first-child {
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        
+        .data-item span:last-child {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        
+        .fallback-note {
+            color: var(--text-muted);
+            font-style: italic;
+            margin-top: 0.5rem;
+        }
+        
+        /* フォールバック表示の改良 */
+        .gemini-chart-container .chart-fallback {
+            height: 200px;
+        }
+        
+        .analytics-chart .chart-fallback {
+            height: 300px;
+        }
+        
+        .analytics-chart .fallback-data {
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
         /* レスポンシブ対応 */
         @media (max-width: 768px) {
             .task292-stats-grid {
@@ -550,6 +699,19 @@
             .quick-action-btn {
                 text-align: center;
                 padding: 0.6rem 1rem;
+            }
+            
+            .chart-fallback {
+                height: 200px;
+                padding: 1rem;
+            }
+            
+            .fallback-icon {
+                font-size: 2rem;
+            }
+            
+            .chart-fallback h3 {
+                font-size: 1rem;
             }
         }
     </style>

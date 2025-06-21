@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ page_title }} - LangPont 管理者</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
 </head>
 <body>
     <!-- 🚀 管理者データ分析画面 - Task 2.9.2 Phase B-1 -->
@@ -315,11 +315,24 @@
     <script>
         // 🚀 管理者データ分析画面 JavaScript
         
-        // 翻訳トレンドチャート
-        const trendCtx = document.getElementById('translationTrendChart').getContext('2d');
-        const trendData = {{ translation_analytics.daily_translations|tojson }};
-        
-        new Chart(trendCtx, {
+        // Chart.js フォールバックチェック
+        if (typeof Chart === 'undefined') {
+            console.warn('Chart.js が読み込めませんでした。グラフ機能は無効になります。');
+            document.querySelectorAll('canvas').forEach(canvas => {
+                canvas.style.display = 'none';
+                const message = document.createElement('div');
+                message.style.padding = '20px';
+                message.style.textAlign = 'center';
+                message.style.color = '#666';
+                message.textContent = 'グラフを表示できません。ページを再読み込みしてください。';
+                canvas.parentNode.appendChild(message);
+            });
+        } else {
+            // 翻訳トレンドチャート
+            const trendCtx = document.getElementById('translationTrendChart').getContext('2d');
+            const trendData = {{ translation_analytics.daily_translations|tojson }};
+            
+            new Chart(trendCtx, {
             type: 'line',
             data: {
                 labels: trendData.map(d => d.date),
@@ -464,8 +477,9 @@
             if (translationsElement) translationsElement.textContent = stats.total_translations;
         }
 
-        // 初期化
-        console.log('🚀 LangPont管理者データ分析画面 Phase B-1 初期化完了');
+            // 初期化
+            console.log('🚀 LangPont管理者データ分析画面 Phase B-1 初期化完了');
+        }
     </script>
 
     <style>

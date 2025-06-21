@@ -18,7 +18,7 @@ labels = {
         "section_chatgpt": "ChatGPTによる翻訳",
         "section_better": "より良い翻訳提案（ChatGPT）",
         "section_gemini": "Geminiによる翻訳",
-        "gemini_nuance_title": "Geminiによる3文のニュアンス解析:",
+        "gemini_nuance_title": "🧠 3つの文章のニュアンス解析:",
         "gemini_loading": "🧠 ニュアンス分析を取得中...",
         "gemini_failed": "⚠️ Gemini分析に失敗しました",
         "label_french": "フランス語",
@@ -60,7 +60,7 @@ labels = {
         "engine_gemini": "Gemini分析", 
         "engine_gemini_desc": "丁寧な説明",
         "engine_claude": "Claude分析",
-        "engine_claude_desc": "準備中",
+        "engine_claude_desc": "深いニュアンス",
         
         # 🌍 展開ボタンとUIメッセージ（多言語対応）
         "expand_full_text": "▼ 全文を表示",
@@ -313,7 +313,7 @@ labels = {
         "section_chatgpt": "Translation by ChatGPT",
         "section_better": "Improved translation (ChatGPT)",
         "section_gemini": "Translation by Gemini",
-        "gemini_nuance_title": "Gemini's Nuance Analysis (3 Sentences):",
+        "gemini_nuance_title": "🧠 Nuance Analysis (3 Sentences):",
         "gemini_loading": "🧠 Analyzing nuance with Gemini...",
         "gemini_failed": "⚠️ Failed to analyze with Gemini.",
         "label_french": "French",
@@ -357,7 +357,7 @@ labels = {
         "engine_gemini": "Gemini Analysis",
         "engine_gemini_desc": "Detailed Explanation",
         "engine_claude": "Claude Analysis",
-        "engine_claude_desc": "Coming Soon",
+        "engine_claude_desc": "Deep Nuance",
         
         # 🌍 展開ボタンとUIメッセージ（多言語対応）
         "expand_full_text": "▼ Show full text",
@@ -608,7 +608,7 @@ labels = {
         "section_chatgpt": "Traduction par ChatGPT",
         "section_better": "Traduction améliorée (ChatGPT)",
         "section_gemini": "Traduction par Gemini",
-        "gemini_nuance_title": "Analyse de nuance par Gemini (3 phrases) :",
+        "gemini_nuance_title": "🧠 Analyse de nuance (3 phrases) :",
         "gemini_loading": "🧠 Analyse de la nuance avec Gemini...",
         "gemini_failed": "⚠️ L'analyse avec Gemini a échoué.",
         "label_french": "Français",
@@ -652,7 +652,7 @@ labels = {
         "engine_gemini": "Analyse Gemini",
         "engine_gemini_desc": "Explication Détaillée",
         "engine_claude": "Analyse Claude",
-        "engine_claude_desc": "Bientôt Disponible",
+        "engine_claude_desc": "Nuances Profondes",
         
         # 🌍 Boutons d'expansion et messages UI (support multilingue)
         "expand_full_text": "▼ Afficher le texte complet",
@@ -1156,7 +1156,7 @@ labels["es"] = {
     "section_chatgpt": "Traducción de ChatGPT",
     "section_better": "Traducción mejorada (ChatGPT)",
     "section_gemini": "Traducción de Gemini",
-    "gemini_nuance_title": "Análisis de matices de Gemini (3 oraciones):",
+    "gemini_nuance_title": "🧠 Análisis de matices (3 oraciones):",
     "gemini_loading": "🧠 Obteniendo análisis de matices...",
     "gemini_failed": "⚠️ Falló el análisis de Gemini",
     "label_french": "Francés",
@@ -1200,7 +1200,7 @@ labels["es"] = {
     "engine_gemini": "Análisis Gemini",
     "engine_gemini_desc": "Explicación Detallada",
     "engine_claude": "Análisis Claude",
-    "engine_claude_desc": "Próximamente",
+    "engine_claude_desc": "Matices Profundos",
     
     # 🌍 Botones de expansión y mensajes UI (soporte multilingüe)
     "expand_full_text": "▼ Mostrar texto completo",

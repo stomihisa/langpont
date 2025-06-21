@@ -2250,7 +2250,7 @@ window.currentLabels = {
                     💎 {{ labels.engine_gemini }}<br>
                     <small>{{ labels.engine_gemini_desc }}</small>
                 </button>
-                <button type="button" class="engine-btn engine-pending" data-engine="claude" onclick="selectAndRunAnalysis('claude')">
+                <button type="button" class="engine-btn" data-engine="claude" onclick="selectAndRunAnalysis('claude')">
                     🎭 {{ labels.engine_claude }}<br>
                     <small>{{ labels.engine_claude_desc }}</small>
                 </button>
@@ -3035,19 +3035,61 @@ window.currentLabels = {
     }
   }
 
-  // 🧠 選択して分析実行 - Task 2.9.2 Phase B-3.5.2 修正版
+  // 🧠 選択して分析実行 - Task 2.9.2 Phase B-3.5.7 Final Integration 修正版
   function selectAndRunAnalysis(engine) {
-    // Claude は準備中のため選択のみ
-    if (engine === 'claude') {
-      showToast('🎭 Claude分析エンジンは準備中です。近日公開予定！', 'info');
+    // 🔍 デバッグログ追加
+    console.log(`🧠 selectAndRunAnalysis called with engine: ${engine}`);
+    
+    // 必須データ確認（正しいDOM要素ID使用）
+    const translatedText = document.getElementById("translated-text")?.textContent;
+    const betterTranslation = document.getElementById("better-translation")?.textContent;
+    const geminiTranslation = document.getElementById("gemini-translation")?.textContent;
+    
+    // 🔍 デバッグ: 実際の要素内容を確認
+    console.log('🔍 Translation data check:');
+    console.log('  - ChatGPT:', translatedText?.substring(0, 50) + '...');
+    console.log('  - Enhanced:', betterTranslation?.substring(0, 50) + '...');
+    console.log('  - Gemini:', geminiTranslation?.substring(0, 50) + '...');
+    
+    if (!translatedText?.trim() || !betterTranslation?.trim() || !geminiTranslation?.trim()) {
+      console.error('❌ 翻訳データが不足しています');
+      console.error('翻訳データ状態:', {
+        chatgpt: !!translatedText?.trim(),
+        enhanced: !!betterTranslation?.trim(),
+        gemini: !!geminiTranslation?.trim()
+      });
+      alert('先に翻訳を実行してください');
       return;
     }
     
-    // 🆕 新しい選択ロジックを使用
+    // 🆕 エンジン選択とセッション更新
     setAnalysisEngine(engine);
     
-    // その後分析を実行
-    fetchNuanceAnalysis(engine);
+    // 🆕 サーバーセッションも更新
+    fetch('/set_analysis_engine', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+      },
+      body: JSON.stringify({ engine: engine })
+    }).then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          console.log(`✅ Server session updated to: ${engine}`);
+          // セッション更新後に分析実行
+          fetchNuanceAnalysis(engine);
+        } else {
+          console.error('❌ Server session update failed:', data.error);
+          // エラーでも分析は実行
+          fetchNuanceAnalysis(engine);
+        }
+      })
+      .catch(error => {
+        console.error('❌ Server session update error:', error);
+        // エラーでも分析は実行
+        fetchNuanceAnalysis(engine);
+      });
   }
 
   // 🧠 ニュアンス分析エンジン選択（UIのみ更新） - Task 2.9.2 Phase B-3.5.2
@@ -3055,17 +3097,11 @@ window.currentLabels = {
     // 🆕 新しい setAnalysisEngine 関数を使用
     setAnalysisEngine(engine);
     
-    // Claude は準備中のため選択不可
-    if (engine === 'claude') {
-      showToast('🎭 Claude分析エンジンは準備中です。近日公開予定！', 'info');
-      return;
-    }
-    
     // 説明文を更新
     const descriptions = {
       'chatgpt': '🤖 ChatGPT が論理的で詳細な分析を提供します',
       'gemini': '💎 Gemini が翻訳の違いやニュアンスを丁寧に解説します',
-      'claude': '🎭 Claude が創造的で洞察に富んだ分析を提供します（準備中）'
+      'claude': '🎭 Claude が深いニュアンスと文化的洞察を提供します'
     };
     
     const descElement = document.getElementById('engineDescText');
@@ -3073,7 +3109,7 @@ window.currentLabels = {
       descElement.textContent = descriptions[engine];
     }
     
-    // セッションにも保存（AJAX）
+    // セッションにも保存（AJAX）- エラー処理を強化
     fetch('/set_analysis_engine', {
       method: 'POST',
       headers: {
@@ -3083,18 +3119,28 @@ window.currentLabels = {
       body: JSON.stringify({
         engine: engine
       })
-    }).then(response => response.json())
+    }).then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+      })
       .then(data => {
         if (data.success) {
           console.log(`🧠 Analysis engine changed to: ${engine}`);
+          console.log(`🧠 Server confirmed: ${data.message}`);
           showToast(`Analysis engine changed to ${engine.toUpperCase()}`, 'success');
           
           // 🚨 自動実行を削除 - ユーザーの明示的なクリックでのみ実行
           // fetchNuanceAnalysis(engine); // 削除
+        } else {
+          console.error('分析エンジン設定エラー:', data.error);
+          showToast(`エンジン設定エラー: ${data.error}`, 'error');
         }
       })
       .catch(error => {
         console.error('分析エンジン設定エラー:', error);
+        showToast('エンジン設定に失敗しました', 'error');
       });
   }
 
@@ -3108,13 +3154,8 @@ window.currentLabels = {
     }
     
     if (engineStatusElement) {
-      if (engine === 'claude') {
-        engineStatusElement.textContent = window.currentLabels.engine_claude_desc || 'Coming Soon';
-        engineStatusElement.style.color = '#FF9500';
-      } else {
-        engineStatusElement.textContent = window.currentLabels.loading_text || 'Available';
-        engineStatusElement.style.color = '#34C759';
-      }
+      engineStatusElement.textContent = window.currentLabels.loading_text || 'Available';
+      engineStatusElement.style.color = '#34C759';
     }
   }
   
@@ -3157,7 +3198,7 @@ window.currentLabels = {
     
     // 選択されたボタンに 'selected' クラスを追加
     const selectedButton = document.querySelector(`[data-engine="${engine}"]`);
-    if (selectedButton && !selectedButton.classList.contains('engine-pending')) {
+    if (selectedButton) {
       selectedButton.classList.add('selected');
     }
     
@@ -4237,7 +4278,14 @@ window.currentLabels = {
 
     fetch("/get_nuance", {
       method: "POST",
-      credentials: "include"
+      credentials: "include",
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+      },
+      body: JSON.stringify({
+        engine: engine
+      })
     })
       .then(response => {
         logOnce(`analysis_response_${engine}`, `🧠 ${engine}分析レスポンス受信: ${response.status}`);

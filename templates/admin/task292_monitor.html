@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Task 2.9.2 専用監視 - LangPont 管理者</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js" onerror="handleChartJsError()"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-adapter-date-fns/2.0.0/chartjs-adapter-date-fns.bundle.min.js" onerror="handleChartAdapterError()"></script>
 </head>
 <body>
     <!-- 🚀 Task 2.9.2 専用監視ダッシュボード - Phase B-2 -->
@@ -32,6 +32,9 @@
         <nav class="admin-nav">
             <a href="{{ url_for('admin.dashboard') }}" class="nav-item">
                 📊 ダッシュボード
+            </a>
+            <a href="/admin/comprehensive_dashboard" class="nav-item">
+                📋 統合活動ログ
             </a>
             <a href="{{ url_for('admin.task292_monitor') }}" class="nav-item active">
                 🔍 Task 2.9.2 監視
@@ -362,88 +365,186 @@
         
         let autoRefreshEnabled = true;
         let autoRefreshInterval = null;
+        let chartJsLoaded = false;
+        let chartJsError = false;
+        let chartAdapterError = false;
         
-        // 推奨エンジン分布チャート
-        const recCtx = document.getElementById('recommendationDistChart').getContext('2d');
-        const recData = {{ task292_metrics.recommendations|tojson }};
+        // Chart.js エラーハンドリング
+        function handleChartJsError() {
+            chartJsError = true;
+            console.warn('Chart.js の読み込みに失敗しました。フォールバック表示を有効化します。');
+            showChartFallbacks();
+        }
         
-        new Chart(recCtx, {
-            type: 'doughnut',
-            data: {
-                labels: Object.keys(recData).map(key => key.charAt(0).toUpperCase() + key.slice(1)),
-                datasets: [{
-                    data: Object.values(recData),
-                    backgroundColor: ['#007AFF', '#FF9500', '#34C759', '#FF3B30', '#5856D6'],
-                    borderWidth: 2,
-                    borderColor: '#ffffff'
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { position: 'bottom' },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                const percentage = ((context.parsed / total) * 100).toFixed(1);
-                                return `${context.label}: ${context.parsed} (${percentage}%)`;
+        function handleChartAdapterError() {
+            chartAdapterError = true;
+            console.warn('Chart.js adapter の読み込みに失敗しました。');
+        }
+        
+        function showChartFallbacks() {
+            const recData = {{ task292_metrics.recommendations|tojson }};
+            const methodData = {{ task292_metrics.extraction_methods|tojson }};
+            const langData = {{ task292_metrics.language_distribution|tojson }};
+            
+            // 推奨エンジン分布チャートのフォールバック
+            const recChart = document.getElementById('recommendationDistChart');
+            if (recChart) {
+                recChart.style.display = 'none';
+                const recContainer = recChart.parentElement;
+                recContainer.innerHTML = `
+                    <div class="chart-fallback">
+                        <div class="fallback-icon">📊</div>
+                        <h3>推奨エンジン分布</h3>
+                        <div class="fallback-data">
+                            ${Object.entries(recData).map(([key, value]) => 
+                                `<div class="data-item"><span>${key.charAt(0).toUpperCase() + key.slice(1)}:</span> <span>${value}</span></div>`
+                            ).join('')}
+                        </div>
+                        <small class="fallback-note">Chart.js を読み込めませんでした</small>
+                    </div>
+                `;
+            }
+            
+            // 抽出メソッド分布チャートのフォールバック
+            const methodChart = document.getElementById('methodDistChart');
+            if (methodChart) {
+                methodChart.style.display = 'none';
+                const methodContainer = methodChart.parentElement;
+                methodContainer.innerHTML = `
+                    <div class="chart-fallback">
+                        <div class="fallback-icon">📈</div>
+                        <h3>抽出メソッド分析</h3>
+                        <div class="fallback-data">
+                            ${Object.entries(methodData).map(([key, value]) => 
+                                `<div class="data-item"><span>${key}:</span> <span>${value} 件</span></div>`
+                            ).join('')}
+                        </div>
+                        <small class="fallback-note">Chart.js を読み込めませんでした</small>
+                    </div>
+                `;
+            }
+            
+            // 言語分布チャートのフォールバック
+            const langChart = document.getElementById('languageDistChart');
+            if (langChart) {
+                langChart.style.display = 'none';
+                const langContainer = langChart.parentElement;
+                langContainer.innerHTML = `
+                    <div class="chart-fallback">
+                        <div class="fallback-icon">🌍</div>
+                        <h3>言語分布</h3>
+                        <div class="fallback-data">
+                            ${Object.entries(langData).map(([key, value]) => 
+                                `<div class="data-item"><span>${key}:</span> <span>${value} 件</span></div>`
+                            ).join('')}
+                        </div>
+                        <small class="fallback-note">Chart.js を読み込めませんでした</small>
+                    </div>
+                `;
+            }
+        }
+        
+        function initializeCharts() {
+            if (typeof Chart === 'undefined') {
+                console.warn('Chart.js が利用できません。フォールバック表示を使用します。');
+                chartJsError = true;
+                showChartFallbacks();
+                return;
+            }
+            
+            chartJsLoaded = true;
+            
+            try {
+                const recData = {{ task292_metrics.recommendations|tojson }};
+                const methodData = {{ task292_metrics.extraction_methods|tojson }};
+                const langData = {{ task292_metrics.language_distribution|tojson }};
+                
+                // 推奨エンジン分布チャート
+                const recCtx = document.getElementById('recommendationDistChart').getContext('2d');
+                
+                new Chart(recCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(recData).map(key => key.charAt(0).toUpperCase() + key.slice(1)),
+                        datasets: [{
+                            data: Object.values(recData),
+                            backgroundColor: ['#007AFF', '#FF9500', '#34C759', '#FF3B30', '#5856D6'],
+                            borderWidth: 2,
+                            borderColor: '#ffffff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { position: 'bottom' },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                        return `${context.label}: ${context.parsed} (${percentage}%)`;
+                                    }
+                                }
                             }
                         }
                     }
-                }
-            }
-        });
+                });
 
-        // 抽出メソッド分布チャート
-        const methodCtx = document.getElementById('methodDistChart').getContext('2d');
-        const methodData = {{ task292_metrics.extraction_methods|tojson }};
-        
-        new Chart(methodCtx, {
-            type: 'bar',
-            data: {
-                labels: Object.keys(methodData),
-                datasets: [{
-                    label: '抽出回数',
-                    data: Object.values(methodData),
-                    backgroundColor: 'rgba(0, 122, 255, 0.8)',
-                    borderColor: '#007AFF',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: { beginAtZero: true }
-                },
-                plugins: {
-                    legend: { display: false }
-                }
-            }
-        });
+                // 抽出メソッド分布チャート
+                const methodCtx = document.getElementById('methodDistChart').getContext('2d');
+                
+                new Chart(methodCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: Object.keys(methodData),
+                        datasets: [{
+                            label: '抽出回数',
+                            data: Object.values(methodData),
+                            backgroundColor: 'rgba(0, 122, 255, 0.8)',
+                            borderColor: '#007AFF',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: { beginAtZero: true }
+                        },
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
 
-        // 言語分布チャート
-        const langCtx = document.getElementById('languageDistChart').getContext('2d');
-        const langData = {{ task292_metrics.language_distribution|tojson }};
-        
-        new Chart(langCtx, {
-            type: 'pie',
-            data: {
-                labels: Object.keys(langData),
-                datasets: [{
-                    data: Object.values(langData),
-                    backgroundColor: ['#007AFF', '#FF9500', '#34C759', '#FF3B30'],
-                    borderWidth: 2,
-                    borderColor: '#ffffff'
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { position: 'right' }
-                }
+                // 言語分布チャート
+                const langCtx = document.getElementById('languageDistChart').getContext('2d');
+                
+                new Chart(langCtx, {
+                    type: 'pie',
+                    data: {
+                        labels: Object.keys(langData),
+                        datasets: [{
+                            data: Object.values(langData),
+                            backgroundColor: ['#007AFF', '#FF9500', '#34C759', '#FF3B30'],
+                            borderWidth: 2,
+                            borderColor: '#ffffff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { position: 'right' }
+                        }
+                    }
+                });
+                
+                console.log('✅ Task 2.9.2 Chart.js グラフが正常に初期化されました');
+                
+            } catch (error) {
+                console.error('Task 2.9.2 Chart.js 初期化エラー:', error);
+                showChartFallbacks();
             }
-        });
+        }
 
         // リアルタイム更新機能
         function startAutoRefresh() {
@@ -549,6 +650,11 @@
         // 初期化
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 Task 2.9.2 専用監視ダッシュボード Phase B-2 初期化完了');
+            
+            // Chart.js の初期化（遅延実行でフォールバック対応）
+            setTimeout(() => {
+                initializeCharts();
+            }, 100);
             
             // 自動更新開始
             if (autoRefreshEnabled) {
@@ -960,6 +1066,77 @@
             gap: 0.5rem;
         }
 
+        /* Chart.js フォールバック表示スタイル */
+        .chart-fallback {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 250px;
+            background: var(--bg-light);
+            border: 2px dashed var(--border-light);
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .fallback-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.6;
+        }
+        
+        .chart-fallback h3 {
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+            font-size: 1.25rem;
+        }
+        
+        .fallback-data {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            width: 100%;
+            max-width: 300px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        
+        .data-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid var(--border-light);
+        }
+        
+        .data-item span:first-child {
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        
+        .data-item span:last-child {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        
+        .fallback-note {
+            color: var(--text-muted);
+            font-style: italic;
+            margin-top: 0.5rem;
+        }
+        
+        /* フォールバック表示の改良 */
+        .chart-container .chart-fallback {
+            height: 250px;
+        }
+        
+        .language-chart .chart-fallback {
+            height: 300px;
+        }
+
         /* レスポンシブ対応 */
         @media (max-width: 768px) {
             .analysis-grid,
@@ -980,6 +1157,23 @@
             
             .error-patterns-grid {
                 grid-template-columns: 1fr;
+            }
+            
+            .chart-fallback {
+                height: 200px;
+                padding: 1rem;
+            }
+            
+            .fallback-icon {
+                font-size: 2rem;
+            }
+            
+            .chart-fallback h3 {
+                font-size: 1rem;
+            }
+            
+            .fallback-data {
+                max-height: 100px;
             }
         }
     </style>
