@@ -15,7 +15,9 @@
       "Bash(echo:*)",
       "Bash(unset PS1)",
       "Bash(exec zsh)",
-      "Bash(deactivate)"
+      "Bash(deactivate)",
+      "Bash(/usr/bin/python3:*)",
+      "Bash(export PYTHONPATH=\"/Users/shintaro_imac_2/langpont\")"
     ],
     "deny": []
   }

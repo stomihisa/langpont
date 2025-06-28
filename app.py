@@ -5609,7 +5609,7 @@ def get_four_stage_analysis():
         match_count = sum(1 for item in four_stage_data if item['stage3']['match'])
         match_rate = (match_count / total_count * 100) if total_count > 0 else 0
         copy_count = sum(1 for item in four_stage_data if item['stage2']['data_source'] == 'actual_copy_tracking')
-        human_check_count = sum(1 for item in four_stage_data if item['stage0']['status'] == '完了')
+        human_check_count = sum(1 for item in four_stage_data if item['stage0']['status'] and item['stage0']['status'] != '未チェック')
         
         return jsonify({
             'success': True,
@@ -5726,9 +5726,9 @@ def api_llm_recommendation_check():
             app_logger.info(f"Successfully processed {len(data)} records for LLM recommendation check")
             
             # 統計計算
-            pending_count = len([item for item in data if not item.get('human_checked', False)])
-            approved_count = len([item for item in data if item.get('human_check_result') == 'approved'])
-            rejected_count = len([item for item in data if item.get('human_check_result') == 'rejected'])
+            pending_count = len([item for item in data if not item.get('stage0_human_check')])
+            approved_count = len([item for item in data if item.get('stage0_human_check')])
+            rejected_count = 0  # 新しい①〜④選択方式では「修正」の概念がない
             accuracy_rate = (approved_count / len(data) * 100) if len(data) > 0 else 0
             
             return jsonify({

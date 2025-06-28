@@ -257,15 +257,11 @@
                 <div class="stat-value" id="pending-count">-</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">✅ 承認済み</div>
+                <div class="stat-label">✅ 人間チェック済み</div>
                 <div class="stat-value" id="approved-count">-</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">❌ 修正必要</div>
-                <div class="stat-value" id="rejected-count">-</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">📊 総精度</div>
+                <div class="stat-label">🎯 LLM推奨一致率</div>
                 <div class="stat-value" id="accuracy-rate">-</div>
             </div>
         </div>
@@ -564,7 +560,6 @@
             // 統計更新
             document.getElementById('pending-count').textContent = data.pending_count || 0;
             document.getElementById('approved-count').textContent = data.approved_count || 0;
-            document.getElementById('rejected-count').textContent = data.rejected_count || 0;
             document.getElementById('accuracy-rate').textContent = 
                 data.accuracy_rate ? `${data.accuracy_rate.toFixed(1)}%` : '-';
             
@@ -595,9 +590,7 @@
                     <td>${item.actual_analysis_llm || '-'}</td>
                     <td><span class="status-badge status-${item.stage0_human_check ? 'completed' : 'pending'}">${getHumanCheckText(item.stage0_human_check)}</span></td>
                     <td>
-                        <button class="action-btn btn-approve" onclick="updateCheck(${item.id}, 'approved')">✅ 承認</button>
-                        <button class="action-btn btn-reject" onclick="updateCheck(${item.id}, 'rejected')">❌ 修正</button>
-                        <button class="action-btn btn-detail" onclick="showDetail(${item.id})">📋 詳細</button>
+                        <button class="action-btn btn-detail" onclick="showDetail(${item.id})">📋 詳細・チェック</button>
                     </td>
                 `;
                 tbody.appendChild(row);
@@ -607,13 +600,10 @@
             document.getElementById('check-content').style.display = 'block';
         }
         
-        // ステータステキスト変換
+        // ステータステキスト変換（廃止予定）
         function getStatusText(status) {
-            switch(status) {
-                case 'approved': return '✅ 承認済み';
-                case 'rejected': return '❌ 修正必要';
-                default: return '⏳ チェック待ち';
-            }
+            // 新しい①〜④選択方式では使用されません
+            return '⏳ チェック待ち';
         }
         
         // 人間チェック結果テキスト変換
@@ -627,30 +617,10 @@
             }
         }
         
-        // チェック結果更新
+        // 旧チェック結果更新（廃止済み - 新しい①〜④選択方式ではupdateHumanCheck()を使用）
         async function updateCheck(id, result) {
-            try {
-                const response = await fetch('/admin/api/llm_recommendation_check', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    body: JSON.stringify({
-                        id: id,
-                        result: result
-                    })
-                });
-                
-                if (response.ok) {
-                    loadCheckData(); // データ再読み込み
-                } else {
-                    alert('更新に失敗しました');
-                }
-            } catch (error) {
-                console.error('更新エラー:', error);
-                alert('エラーが発生しました');
-            }
+            console.warn('updateCheck()は廃止されました。updateHumanCheck()を使用してください。');
+            // 後方互換性のため残していますが、新しいシステムでは使用されません
         }
         
         // 詳細表示
@@ -800,10 +770,10 @@
             document.getElementById('detail-modal').style.display = 'none';
         }
         
-        // モーダルからのチェック更新
+        // モーダルからのチェック更新（廃止済み - 新しい①〜④選択方式では直接updateHumanCheck()を使用）
         async function updateCheckFromModal(id, result) {
-            await updateCheck(id, result);
-            closeDetailModal();
+            console.warn('updateCheckFromModal()は廃止されました。モーダル内では直接updateHumanCheck()を使用してください。');
+            // 新しいシステムでは使用されません
         }
         
         // 人間による推奨判定更新
