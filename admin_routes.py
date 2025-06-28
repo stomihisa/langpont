@@ -66,9 +66,18 @@ def dashboard():
         return render_template('admin/dashboard.html', **dashboard_data)
         
     except Exception as e:
-        log_error("dashboard_error", str(e), user_info.get('username'))
-        flash(f'ダッシュボード読み込みエラー: {str(e)}', 'error')
-        return redirect(url_for('index'))
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"🚨 DASHBOARD ERROR: {str(e)}")
+        print(f"🚨 TRACEBACK: {error_trace}")
+        
+        try:
+            log_error("dashboard_error", str(e), user_info.get('username'))
+        except:
+            print("🚨 ERROR: Could not log dashboard error")
+        
+        # デバッグ用: エラー詳細を返す
+        return f"<h1>Dashboard Error</h1><pre>{str(e)}</pre><pre>{error_trace}</pre>", 500
 
 
 @admin_bp.route('/api/system_stats')

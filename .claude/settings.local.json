@@ -5,7 +5,17 @@
       "Bash(ls:*)",
       "Bash(find:*)",
       "Bash(python3:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(echo)",
+      "Bash(kill:*)",
+      "Bash(./start_app.sh:*)",
+      "Bash(cat:*)",
+      "Bash(echo $PS1)",
+      "Bash(export PS1=\"%n@%m %1~ %# \")",
+      "Bash(echo:*)",
+      "Bash(unset PS1)",
+      "Bash(exec zsh)",
+      "Bash(deactivate)"
     ],
     "deny": []
   }

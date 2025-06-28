@@ -212,7 +212,7 @@ window.currentLabels = {
         color: white;
     }
     
-    /* 🚀 Phase B-1: 管理者ボタンスタイル */
+    /* 🚀 Phase B-1: 管理者ボタンスタイル（強化版） */
     .admin-btn {
         background: rgba(255, 149, 0, 0.2);
         border: 1px solid rgba(255, 149, 0, 0.3);
@@ -226,12 +226,22 @@ window.currentLabels = {
         transition: all 0.2s;
         display: inline-block;
         margin-right: 12px;
+        position: relative;
+        z-index: 9999 !important;
+        pointer-events: auto !important;
+        user-select: none;
     }
     
     .admin-btn:hover {
         background: rgba(255, 149, 0, 0.3);
         color: white;
         transform: translateY(-1px);
+        z-index: 10000 !important;
+    }
+    
+    .admin-btn:active {
+        background: rgba(255, 149, 0, 0.5);
+        transform: translateY(0);
     }
     
     /* 🆕 翻訳ペア選択セクション（国旗付き） */
@@ -2051,14 +2061,14 @@ window.currentLabels = {
           <div class="auth-button">
               <!-- 🚀 Phase B-1: 管理者ダッシュボードリンク -->
               {% if session.get('user_role') in ['admin', 'developer'] %}
-              <a href="{{ url_for('admin.dashboard') }}" class="admin-btn" title="管理者ダッシュボード">👑 {{ labels.get("admin_dashboard", "管理者") }}</a>
+              <a href="{{ url_for('admin_comprehensive_dashboard') }}" class="admin-btn" title="管理者ダッシュボード" onclick="event.stopPropagation(); window.location.href='{{ url_for('admin_comprehensive_dashboard') }}'; return false;">👑 {{ labels.get("admin_dashboard", "管理者") }}</a>
               {% endif %}
-              <a href="{{ url_for('profile_redirect') }}" class="profile-btn">👤 {{ labels.get("user_profile", "プロフィール") }}</a>
-              <a href="{{ url_for('logout') }}" class="logout-btn">🔓 {{ labels["logout"] }}</a>
+              <a href="{{ url_for('profile_redirect') }}" class="profile-btn" onclick="event.stopPropagation(); window.location.href='{{ url_for('profile_redirect') }}'; return false;">👤 {{ labels.get("user_profile", "プロフィール") }}</a>
+              <a href="{{ url_for('logout') }}" class="logout-btn" onclick="event.stopPropagation(); window.location.href='{{ url_for('logout') }}'; return false;">🔓 {{ labels["logout"] }}</a>
           </div>
           {% else %}
           <div class="auth-button">
-              <a href="{{ url_for('login') }}" class="profile-btn">🔑 {{ labels.get("login", "ログイン") }}</a>
+              <a href="{{ url_for('login') }}" class="profile-btn" onclick="event.stopPropagation(); window.location.href='{{ url_for('login') }}'; return false;">🔑 {{ labels.get("login", "ログイン") }}</a>
           </div>
           {% endif %}
       </div>
@@ -5962,6 +5972,47 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
     
     {% endif %}
   });
+
+  // 🚨 管理者ボタンデバッグ関数
+  function debugAdminButton() {
+    console.log("🚨 ADMIN BUTTON DEBUG: Button clicked!");
+    
+    try {
+      // 1. 基本チェック
+      console.log("🚨 DEBUG: Starting admin button debug...");
+      
+      // 2. URL確認
+      const adminUrl = "{{ url_for('admin_comprehensive_dashboard') }}";
+      console.log("🚨 DEBUG: Admin URL:", adminUrl);
+      
+      // 3. 複数の方法でナビゲーションを試行
+      console.log("🚨 DEBUG: Attempting navigation...");
+      
+      // 方法1: window.location.href
+      console.log("🚨 DEBUG: Method 1 - window.location.href");
+      window.location.href = adminUrl;
+      
+      // 方法2: window.open (フォールバック)
+      setTimeout(() => {
+        console.log("🚨 DEBUG: Method 2 - window.open fallback");
+        window.open(adminUrl, '_self');
+      }, 100);
+      
+      // 方法3: form submit (最終フォールバック)
+      setTimeout(() => {
+        console.log("🚨 DEBUG: Method 3 - form submit fallback");
+        const form = document.createElement('form');
+        form.method = 'GET';
+        form.action = adminUrl;
+        document.body.appendChild(form);
+        form.submit();
+      }, 200);
+      
+    } catch (error) {
+      console.error("🚨 DEBUG: Error in admin button:", error);
+      alert("管理者ボタンエラー: " + error.message);
+    }
+  }
 
 </script>
 {% endblock %}" id="translated-label">{{ labels["label_" + target_lang] }}</div>

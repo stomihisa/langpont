@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LangPont データ診断ページ</title>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .diagnostic-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 5px solid #28a745;
+        }
+        .error {
+            border-left-color: #dc3545;
+            background: #fff5f5;
+        }
+        .warning {
+            border-left-color: #ffc107;
+            background: #fffdf5;
+        }
+        .test-button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            margin: 10px 5px;
+        }
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .data-table th, .data-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .data-table th {
+            background-color: #f2f2f2;
+        }
+        .navigation-links {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .nav-link {
+            display: inline-block;
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .nav-link:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 LangPont データ診断ページ</h1>
+        <p style="text-align: center; color: #666;">統一データサービスの状況を確認し、問題を特定します</p>
+
+        <!-- ナビゲーションリンク -->
+        <div class="navigation-links">
+            <h3>📋 ダッシュボードリンク（認証後にアクセス可能）</h3>
+            <a href="/admin/comprehensive_dashboard" class="nav-link" target="_blank">📊 統合活動ログ</a>
+            <a href="/admin/four_stage_dashboard" class="nav-link" target="_blank">🎯 4段階分析</a>
+            <a href="/admin/llm_recommendation_check" class="nav-link" target="_blank">📝 第0段階チェック</a>
+            <a href="/admin/dashboard" class="nav-link" target="_blank">🏠 管理者メイン</a>
+        </div>
+
+        <!-- データベース状況 -->
+        <div class="diagnostic-section">
+            <h3>🗃️ データベース状況</h3>
+            <div id="database-status">診断中...</div>
+            <button class="test-button" onclick="checkDatabase()">🔄 データベース再確認</button>
+        </div>
+
+        <!-- 統一データサービス状況 -->
+        <div class="diagnostic-section">
+            <h3>🔧 統一データサービス状況</h3>
+            <div id="service-status">診断中...</div>
+            <button class="test-button" onclick="checkDataService()">🔄 サービス再確認</button>
+        </div>
+
+        <!-- API状況 -->
+        <div class="diagnostic-section">
+            <h3>📡 API状況</h3>
+            <div id="api-status">診断中...</div>
+            <button class="test-button" onclick="checkAPIs()">🔄 API再確認</button>
+        </div>
+
+        <!-- 実際のデータ表示 -->
+        <div class="diagnostic-section">
+            <h3>📊 実際のデータ（認証不要版）</h3>
+            <div id="data-display">データ取得中...</div>
+            <button class="test-button" onclick="fetchActualData()">🔄 データ再取得</button>
+        </div>
+
+        <!-- エラーログ -->
+        <div class="diagnostic-section error">
+            <h3>🚨 エラーログ</h3>
+            <div id="error-log">エラーなし</div>
+        </div>
+    </div>
+
+    <script>
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            runAllDiagnostics();
+        });
+
+        function runAllDiagnostics() {
+            checkDatabase();
+            checkDataService();
+            checkAPIs();
+            fetchActualData();
+        }
+
+        async function checkDatabase() {
+            const statusDiv = document.getElementById('database-status');
+            statusDiv.innerHTML = '🔍 データベース確認中...';
+            
+            try {
+                const response = await fetch('/diagnostic/database');
+                const data = await response.json();
+                
+                if (data.success) {
+                    statusDiv.innerHTML = `
+                        ✅ データベース正常
+                        <ul>
+                            <li>総レコード数: ${data.total_records}件</li>
+                            <li>データベース: ${data.database}</li>
+                            <li>最終更新: ${data.last_update}</li>
+                        </ul>
+                    `;
+                } else {
+                    statusDiv.innerHTML = `❌ データベースエラー: ${data.error}`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `❌ データベースチェック失敗: ${error.message}`;
+            }
+        }
+
+        async function checkDataService() {
+            const statusDiv = document.getElementById('service-status');
+            statusDiv.innerHTML = '🔍 データサービス確認中...';
+            
+            try {
+                const response = await fetch('/diagnostic/data_service');
+                const data = await response.json();
+                
+                if (data.success) {
+                    statusDiv.innerHTML = `
+                        ✅ 統一データサービス正常
+                        <ul>
+                            <li>状況: ${data.status}</li>
+                            <li>キャッシュ: ${data.cache_status}</li>
+                            <li>データソース: ${data.databases}個</li>
+                        </ul>
+                    `;
+                } else {
+                    statusDiv.innerHTML = `❌ データサービスエラー: ${data.error}`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `❌ データサービスチェック失敗: ${error.message}`;
+            }
+        }
+
+        async function checkAPIs() {
+            const statusDiv = document.getElementById('api-status');
+            statusDiv.innerHTML = '🔍 API確認中...';
+            
+            const apis = [
+                '/diagnostic/api/activity_stats',
+                '/diagnostic/api/data_sources',
+                '/diagnostic/api/health'
+            ];
+
+            let results = [];
+            
+            for (const api of apis) {
+                try {
+                    const response = await fetch(api);
+                    const status = response.ok ? '✅' : '❌';
+                    results.push(`${status} ${api}: ${response.status}`);
+                } catch (error) {
+                    results.push(`❌ ${api}: ${error.message}`);
+                }
+            }
+            
+            statusDiv.innerHTML = `
+                API状況:
+                <ul>
+                    ${results.map(r => `<li>${r}</li>`).join('')}
+                </ul>
+            `;
+        }
+
+        async function fetchActualData() {
+            const displayDiv = document.getElementById('data-display');
+            displayDiv.innerHTML = '🔍 データ取得中...';
+            
+            try {
+                const response = await fetch('/diagnostic/actual_data');
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayDiv.innerHTML = `
+                        ✅ データ取得成功
+                        <table class="data-table">
+                            <tr><th>項目</th><th>値</th></tr>
+                            <tr><td>総活動数</td><td>${data.stats.total_activities}</td></tr>
+                            <tr><td>今日の活動</td><td>${data.stats.today_activities}</td></tr>
+                            <tr><td>エラー率</td><td>${data.stats.error_rate}%</td></tr>
+                            <tr><td>処理時間</td><td>${data.stats.avg_processing_time}秒</td></tr>
+                            <tr><td>データソース</td><td>${data.stats.data_source}</td></tr>
+                        </table>
+                        
+                        <h4>エンジン統計:</h4>
+                        <table class="data-table">
+                            <tr><th>エンジン</th><th>件数</th><th>信頼度</th></tr>
+                            ${data.engine_stats.map(e => `
+                                <tr>
+                                    <td>${e.button_pressed}</td>
+                                    <td>${e.count}</td>
+                                    <td>${(e.avg_confidence || 0).toFixed(2)}</td>
+                                </tr>
+                            `).join('')}
+                        </table>
+                    `;
+                } else {
+                    displayDiv.innerHTML = `❌ データ取得失敗: ${data.error}`;
+                }
+            } catch (error) {
+                displayDiv.innerHTML = `❌ データ取得エラー: ${error.message}`;
+                logError(`データ取得エラー: ${error.message}`);
+            }
+        }
+
+        function logError(message) {
+            const errorDiv = document.getElementById('error-log');
+            const timestamp = new Date().toLocaleString();
+            errorDiv.innerHTML += `<div>${timestamp}: ${message}</div>`;
+        }
+    </script>
+</body>
+</html>

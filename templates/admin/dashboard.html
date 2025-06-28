@@ -35,18 +35,18 @@
             <a href="{{ url_for('admin_comprehensive_dashboard') }}" class="nav-item">
                 📋 統合活動ログ
             </a>
-            <a href="{{ url_for('admin.task292_monitor') }}" class="nav-item">
-                🔍 Task 2.9.2 監視
+            <a href="#" class="nav-item">
+                🏗️ 統一データダッシュボード
             </a>
             {% if user_info.role == 'admin' %}
-            <a href="{{ url_for('admin.users') }}" class="nav-item">
+            <a href="/admin/users" class="nav-item">
                 👥 ユーザー管理
             </a>
             {% endif %}
-            <a href="{{ url_for('admin.logs') }}" class="nav-item">
+            <a href="/admin/logs" class="nav-item">
                 📋 システムログ
             </a>
-            <a href="{{ url_for('admin.analytics') }}" class="nav-item">
+            <a href="/admin/analytics" class="nav-item">
                 📈 データ分析
             </a>
         </nav>
