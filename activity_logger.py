@@ -119,11 +119,35 @@ class ActivityLogger:
                 day INTEGER,                              -- 日（インデックス用）
                 hour INTEGER,                             -- 時（インデックス用）
                 
+                -- 第0段階: 人間チェック
+                stage0_human_check TEXT,                  -- 人間による推奨判定 (ChatGPT/Enhanced/Gemini/None)
+                stage0_human_check_date TIMESTAMP,        -- 人間チェック日時
+                stage0_human_check_user TEXT,             -- チェック実施者
+                
                 -- 追加メモ
                 notes TEXT,                               -- 手動メモ
                 tags TEXT                                 -- タグ（JSON配列）
             )
         """)
+            
+            # 既存テーブルに新カラムを追加（安全に）
+            try:
+                cursor.execute("ALTER TABLE analysis_activity_log ADD COLUMN stage0_human_check TEXT")
+                self.logger.info("Added stage0_human_check column")
+            except sqlite3.OperationalError:
+                pass  # カラムが既に存在する場合
+                
+            try:
+                cursor.execute("ALTER TABLE analysis_activity_log ADD COLUMN stage0_human_check_date TIMESTAMP")
+                self.logger.info("Added stage0_human_check_date column")
+            except sqlite3.OperationalError:
+                pass  # カラムが既に存在する場合
+                
+            try:
+                cursor.execute("ALTER TABLE analysis_activity_log ADD COLUMN stage0_human_check_user TEXT")
+                self.logger.info("Added stage0_human_check_user column")
+            except sqlite3.OperationalError:
+                pass  # カラムが既に存在する場合
             
             # インデックス作成（パフォーマンス最適化）
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_activity_type ON analysis_activity_log(activity_type)")
@@ -133,6 +157,7 @@ class ActivityLogger:
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_button_pressed ON analysis_activity_log(button_pressed)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_actual_llm ON analysis_activity_log(actual_analysis_llm)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_error_occurred ON analysis_activity_log(error_occurred)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_stage0_human_check ON analysis_activity_log(stage0_human_check)")
             
             # テストサンプル管理テーブル
             cursor.execute("""
@@ -149,6 +174,9 @@ class ActivityLogger:
                     is_active BOOLEAN DEFAULT 1
                 )
             """)
+            
+            # 🎯 4段階分析システム用のカラムを追加（既存テーブルの拡張）
+            self._add_four_stage_analysis_columns(cursor)
         
             conn.commit()
             conn.close()
@@ -164,6 +192,84 @@ class ActivityLogger:
             else:
                 print(f"❌ Failed to initialize database: {str(e)}")
             raise
+    
+    def _add_four_stage_analysis_columns(self, cursor):
+        """🎯 4段階分析システム用のカラムを追加"""
+        try:
+            # 既存のカラムリストを取得
+            cursor.execute("PRAGMA table_info(analysis_activity_log)")
+            existing_columns = [row[1] for row in cursor.fetchall()]
+            
+            # 4段階分析用の新しいカラムを定義
+            four_stage_columns = [
+                # 第0段階: 人間によるLLM推奨チェック
+                ("human_check_result", "TEXT"),          # 'approved' | 'rejected' | 'pending'
+                ("human_check_timestamp", "TIMESTAMP"),  # 人間チェック実行時刻
+                ("human_checker_id", "TEXT"),            # チェック実行者ID
+                ("human_check_notes", "TEXT"),           # 人間チェックメモ
+                
+                # 第1段階: LLM推奨抽出・分析（改良版）
+                ("stage1_extraction_method", "TEXT"),    # 推奨抽出手法詳細
+                ("stage1_confidence_score", "REAL"),     # 第1段階の信頼度
+                ("stage1_processing_time", "REAL"),      # 第1段階処理時間
+                ("stage1_metadata", "TEXT"),             # 第1段階メタデータ（JSON）
+                
+                # 第1.5段階: 補完分析
+                ("stage15_supplementary_analysis", "TEXT"),    # 補完分析内容
+                ("stage15_context_evaluation", "TEXT"),        # コンテキスト評価
+                ("stage15_linguistic_notes", "TEXT"),          # 言語学的ノート
+                
+                # 第2段階: ユーザー実選択・行動分析（強化版）
+                ("actual_user_choice", "TEXT"),          # 実際のユーザー選択（追跡済み）
+                ("copy_behavior_tracked", "BOOLEAN"),    # コピー行動追跡済みフラグ
+                ("copied_translation", "TEXT"),          # コピーされた翻訳内容
+                ("copy_method", "TEXT"),                 # コピー方法（button|keyboard|other）
+                ("copy_timestamp", "TIMESTAMP"),         # コピー実行時刻
+                ("selection_reasoning", "TEXT"),         # 選択理由（推定・アンケート）
+                ("user_confidence_level", "REAL"),       # ユーザーの確信度
+                
+                # 第3段階: 推奨vs実選択の一致分析（詳細版）
+                ("recommendation_vs_choice_match", "BOOLEAN"),    # 推奨と実選択の一致フラグ
+                ("divergence_analysis", "TEXT"),                 # 乖離分析結果
+                ("divergence_category", "TEXT"),                 # 乖離カテゴリ分類
+                ("learning_value_score", "REAL"),                # 学習価値スコア（0-1）
+                ("feedback_loop_data", "TEXT"),                  # フィードバックループデータ（JSON）
+                
+                # 統合メタデータ
+                ("four_stage_completion_status", "TEXT"),        # 4段階完了状況
+                ("data_quality_score", "REAL"),                  # データ品質スコア
+                ("analysis_revision_count", "INTEGER")           # 分析修正回数
+            ]
+            
+            # 存在しないカラムのみ追加
+            for column_name, column_type in four_stage_columns:
+                if column_name not in existing_columns:
+                    try:
+                        cursor.execute(f"ALTER TABLE analysis_activity_log ADD COLUMN {column_name} {column_type}")
+                        print(f"✅ Added column: {column_name}")
+                    except sqlite3.OperationalError as e:
+                        if "duplicate column name" not in str(e):
+                            print(f"⚠️ Failed to add column {column_name}: {e}")
+            
+            # 4段階分析用のインデックスを追加
+            four_stage_indexes = [
+                ("idx_human_check_result", "human_check_result"),
+                ("idx_actual_user_choice", "actual_user_choice"),
+                ("idx_copy_behavior_tracked", "copy_behavior_tracked"),
+                ("idx_recommendation_match", "recommendation_vs_choice_match"),
+                ("idx_four_stage_completion", "four_stage_completion_status")
+            ]
+            
+            for index_name, column_name in four_stage_indexes:
+                try:
+                    cursor.execute(f"CREATE INDEX IF NOT EXISTS {index_name} ON analysis_activity_log({column_name})")
+                except sqlite3.OperationalError:
+                    pass  # インデックスが既に存在する場合は無視
+            
+            print("🎯 4段階分析用データベーススキーマ拡張完了")
+            
+        except Exception as e:
+            print(f"❌ 4段階分析カラム追加エラー: {str(e)}")
     
     def log_activity(self, activity_data: Dict[str, Any]) -> int:
         """活動ログを記録"""
@@ -510,3 +616,353 @@ if __name__ == "__main__":
     print(f"📋 Activities: {len(activities['activities'])} items")
     
     print("✅ Activity Logger test completed")
+
+
+# =============================================================================
+# 🎯 4段階分析システム専用機能
+# =============================================================================
+
+class FourStageAnalysisManager:
+    """4段階統合分析システムの管理クラス"""
+    
+    def __init__(self, activity_logger: ActivityLogger):
+        self.activity_logger = activity_logger
+        self.db_path = activity_logger.db_path
+    
+    def update_stage0_human_check(self, activity_id: int, check_result: str, checker_id: str, notes: str = "") -> bool:
+        """第0段階: 人間によるLLM推奨チェック結果を更新"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            now = get_jst_now()
+            
+            cursor.execute("""
+                UPDATE analysis_activity_log 
+                SET human_check_result = ?, 
+                    human_check_timestamp = ?, 
+                    human_checker_id = ?, 
+                    human_check_notes = ?
+                WHERE id = ?
+            """, (check_result, now.isoformat(), checker_id, notes, activity_id))
+            
+            conn.commit()
+            conn.close()
+            
+            print(f"✅ Stage 0 updated: Activity {activity_id} - {check_result} by {checker_id}")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Stage 0 update failed: {str(e)}")
+            return False
+    
+    def update_stage1_analysis(self, activity_id: int, extraction_method: str, confidence: float, processing_time: float, metadata: Dict[str, Any] = None) -> bool:
+        """第1段階: LLM推奨抽出・分析データを更新"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            metadata_json = json.dumps(metadata) if metadata else None
+            
+            cursor.execute("""
+                UPDATE analysis_activity_log 
+                SET stage1_extraction_method = ?, 
+                    stage1_confidence_score = ?, 
+                    stage1_processing_time = ?, 
+                    stage1_metadata = ?
+                WHERE id = ?
+            """, (extraction_method, confidence, processing_time, metadata_json, activity_id))
+            
+            conn.commit()
+            conn.close()
+            
+            print(f"✅ Stage 1 updated: Activity {activity_id} - {extraction_method} (confidence: {confidence})")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Stage 1 update failed: {str(e)}")
+            return False
+    
+    def update_stage15_supplementary(self, activity_id: int, supplementary_analysis: str, context_evaluation: str, linguistic_notes: str = "") -> bool:
+        """第1.5段階: 補完分析データを更新"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                UPDATE analysis_activity_log 
+                SET stage15_supplementary_analysis = ?, 
+                    stage15_context_evaluation = ?, 
+                    stage15_linguistic_notes = ?
+                WHERE id = ?
+            """, (supplementary_analysis, context_evaluation, linguistic_notes, activity_id))
+            
+            conn.commit()
+            conn.close()
+            
+            print(f"✅ Stage 1.5 updated: Activity {activity_id} - supplementary analysis added")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Stage 1.5 update failed: {str(e)}")
+            return False
+    
+    def update_stage2_user_behavior(self, activity_id: int, user_choice: str, copied_text: str, copy_method: str, reasoning: str = "", confidence: float = None) -> bool:
+        """第2段階: ユーザー実選択・行動データを更新"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            now = get_jst_now()
+            
+            cursor.execute("""
+                UPDATE analysis_activity_log 
+                SET actual_user_choice = ?, 
+                    copy_behavior_tracked = 1, 
+                    copied_translation = ?, 
+                    copy_method = ?, 
+                    copy_timestamp = ?, 
+                    selection_reasoning = ?, 
+                    user_confidence_level = ?
+                WHERE id = ?
+            """, (user_choice, copied_text, copy_method, now.isoformat(), reasoning, confidence, activity_id))
+            
+            conn.commit()
+            conn.close()
+            
+            print(f"✅ Stage 2 updated: Activity {activity_id} - User chose {user_choice}")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Stage 2 update failed: {str(e)}")
+            return False
+    
+    def update_stage3_divergence_analysis(self, activity_id: int) -> bool:
+        """第3段階: 推奨vs実選択の一致分析を実行・更新"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            # 現在のデータを取得
+            cursor.execute("""
+                SELECT recommendation_result, actual_user_choice, 
+                       chatgpt_translation, enhanced_translation, gemini_translation,
+                       copied_translation, japanese_text
+                FROM analysis_activity_log 
+                WHERE id = ?
+            """, (activity_id,))
+            
+            row = cursor.fetchone()
+            if not row:
+                return False
+            
+            recommendation, user_choice, chatgpt, enhanced, gemini, copied_text, original = row
+            
+            # 一致判定
+            match = False
+            divergence_category = "unknown"
+            learning_value = 0.0
+            
+            if recommendation and user_choice:
+                match = recommendation.lower() == user_choice.lower()
+                
+                if not match:
+                    # 乖離カテゴリ分析
+                    if "enhanced" in recommendation.lower() and "chatgpt" in user_choice.lower():
+                        divergence_category = "enhanced_to_original"
+                    elif "chatgpt" in recommendation.lower() and "gemini" in user_choice.lower():
+                        divergence_category = "chatgpt_to_gemini"
+                    elif "gemini" in recommendation.lower() and "enhanced" in user_choice.lower():
+                        divergence_category = "gemini_to_enhanced"
+                    else:
+                        divergence_category = "other_divergence"
+                    
+                    # 学習価値スコア（乖離の場合は高い価値）
+                    learning_value = 0.8
+                else:
+                    divergence_category = "perfect_match"
+                    learning_value = 0.3
+            
+            # 乖離分析結果
+            divergence_analysis = f"Recommendation: {recommendation}, User Choice: {user_choice}, Match: {match}, Category: {divergence_category}"
+            
+            # フィードバックループデータ
+            feedback_data = {
+                "match": match,
+                "divergence_category": divergence_category,
+                "learning_value": learning_value,
+                "analysis_timestamp": get_jst_now().isoformat(),
+                "text_length": len(original) if original else 0
+            }
+            
+            cursor.execute("""
+                UPDATE analysis_activity_log 
+                SET recommendation_vs_choice_match = ?, 
+                    divergence_analysis = ?, 
+                    divergence_category = ?, 
+                    learning_value_score = ?, 
+                    feedback_loop_data = ?
+                WHERE id = ?
+            """, (match, divergence_analysis, divergence_category, learning_value, json.dumps(feedback_data), activity_id))
+            
+            conn.commit()
+            conn.close()
+            
+            print(f"✅ Stage 3 updated: Activity {activity_id} - Match: {match}, Category: {divergence_category}")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Stage 3 update failed: {str(e)}")
+            return False
+    
+    def get_four_stage_analysis_data(self, period: str = "all", engine: str = "") -> Dict[str, Any]:
+        """4段階分析統合データを取得"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            # フィルター条件構築
+            where_conditions = []
+            params = []
+            
+            if period == 'today':
+                where_conditions.append("DATE(created_at, '+9 hours') = DATE('now', '+9 hours')")
+            elif period == 'week':
+                where_conditions.append("created_at >= datetime('now', '-7 days')")
+            elif period == 'month':
+                where_conditions.append("created_at >= datetime('now', '-30 days')")
+            
+            if engine:
+                where_conditions.append("actual_analysis_llm = ?")
+                params.append(engine)
+            
+            where_clause = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
+            
+            # 統計データ取得
+            cursor.execute(f"""
+                SELECT 
+                    COUNT(*) as total_cases,
+                    COUNT(human_check_result) as stage0_completed,
+                    COUNT(CASE WHEN recommendation_result IS NOT NULL THEN 1 END) as stage1_completed,
+                    COUNT(CASE WHEN actual_user_choice IS NOT NULL THEN 1 END) as stage2_completed,
+                    COUNT(CASE WHEN recommendation_vs_choice_match IS NOT NULL THEN 1 END) as stage3_completed,
+                    COUNT(CASE WHEN copy_behavior_tracked = 1 THEN 1 END) as copy_tracked,
+                    COUNT(CASE WHEN recommendation_vs_choice_match = 1 THEN 1 END) as stage3_matches,
+                    COUNT(CASE WHEN recommendation_vs_choice_match = 0 THEN 1 END) as stage3_divergent
+                FROM analysis_activity_log
+                {where_clause}
+            """, params)
+            
+            summary = cursor.fetchone()
+            
+            # 詳細データ取得
+            cursor.execute(f"""
+                SELECT 
+                    id, created_at, japanese_text, actual_analysis_llm,
+                    recommendation_result, actual_user_choice, 
+                    human_check_result, human_check_timestamp,
+                    copy_behavior_tracked, copied_translation, copy_method,
+                    recommendation_vs_choice_match, divergence_category,
+                    stage1_confidence_score, learning_value_score
+                FROM analysis_activity_log
+                {where_clause}
+                ORDER BY created_at DESC
+                LIMIT 100
+            """, params)
+            
+            rows = cursor.fetchall()
+            conn.close()
+            
+            # データ構造化
+            items = []
+            for row in rows:
+                item = {
+                    'id': row[0],
+                    'created_at': row[1],
+                    'japanese_text': row[2],
+                    'analysis_engine': row[3],
+                    'stage0': {
+                        'status': row[6] or 'pending',
+                        'timestamp': row[7]
+                    } if row[6] else None,
+                    'stage1': {
+                        'recommendation': row[4],
+                        'confidence': row[12]
+                    } if row[4] else None,
+                    'stage15': {
+                        'status': 'completed' if row[4] else 'pending'
+                    },
+                    'stage2': {
+                        'user_selection': row[5],
+                        'copy_tracked': bool(row[8]),
+                        'copy_method': row[10],
+                        'data_source': 'actual_copy_tracking' if row[8] else 'button_tracking'
+                    } if row[5] else None,
+                    'stage3': {
+                        'match': row[11] if row[11] is not None else None,
+                        'category': row[12],
+                        'learning_value': row[13]
+                    } if row[11] is not None else None
+                }
+                items.append(item)
+            
+            return {
+                'total_count': summary[0] if summary else 0,
+                'stage0_completed': summary[1] if summary else 0,
+                'stage1_completed': summary[2] if summary else 0,
+                'stage2_completed': summary[3] if summary else 0,
+                'stage3_completed': summary[4] if summary else 0,
+                'copy_count': summary[5] if summary else 0,
+                'match_rate': (summary[6] / summary[7] * 100) if summary and summary[7] > 0 else 0,
+                'human_check_count': summary[1] if summary else 0,
+                'items': items
+            }
+            
+        except Exception as e:
+            print(f"❌ 4段階分析データ取得エラー: {str(e)}")
+            return {'total_count': 0, 'items': []}
+    
+    def get_human_check_queue(self) -> List[Dict[str, Any]]:
+        """第0段階: 人間チェック待ちのデータを取得"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                SELECT 
+                    id, created_at, japanese_text, recommendation_result, 
+                    confidence, actual_analysis_llm, full_analysis_text
+                FROM analysis_activity_log 
+                WHERE human_check_result IS NULL 
+                   OR human_check_result = 'pending'
+                ORDER BY created_at DESC 
+                LIMIT 50
+            """)
+            
+            rows = cursor.fetchall()
+            conn.close()
+            
+            items = []
+            for row in rows:
+                items.append({
+                    'id': row[0],
+                    'created_at': row[1],
+                    'japanese_text': row[2],
+                    'recommendation_result': row[3],
+                    'confidence': row[4],
+                    'actual_analysis_llm': row[5],
+                    'full_analysis_text': row[6]
+                })
+            
+            return items
+            
+        except Exception as e:
+            print(f"❌ 人間チェック待ちデータ取得エラー: {str(e)}")
+            return []
+
+
+# グローバルインスタンス作成用関数
+def create_four_stage_manager() -> FourStageAnalysisManager:
+    """4段階分析マネージャーのインスタンスを作成"""
+    activity_logger = ActivityLogger()
+    return FourStageAnalysisManager(activity_logger)

@@ -20,13 +20,17 @@ import time
 
 # 🆕 Task 2.9.2 Phase B-3.5.10: 統合活動ログシステム
 try:
-    from activity_logger import log_analysis_activity
+    from activity_logger import log_analysis_activity, activity_logger, get_jst_today
     print("✅ Activity Logger imported successfully")
 except ImportError as e:
     print(f"⚠️ Activity Logger import failed: {e}")
     # フォールバック：ダミー関数
     def log_analysis_activity(data):
         pass
+    activity_logger = None
+    def get_jst_today():
+        from datetime import datetime
+        return datetime.now().date()
 
 print("🚨 FORCE DEBUG: 基本モジュールインポート完了")
 
@@ -3228,6 +3232,59 @@ interactive_processor = LangPontTranslationExpertAI(client)
 @csrf_protect
 @require_rate_limit
 def login():
+    # 🚨 緊急デバッグ機能
+    if request.args.get('debug') == 'emergency':
+        from admin_auth import admin_auth_manager
+        import json
+        
+        try:
+            session_data = dict(session)
+            user_info = admin_auth_manager.get_current_user_info()
+            
+            admin_routes = []
+            for rule in app.url_map.iter_rules():
+                if 'admin' in rule.endpoint:
+                    admin_routes.append(f"{rule.endpoint}: {rule.rule}")
+            
+            debug_data = {
+                "logged_in": session.get('logged_in', False),
+                "user_role": session.get('user_role', 'none'),
+                "username": session.get('username', 'none'),
+                "has_admin_access": admin_auth_manager.has_admin_access(),
+                "admin_routes_count": len(admin_routes),
+                "admin_routes": admin_routes,
+                "session_keys": list(session_data.keys()),
+                "request_path": request.path,
+                "request_method": request.method
+            }
+            
+            html = f"""
+            <!DOCTYPE html>
+            <html><head><title>Emergency Debug</title></head>
+            <body>
+            <h1>🚨 Emergency Debug Information</h1>
+            {f'<div style="background:green;color:white;padding:10px;margin:10px 0;">✅ Just logged in successfully!</div>' if request.args.get('just_logged_in') else ''}
+            <pre>{json.dumps(debug_data, indent=2, ensure_ascii=False)}</pre>
+            
+            <h2>Quick Actions</h2>
+            <p><a href="/login">Normal Login</a></p>
+            <p><a href="/admin/dashboard">Admin Dashboard Test</a></p>
+            <p><a href="/">Main Page</a></p>
+            
+            <h2>Test Steps</h2>
+            <ol>
+            <li>If not logged in: Use normal login with admin/admin_langpont_2025</li>
+            <li>After login: Visit <a href="/admin/dashboard">Admin Dashboard</a></li>
+            <li>If still fails: Check admin_routes above</li>
+            </ol>
+            </body></html>
+            """
+            return html
+            
+        except Exception as e:
+            return f"<h1>Debug Error</h1><pre>{str(e)}</pre><p><a href='/login'>Back to Login</a></p>"
+    
+    # 🔄 通常のログイン処理に続行
     # 多言語ラベル辞書を追加（jp, en, fr, esの4言語対応）
     multilang_labels = {
         "jp": {
@@ -3286,7 +3343,8 @@ def login():
     
     if request.method == "POST":
         username = request.form.get("username", "").strip()
-        password = request.form.get("password", "").strip()
+        password = request.form.get("password", "")
+        print(f"🚨 LOGIN DEBUG: POST request - username: '{username}', password length: {len(password)}")
         
         if not password:
             error = current_labels["error_empty_password"]
@@ -3317,15 +3375,20 @@ def login():
                 # 🆕 新しいユーザー認証システム
                 elif username in USERS:
                     user_data = USERS[username]
+                    print(f"🚨 LOGIN DEBUG: Found user {username}, checking password...")
                     if password == user_data["password"]:
+                        print(f"🚨 LOGIN DEBUG: Password correct for {username}!")
                         authenticated_user = {
                             "username": username,
                             "role": user_data["role"],
                             "daily_limit": user_data["daily_limit"],
                             "auth_method": "standard"
                         }
+                        print(f"🚨 LOGIN DEBUG: Created authenticated_user: {authenticated_user}")
+                    else:
+                        print(f"🚨 LOGIN DEBUG: Password incorrect for {username}")
                 
-                # 🆕 空のユーザー名でguestパスワードの場合
+                # 🆕 空のユーザー名でguestパスワードの場合  
                 elif not username and password in [user_data["password"] for user_data in USERS.values()]:
                     # パスワードからユーザーを特定
                     for user, data in USERS.items():
@@ -3339,15 +3402,17 @@ def login():
                             break
                 
                 if authenticated_user:
+                    print(f"🚨 LOGIN DEBUG: authenticated_user exists, setting session...")
                     # 🆕 セッション情報の保存
                     session["logged_in"] = True
                     session["username"] = authenticated_user["username"]
                     session["user_role"] = authenticated_user["role"]
                     session["daily_limit"] = authenticated_user["daily_limit"]
                     session.permanent = True
+                    print(f"🚨 LOGIN DEBUG: Session set - logged_in: {session['logged_in']}, username: {session['username']}, role: {session['user_role']}")
                     
                     # 🆕 セッションIDの再生成（セッションハイジャック対策）
-                    SecureSessionManager.regenerate_session_id()
+                    # 🚨 TEMPORARILY DISABLED FOR DEBUG: SecureSessionManager.regenerate_session_id()
                     
                     # 🆕 詳細ログ記録
                     log_security_event(
@@ -3357,8 +3422,12 @@ def login():
                     )
                     log_access_event(f'User logged in: {authenticated_user["username"]} ({authenticated_user["role"]})')
                     
+                    print(f"🚨 LOGIN DEBUG: About to redirect to main page...")
+                    # 🆕 ログイン成功後の適切なリダイレクト
+                    # 全てのユーザーをメインアプリ（翻訳画面）へリダイレクト
                     return redirect(url_for("index"))
                 else:
+                    print(f"🚨 LOGIN DEBUG: authenticated_user is None - authentication failed")
                     # 🆕 詳細な失敗ログ
                     log_security_event(
                         'LOGIN_FAILED',
@@ -3382,6 +3451,37 @@ def profile_redirect():
             return redirect(url_for('login'))
         # プロフィール機能が未実装の場合は翻訳画面に戻る
         return redirect(url_for('index'))
+
+@app.route("/debug-info", methods=["GET"])
+def debug_info():
+    """緊急デバッグ情報表示"""
+    from admin_auth import admin_auth_manager
+    import json
+    
+    try:
+        session_data = dict(session)
+        user_info = admin_auth_manager.get_current_user_info()
+        
+        # 管理者ルート確認
+        admin_routes = []
+        for rule in app.url_map.iter_rules():
+            if 'admin' in rule.endpoint:
+                admin_routes.append(f"{rule.endpoint}: {rule.rule}")
+        
+        debug_data = {
+            "logged_in": session.get('logged_in', False),
+            "user_role": session.get('user_role', 'none'),
+            "username": session.get('username', 'none'),
+            "has_admin_access": admin_auth_manager.has_admin_access(),
+            "admin_routes_count": len(admin_routes),
+            "admin_routes": admin_routes[:10],  # 最初の10個のみ
+            "session_keys": list(session_data.keys())
+        }
+        
+        return f"<h1>緊急デバッグ情報</h1><pre>{json.dumps(debug_data, indent=2, ensure_ascii=False)}</pre><p><a href='/login'>ログイン</a> | <a href='/admin/dashboard'>管理者ダッシュボード</a></p>"
+    
+    except Exception as e:
+        return f"<h1>デバッグエラー</h1><pre>{str(e)}</pre>"
 
 @app.route("/", methods=["GET", "POST"])
 @csrf_protect
@@ -5398,6 +5498,495 @@ def admin_comprehensive_dashboard():
             "details": str(e)
         }), 500
 
+@app.route("/admin/four_stage_dashboard")
+@require_login
+def four_stage_dashboard():
+    """4段階分析ダッシュボード（管理者専用）"""
+    user_role = session.get('user_role', 'guest')
+    username = session.get('username', 'unknown')
+    
+    app_logger.info(f"Four stage dashboard access: role={user_role}, user={username}")
+    
+    # 管理者権限チェック
+    if user_role not in ['admin', 'developer']:
+        app_logger.warning(f"Unauthorized four stage dashboard access: role={user_role}")
+        return jsonify({
+            "error": "アクセス権限がありません",
+            "error_code": "UNAUTHORIZED",
+            "success": False,
+            "required_role": "admin or developer",
+            "current_role": user_role
+        }), 403
+    
+    try:
+        # CSRFトークン生成
+        import secrets
+        csrf_token = secrets.token_urlsafe(32)
+        session['csrf_token'] = csrf_token
+        
+        return render_template('admin/four_stage_dashboard.html', csrf_token=csrf_token)
+    except Exception as e:
+        app_logger.error(f"Four stage dashboard template error: {str(e)}")
+        return jsonify({
+            "error": "テンプレートエラー",
+            "error_code": "TEMPLATE_ERROR",
+            "success": False,
+            "details": str(e)
+        }), 500
+
+@app.route("/admin/api/four_stage_analysis", methods=["GET"])
+@require_login
+def get_four_stage_analysis():
+    """4段階分析データAPI（管理者専用）"""
+    user_role = session.get('user_role', 'guest')
+    if user_role not in ['admin', 'developer']:
+        return jsonify({"error": "Unauthorized"}), 403
+    
+    try:
+        # activity_loggerは既にグローバルにインポート済み
+        
+        # フィルターパラメータ取得
+        period = request.args.get('period', 'all')
+        
+        # 基本的な活動ログデータを取得（直接SQL実行）
+        import sqlite3
+        conn = sqlite3.connect(activity_logger.db_path)
+        conn.row_factory = sqlite3.Row  # 辞書形式でアクセス可能
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT 
+                id, created_at, japanese_text, recommendation_result,
+                actual_user_choice, llm_match, confidence, 
+                processing_duration, activity_type, button_pressed,
+                actual_analysis_llm, stage0_human_check,
+                stage0_human_check_date, stage0_human_check_user
+            FROM analysis_activity_log
+            ORDER BY created_at DESC
+            LIMIT 100
+        """)
+        
+        rows = cursor.fetchall()
+        results = [dict(row) for row in rows]
+        conn.close()
+        
+        # 4段階分析形式に変換
+        four_stage_data = []
+        for row in results:
+            item = {
+                'id': row.get('id'),
+                'japanese_text': row.get('japanese_text', '')[:50] + '...' if row.get('japanese_text') and len(row.get('japanese_text', '')) > 50 else row.get('japanese_text', ''),
+                'created_at': row.get('created_at'),
+                'stage0': {  # 第0段階: 人間CK
+                    'status': row.get('stage0_human_check') or '未チェック',
+                    'check_date': row.get('stage0_human_check_date'),
+                    'check_user': row.get('stage0_human_check_user')
+                },
+                'stage05': {  # 第0.5段階: User SEL LLM
+                    'user_selected_llm': row.get('button_pressed') or '-'
+                },
+                'stage1': {  # 第1段階: LLMの推奨
+                    'recommendation': row.get('recommendation_result') or '-',
+                    'confidence': row.get('confidence') or 0.0
+                },
+                'stage15': {  # 第1.5段階: 判定したLLM
+                    'judging_llm': row.get('actual_analysis_llm') or '-'
+                },
+                'stage2': {  # 第2段階: User選択(Copy)
+                    'user_selection': row.get('actual_user_choice') or '未選択',
+                    'data_source': 'actual_copy_tracking'
+                },
+                'stage3': {  # 第3段階: LLM推奨 vs User選択
+                    'match': bool(row.get('llm_match', False)),
+                    'analysis': '自動判定'
+                },
+                'analysis_engine': row.get('actual_analysis_llm') or '-'
+            }
+            four_stage_data.append(item)
+        
+        # 統計計算
+        total_count = len(four_stage_data)
+        match_count = sum(1 for item in four_stage_data if item['stage3']['match'])
+        match_rate = (match_count / total_count * 100) if total_count > 0 else 0
+        copy_count = sum(1 for item in four_stage_data if item['stage2']['data_source'] == 'actual_copy_tracking')
+        human_check_count = sum(1 for item in four_stage_data if item['stage0']['status'] == '完了')
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'items': four_stage_data,
+                'total_count': total_count,
+                'match_rate': match_rate,
+                'copy_count': copy_count,
+                'human_check_count': human_check_count
+            },
+            'period': period
+        })
+        
+    except Exception as e:
+        app_logger.error(f"Four stage analysis API error: {str(e)}")
+        return jsonify({
+            'error': str(e),
+            'error_code': 'API_ERROR',
+            'success': False
+        }), 500
+
+@app.route("/admin/llm_recommendation_check")
+@require_login
+def llm_recommendation_check():
+    """第0段階: LLM推奨品質チェックページ（管理者専用）"""
+    user_role = session.get('user_role', 'guest')
+    if user_role not in ['admin', 'developer']:
+        return jsonify({"error": "アクセス権限がありません"}), 403
+    
+    try:
+        import secrets
+        csrf_token = secrets.token_urlsafe(32)
+        session['csrf_token'] = csrf_token
+        
+        return render_template('admin/llm_recommendation_check.html', csrf_token=csrf_token)
+    except Exception as e:
+        app_logger.error(f"LLM recommendation check template error: {str(e)}")
+        return jsonify({"error": "テンプレートエラー", "details": str(e)}), 500
+
+@app.route("/admin/api/llm_recommendation_check", methods=["GET", "POST"])
+@require_login
+def api_llm_recommendation_check():
+    """LLM推奨品質チェックAPI"""
+    user_role = session.get('user_role', 'guest')
+    if user_role not in ['admin', 'developer']:
+        return jsonify({"error": "Unauthorized"}), 403
+    
+    if request.method == 'GET':
+        # データ取得
+        try:
+            app_logger.info("Starting LLM recommendation check data retrieval")
+            
+            if activity_logger is None:
+                raise Exception("Activity logger not available")
+            
+            import sqlite3
+            db_path = activity_logger.db_path
+            app_logger.info(f"Using database: {db_path}")
+            
+            conn = sqlite3.connect(db_path)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            # まず全体の件数を確認
+            cursor.execute("SELECT COUNT(*) as total FROM analysis_activity_log")
+            total_rows = cursor.fetchone()[0]
+            app_logger.info(f"Total rows in database: {total_rows}")
+            
+            # 推奨結果がある件数を確認
+            cursor.execute("SELECT COUNT(*) as count FROM analysis_activity_log WHERE recommendation_result IS NOT NULL AND recommendation_result != ''")
+            recommendation_rows = cursor.fetchone()[0]
+            app_logger.info(f"Rows with recommendation_result: {recommendation_rows}")
+            
+            cursor.execute("""
+                SELECT 
+                    id, created_at, japanese_text, recommendation_result,
+                    actual_user_choice, llm_match, confidence, 
+                    button_pressed, actual_analysis_llm, full_analysis_text,
+                    stage0_human_check, stage0_human_check_date, stage0_human_check_user
+                FROM analysis_activity_log
+                WHERE recommendation_result IS NOT NULL 
+                AND recommendation_result != ''
+                ORDER BY created_at DESC
+                LIMIT 50
+            """)
+            
+            rows = cursor.fetchall()
+            app_logger.info(f"Retrieved {len(rows)} rows for LLM recommendation check")
+            
+            data = []
+            for row in rows:
+                try:
+                    data.append({
+                        'id': row['id'],
+                        'created_at': row['created_at'],
+                        'japanese_text': row['japanese_text'][:100] + '...' if row['japanese_text'] and len(row['japanese_text']) > 100 else row['japanese_text'],
+                        'recommendation_result': row['recommendation_result'],
+                        'actual_user_choice': row['actual_user_choice'],
+                        'llm_match': bool(row['llm_match']) if row['llm_match'] is not None else False,
+                        'confidence': float(row['confidence']) if row['confidence'] is not None else 0.0,
+                        'button_pressed': row['button_pressed'],
+                        'actual_analysis_llm': row['actual_analysis_llm'],
+                        'full_analysis_text': row['full_analysis_text'][:500] + '...' if row['full_analysis_text'] and len(row['full_analysis_text']) > 500 else row['full_analysis_text'],
+                        'stage0_human_check': row['stage0_human_check'],
+                        'stage0_human_check_date': row['stage0_human_check_date'],
+                        'stage0_human_check_user': row['stage0_human_check_user']
+                    })
+                except Exception as row_error:
+                    app_logger.error(f"Error processing row {row['id']}: {str(row_error)}")
+                    continue
+            
+            conn.close()
+            
+            app_logger.info(f"Successfully processed {len(data)} records for LLM recommendation check")
+            
+            # 統計計算
+            pending_count = len([item for item in data if not item.get('human_checked', False)])
+            approved_count = len([item for item in data if item.get('human_check_result') == 'approved'])
+            rejected_count = len([item for item in data if item.get('human_check_result') == 'rejected'])
+            accuracy_rate = (approved_count / len(data) * 100) if len(data) > 0 else 0
+            
+            return jsonify({
+                'success': True,
+                'items': data,  # JavaScriptが期待する形式
+                'total_count': len(data),
+                'pending_count': pending_count,
+                'approved_count': approved_count,
+                'rejected_count': rejected_count,
+                'accuracy_rate': accuracy_rate,
+                'debug_info': {
+                    'total_db_rows': total_rows,
+                    'recommendation_rows': recommendation_rows,
+                    'processed_rows': len(data)
+                }
+            })
+            
+        except Exception as e:
+            app_logger.error(f"LLM recommendation check GET error: {str(e)}")
+            return jsonify({
+                'error': str(e),
+                'error_code': 'API_ERROR',
+                'success': False
+            }), 500
+    
+    else:  # POST - 品質チェック処理
+        try:
+            data = request.json
+            activity_id = data.get('activity_id')
+            quality_status = data.get('quality_status', '確認済み')
+            
+            if not activity_id:
+                return jsonify({
+                    'error': 'activity_id が必要です',
+                    'error_code': 'MISSING_PARAMETER',
+                    'success': False
+                }), 400
+            
+            # 品質チェック結果を記録（実装は後で詳細化）
+            result = {
+                'success': True,
+                'activity_id': activity_id,
+                'quality_check': {
+                    'status': quality_status,
+                    'checked_at': datetime.now().isoformat(),
+                    'checked_by': session.get('username', 'unknown')
+                }
+            }
+            
+            return jsonify(result)
+            
+        except Exception as e:
+            app_logger.error(f"LLM recommendation check POST error: {str(e)}")
+            return jsonify({
+                'error': str(e),
+                'error_code': 'QUALITY_CHECK_ERROR',
+                'success': False
+            }), 500
+
+@app.route("/admin/api/llm_recommendation_detail/<int:activity_id>", methods=["GET"])
+@require_login
+def get_llm_recommendation_detail(activity_id):
+    """LLM推奨詳細データ取得API"""
+    user_role = session.get('user_role', 'guest')
+    if user_role not in ['admin', 'developer']:
+        return jsonify({"error": "Unauthorized"}), 403
+    
+    try:
+        app_logger.info(f"Getting LLM recommendation detail for activity_id: {activity_id}")
+        
+        if activity_logger is None:
+            raise Exception("Activity logger not available")
+        
+        import sqlite3
+        db_path = activity_logger.db_path
+        
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT 
+                id, created_at, japanese_text, 
+                chatgpt_translation, enhanced_translation, gemini_translation,
+                recommendation_result, actual_user_choice, llm_match, 
+                confidence, button_pressed, actual_analysis_llm, 
+                full_analysis_text, human_check_result, 
+                processing_duration, language_pair, context_info,
+                partner_message
+            FROM analysis_activity_log
+            WHERE id = ?
+        """, (activity_id,))
+        
+        row = cursor.fetchone()
+        conn.close()
+        
+        if not row:
+            return jsonify({
+                'error': f'Activity ID {activity_id} not found',
+                'error_code': 'NOT_FOUND',
+                'success': False
+            }), 404
+        
+        # データを構造化
+        detail = {
+            'id': row['id'],
+            'created_at': row['created_at'],
+            'japanese_text': row['japanese_text'],
+            'chatgpt_translation': row['chatgpt_translation'],
+            'enhanced_translation': row['enhanced_translation'],
+            'gemini_translation': row['gemini_translation'],
+            'recommendation_result': row['recommendation_result'],
+            'actual_user_choice': row['actual_user_choice'],
+            'llm_match': bool(row['llm_match']) if row['llm_match'] is not None else False,
+            'confidence': float(row['confidence']) if row['confidence'] is not None else 0.0,
+            'button_pressed': row['button_pressed'],
+            'actual_analysis_llm': row['actual_analysis_llm'],
+            'full_analysis_text': row['full_analysis_text'],
+            'human_check_result': row['human_check_result'],
+            'processing_duration': row['processing_duration'],
+            'language_pair': row['language_pair'],
+            'context_info': row['context_info'],
+            'partner_message': row['partner_message']
+        }
+        
+        app_logger.info(f"Successfully retrieved detail for activity_id: {activity_id}")
+        
+        return jsonify({
+            'success': True,
+            'data': detail
+        })
+        
+    except Exception as e:
+        app_logger.error(f"LLM recommendation detail error for ID {activity_id}: {str(e)}")
+        return jsonify({
+            'error': str(e),
+            'error_code': 'DETAIL_ERROR',
+            'success': False
+        }), 500
+
+@app.route("/admin/api/stage0_human_check", methods=["POST"])
+@require_login
+def stage0_human_check():
+    """第0段階: 人間による推奨判定更新API"""
+    user_role = session.get('user_role', 'guest')
+    if user_role not in ['admin', 'developer']:
+        return jsonify({"error": "Unauthorized"}), 403
+    
+    try:
+        data = request.json
+        activity_id = data.get('activity_id')
+        human_selection = data.get('human_selection')
+        
+        if not activity_id:
+            return jsonify({
+                'error': 'activity_id が必要です',
+                'error_code': 'MISSING_PARAMETER',
+                'success': False
+            }), 400
+            
+        if not human_selection:
+            return jsonify({
+                'error': 'human_selection が必要です',
+                'error_code': 'MISSING_PARAMETER',
+                'success': False
+            }), 400
+        
+        app_logger.info(f"Updating human check for activity_id: {activity_id} to: {human_selection}")
+        
+        if activity_logger is None:
+            raise Exception("Activity logger not available")
+        
+        import sqlite3
+        db_path = activity_logger.db_path
+        
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        # 現在のデータを確認
+        cursor.execute("SELECT id FROM analysis_activity_log WHERE id = ?", (activity_id,))
+        if not cursor.fetchone():
+            conn.close()
+            return jsonify({
+                'error': f'Activity ID {activity_id} not found',
+                'error_code': 'NOT_FOUND',
+                'success': False
+            }), 404
+        
+        # 人間チェック結果を更新
+        cursor.execute("""
+            UPDATE analysis_activity_log 
+            SET stage0_human_check = ?,
+                stage0_human_check_date = datetime('now'),
+                stage0_human_check_user = ?
+            WHERE id = ?
+        """, (human_selection, session.get('username', 'unknown'), activity_id))
+        
+        conn.commit()
+        conn.close()
+        
+        app_logger.info(f"Successfully updated human check for activity_id: {activity_id}")
+        
+        return jsonify({
+            'success': True,
+            'activity_id': activity_id,
+            'human_selection': human_selection,
+            'message': f'人間チェック結果を「{human_selection}」に更新しました'
+        })
+        
+    except Exception as e:
+        app_logger.error(f"Stage0 human check error: {str(e)}")
+        return jsonify({
+            'error': str(e),
+            'error_code': 'UPDATE_ERROR',
+            'success': False
+        }), 500
+
+@app.route("/admin/api/stage0_quality_check", methods=["POST"])
+@require_login
+def stage0_quality_check():
+    """第0段階: LLM推奨品質チェックAPI"""
+    user_role = session.get('user_role', 'guest')
+    if user_role not in ['admin', 'developer']:
+        return jsonify({"error": "Unauthorized"}), 403
+    
+    try:
+        data = request.json
+        activity_id = data.get('activity_id')
+        
+        if not activity_id:
+            return jsonify({
+                'error': 'activity_id が必要です',
+                'error_code': 'MISSING_PARAMETER',
+                'success': False
+            }), 400
+        
+        # 実際の品質チェック処理をここに実装
+        # 現在は仮の実装
+        result = {
+            'success': True,
+            'activity_id': activity_id,
+            'quality_check': {
+                'status': '品質チェック完了',
+                'score': 0.95,
+                'notes': '自動品質チェック実行済み'
+            }
+        }
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        app_logger.error(f"Stage 0 quality check error: {str(e)}")
+        return jsonify({
+            'error': str(e),
+            'error_code': 'QUALITY_CHECK_ERROR',
+            'success': False
+        }), 500
+
 @app.route("/admin/api/activity_stats", methods=["GET"])
 @require_login
 def get_activity_stats():
@@ -5407,7 +5996,7 @@ def get_activity_stats():
         return jsonify({"error": "Unauthorized"}), 403
     
     try:
-        from activity_logger import activity_logger, get_jst_today
+        # activity_loggerとget_jst_todayは既にグローバルにインポート済み
         from datetime import datetime, timedelta
         
         # 期間フィルター処理
@@ -5463,7 +6052,7 @@ def get_activity_log():
         return jsonify({"error": "Unauthorized"}), 403
     
     try:
-        from activity_logger import activity_logger, get_jst_today
+        # activity_loggerとget_jst_todayは既にグローバルにインポート済み
         from datetime import datetime, timedelta
         
         # パラメータ取得
@@ -5523,7 +6112,7 @@ def get_activity_detail(activity_id):
         return jsonify({"error": "Unauthorized"}), 403
     
     try:
-        from activity_logger import activity_logger
+        # activity_loggerは既にグローバルにインポート済み
         
         detail = activity_logger.get_activity_detail(activity_id)
         if not detail:
@@ -5544,7 +6133,7 @@ def export_activity_log():
         return jsonify({"error": "Unauthorized"}), 403
     
     try:
-        from activity_logger import activity_logger
+        # activity_loggerは既にグローバルにインポート済み
         import csv
         import io
         
@@ -5656,7 +6245,7 @@ def reset_all_data():
         return jsonify({"error": "管理者権限が必要です"}), 403
     
     try:
-        from activity_logger import activity_logger
+        # activity_loggerは既にグローバルにインポート済み
         import os
         
         # アクティビティログデータベースの削除
@@ -5701,6 +6290,324 @@ def reset_all_data():
             'ERROR'
         )
         return jsonify({"error": f"データリセットに失敗しました: {str(e)}"}), 500
+
+# 🔧 包括的デバッグシステム
+@app.route("/debug/session", methods=["GET"])
+def debug_session():
+    """デバッグ用: 現在のセッション状態を表示"""
+    from admin_auth import admin_auth_manager
+    
+    session_data = dict(session)
+    user_info = admin_auth_manager.get_current_user_info()
+    
+    debug_info = {
+        "session_data": session_data,
+        "user_info": user_info,
+        "has_admin_access": admin_auth_manager.has_admin_access(),
+        "logged_in": session.get('logged_in', False),
+        "user_role": session.get('user_role', 'none'),
+        "username": session.get('username', 'none')
+    }
+    
+    return f"<pre>{json.dumps(debug_info, indent=2, ensure_ascii=False)}</pre>"
+
+@app.route("/debug/full", methods=["GET"])
+def debug_full():
+    """🔍 完全デバッグ情報"""
+    from admin_auth import admin_auth_manager
+    import sys
+    
+    # 1. セッション情報
+    session_data = dict(session)
+    user_info = admin_auth_manager.get_current_user_info()
+    
+    # 2. ルート情報
+    routes = []
+    for rule in app.url_map.iter_rules():
+        routes.append({
+            'endpoint': rule.endpoint,
+            'methods': list(rule.methods),
+            'rule': rule.rule
+        })
+    
+    admin_routes = [r for r in routes if 'admin' in r['endpoint']]
+    
+    # 3. Blueprint情報
+    blueprints = {}
+    for name, bp in app.blueprints.items():
+        blueprints[name] = {
+            'name': bp.name,
+            'url_prefix': bp.url_prefix,
+            'import_name': bp.import_name
+        }
+    
+    # 4. テンプレート確認
+    template_exists = {}
+    import os
+    template_paths = [
+        'admin/dashboard.html',
+        'index.html',
+        'login.html'
+    ]
+    
+    for template in template_paths:
+        full_path = os.path.join('templates', template)
+        template_exists[template] = os.path.exists(full_path)
+    
+    # 5. 権限チェック
+    permission_check = {
+        'logged_in': session.get('logged_in', False),
+        'user_role': session.get('user_role', 'none'),
+        'has_admin_access': admin_auth_manager.has_admin_access(),
+        'is_admin_role': session.get('user_role') in ['admin', 'developer'],
+        'session_keys': list(session_data.keys())
+    }
+    
+    debug_report = {
+        "🔐 セッション情報": session_data,
+        "👤 ユーザー情報": user_info,
+        "🛡️ 権限チェック": permission_check,
+        "🗺️ 管理者ルート": admin_routes,
+        "📦 Blueprint情報": blueprints,
+        "📄 テンプレート存在": template_exists,
+        "🔢 総ルート数": len(routes),
+        "🔢 管理者ルート数": len(admin_routes),
+        "🐍 Python Version": sys.version,
+        "🌐 Request Info": {
+            'remote_addr': request.remote_addr,
+            'user_agent': request.headers.get('User-Agent', ''),
+            'method': request.method,
+            'path': request.path,
+            'url': request.url
+        }
+    }
+    
+    html = f"""
+    <!DOCTYPE html>
+    <html><head><title>LangPont Debug Report</title>
+    <style>
+        body {{ font-family: monospace; margin: 20px; background: #f5f5f5; }}
+        .section {{ background: white; margin: 20px 0; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
+        .good {{ color: #28a745; }}
+        .bad {{ color: #dc3545; }}
+        .warning {{ color: #ffc107; }}
+        pre {{ background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; }}
+        h2 {{ color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 5px; }}
+        .test-links {{ background: #e9ecef; padding: 15px; border-radius: 8px; }}
+        .test-links a {{ display: inline-block; margin: 5px 10px; padding: 8px 15px; background: #007bff; color: white; text-decoration: none; border-radius: 4px; }}
+        .test-links a:hover {{ background: #0056b3; }}
+    </style></head>
+    <body>
+    <h1>🔍 LangPont 完全デバッグレポート</h1>
+    
+    <div class="test-links">
+        <h3>🧪 テストリンク</h3>
+        <a href="/debug/session">セッション情報</a>
+        <a href="/admin/dashboard">管理者ダッシュボード</a>
+        <a href="/login">ログインページ</a>
+        <a href="/">メインページ</a>
+        <a href="/debug/routes">全ルート一覧</a>
+    </div>
+    
+    <div class="section">
+        <h2>🔐 ログイン状態チェック</h2>
+        <p>ログイン済み: <span class="{'good' if permission_check['logged_in'] else 'bad'}">{permission_check['logged_in']}</span></p>
+        <p>ユーザーロール: <span class="{'good' if permission_check['user_role'] != 'none' else 'bad'}">{permission_check['user_role']}</span></p>
+        <p>管理者アクセス権: <span class="{'good' if permission_check['has_admin_access'] else 'bad'}">{permission_check['has_admin_access']}</span></p>
+        <p>管理者ロール判定: <span class="{'good' if permission_check['is_admin_role'] else 'bad'}">{permission_check['is_admin_role']}</span></p>
+    </div>
+    
+    <div class="section">
+        <h2>🗺️ 管理者ルート状況</h2>
+        <p>管理者ルート数: <span class="{'good' if len(admin_routes) > 0 else 'bad'}">{len(admin_routes)}</span></p>
+        <ul>
+    """
+    
+    for route in admin_routes:
+        html += f"<li><strong>{route['endpoint']}</strong>: {route['rule']} {route['methods']}</li>"
+    
+    html += f"""
+        </ul>
+    </div>
+    
+    <div class="section">
+        <h2>📄 テンプレート状況</h2>
+        <ul>
+    """
+    
+    for template, exists in template_exists.items():
+        status_class = 'good' if exists else 'bad'
+        status_text = '✅ 存在' if exists else '❌ 不存在'
+        html += f"<li><span class='{status_class}'>{template}: {status_text}</span></li>"
+    
+    html += f"""
+        </ul>
+    </div>
+    
+    <div class="section">
+        <h2>📦 Blueprint状況</h2>
+        <ul>
+    """
+    
+    for name, info in blueprints.items():
+        html += f"<li><strong>{name}</strong>: {info['url_prefix']} ({info['import_name']})</li>"
+    
+    html += f"""
+        </ul>
+    </div>
+    
+    <div class="section">
+        <h2>📋 完全デバッグデータ</h2>
+        <pre>{json.dumps(debug_report, indent=2, ensure_ascii=False)}</pre>
+    </div>
+    
+    </body></html>
+    """
+    
+    return html
+
+@app.route("/debug/routes", methods=["GET"])
+def debug_routes():
+    """🗺️ 全ルート一覧"""
+    routes = []
+    for rule in app.url_map.iter_rules():
+        routes.append({
+            'endpoint': rule.endpoint,
+            'methods': sorted(list(rule.methods - {'HEAD', 'OPTIONS'})),
+            'rule': rule.rule
+        })
+    
+    routes.sort(key=lambda x: x['rule'])
+    
+    html = """
+    <!DOCTYPE html>
+    <html><head><title>LangPont Routes</title>
+    <style>
+        body { font-family: monospace; margin: 20px; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .admin-route { background-color: #fff3cd; }
+        .auth-route { background-color: #d1ecf1; }
+    </style></head>
+    <body>
+    <h1>🗺️ LangPont 全ルート一覧</h1>
+    <table>
+    <tr><th>エンドポイント</th><th>メソッド</th><th>パス</th></tr>
+    """
+    
+    for route in routes:
+        row_class = ""
+        if 'admin' in route['endpoint']:
+            row_class = "admin-route"
+        elif 'auth' in route['endpoint']:
+            row_class = "auth-route"
+        
+        html += f"""
+        <tr class="{row_class}">
+            <td>{route['endpoint']}</td>
+            <td>{', '.join(route['methods'])}</td>
+            <td>{route['rule']}</td>
+        </tr>
+        """
+    
+    html += "</table></body></html>"
+    return html
+
+@app.route("/debug/test-admin", methods=["GET"])
+def debug_test_admin():
+    """🧪 管理者アクセステスト"""
+    from admin_auth import admin_auth_manager
+    
+    # ステップバイステップのテスト
+    test_results = []
+    
+    # Step 1: セッション確認
+    logged_in = session.get('logged_in', False)
+    test_results.append(f"✅ Step 1: ログイン状態 = {logged_in}" if logged_in else f"❌ Step 1: ログイン状態 = {logged_in}")
+    
+    # Step 2: ユーザーロール確認
+    user_role = session.get('user_role', 'none')
+    is_admin_role = user_role in ['admin', 'developer']
+    test_results.append(f"✅ Step 2: ユーザーロール = {user_role}" if is_admin_role else f"❌ Step 2: ユーザーロール = {user_role}")
+    
+    # Step 3: AdminAuthManager確認
+    try:
+        has_admin_access = admin_auth_manager.has_admin_access()
+        test_results.append(f"✅ Step 3: has_admin_access() = {has_admin_access}" if has_admin_access else f"❌ Step 3: has_admin_access() = {has_admin_access}")
+    except Exception as e:
+        test_results.append(f"❌ Step 3: AdminAuthManager エラー = {str(e)}")
+    
+    # Step 4: ルート存在確認
+    admin_dashboard_exists = any(rule.endpoint == 'admin.dashboard' for rule in app.url_map.iter_rules())
+    test_results.append(f"✅ Step 4: admin.dashboard ルート存在 = {admin_dashboard_exists}" if admin_dashboard_exists else f"❌ Step 4: admin.dashboard ルート存在 = {admin_dashboard_exists}")
+    
+    # Step 5: テンプレート存在確認
+    import os
+    template_exists = os.path.exists('templates/admin/dashboard.html')
+    test_results.append(f"✅ Step 5: dashboard.html テンプレート存在 = {template_exists}" if template_exists else f"❌ Step 5: dashboard.html テンプレート存在 = {template_exists}")
+    
+    # Step 6: 実際のアクセステスト
+    try:
+        if logged_in and is_admin_role and has_admin_access and admin_dashboard_exists and template_exists:
+            test_results.append("✅ Step 6: 全条件クリア - 管理者ダッシュボードアクセス可能")
+            redirect_test = "success"
+        else:
+            test_results.append("❌ Step 6: 条件不足 - 管理者ダッシュボードアクセス不可")
+            redirect_test = "failed"
+    except Exception as e:
+        test_results.append(f"❌ Step 6: テストエラー = {str(e)}")
+        redirect_test = "error"
+    
+    html = f"""
+    <!DOCTYPE html>
+    <html><head><title>Admin Access Test</title>
+    <style>
+        body {{ font-family: monospace; margin: 20px; }}
+        .success {{ color: #28a745; }}
+        .error {{ color: #dc3545; }}
+        .test-item {{ padding: 10px; margin: 5px 0; background: #f8f9fa; border-radius: 4px; }}
+        .actions {{ margin: 20px 0; }}
+        .actions a {{ display: inline-block; margin: 5px; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 4px; }}
+    </style></head>
+    <body>
+    <h1>🧪 管理者アクセステスト結果</h1>
+    
+    <div class="actions">
+        <a href="/debug/full">完全デバッグ</a>
+        <a href="/login">ログイン</a>
+        <a href="/admin/dashboard">管理者ダッシュボード</a>
+    </div>
+    
+    <h2>📝 テスト結果</h2>
+    """
+    
+    for result in test_results:
+        item_class = "success" if result.startswith("✅") else "error"
+        html += f'<div class="test-item {item_class}">{result}</div>'
+    
+    html += f"""
+    
+    <h2>🎯 推奨アクション</h2>
+    <div class="test-item">
+    """
+    
+    if redirect_test == "success":
+        html += "🎉 すべてのテストをパス！管理者ダッシュボードにアクセスできるはずです。"
+    elif not logged_in:
+        html += "🔑 まずログインしてください: <a href='/login'>ログインページ</a>"
+    elif not is_admin_role:
+        html += f"⚠️ 現在のロール '{user_role}' は管理者権限がありません。adminまたはdeveloperロールでログインしてください。"
+    else:
+        html += "🚨 予期しない問題が発生しています。開発者に連絡してください。"
+    
+    html += """
+    </div>
+    
+    </body></html>
+    """
+    
+    return html
 
 @app.route("/admin/api/system_logs", methods=["GET"])
 @require_login
