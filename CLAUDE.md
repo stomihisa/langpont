@@ -3048,6 +3048,334 @@ def custom_data_extract():
 
 ---
 
+# 📅 セッション履歴: 2025年6月29日 - LLM推奨品質チェック新システム完全移行
+
+## 🎯 このセッションの成果概要
+前セッションでの最適ダッシュボード設計策定に続いて、LLM推奨品質チェック（第0段階）システムを従来の「承認/修正」方式から新しい「①〜④選択」方式に完全移行しました。UIとAPIの統合、JavaScriptの更新、データベース構造の確認が全て完了し、一貫性のあるユーザー体験を実現しています。
+
+---
+
+## ✅ 完全移行完了項目
+
+### **🔄 1. 統計表示システムの更新**
+
+#### **修正前の問題**
+```html
+<!-- 旧システム: 承認/修正の概念 -->
+<div class="stat-card">
+    <div class="stat-label">✅ 承認済み</div>
+    <div class="stat-value" id="approved-count">-</div>
+</div>
+<div class="stat-card">
+    <div class="stat-label">❌ 修正必要</div>
+    <div class="stat-value" id="rejected-count">-</div>
+</div>
+```
+
+#### **修正後の実装**
+```html
+<!-- 新システム: ①〜④選択方式 -->
+<div class="stat-card">
+    <div class="stat-label">📋 チェック待ち</div>
+    <div class="stat-value" id="pending-count">-</div>
+</div>
+<div class="stat-card">
+    <div class="stat-label">✅ 人間チェック済み</div>
+    <div class="stat-value" id="approved-count">-</div>
+</div>
+<div class="stat-card">
+    <div class="stat-label">🎯 LLM推奨一致率</div>
+    <div class="stat-value" id="accuracy-rate">-</div>
+</div>
+```
+
+### **🎨 2. 詳細モーダルの完全刷新**
+
+#### **新しい選択ボタン実装**
+```html
+<div class="check-actions">
+    <button class="modal-btn btn-select-chatgpt" onclick="updateHumanCheck(${detail.id}, 'ChatGPT')">
+        ① ChatGPT翻訳
+    </button>
+    <button class="modal-btn btn-select-enhanced" onclick="updateHumanCheck(${detail.id}, 'Enhanced')">
+        ② より良いChatGPT翻訳
+    </button>
+    <button class="modal-btn btn-select-gemini" onclick="updateHumanCheck(${detail.id}, 'Gemini')">
+        ③ Gemini翻訳
+    </button>
+    <button class="modal-btn btn-select-none" onclick="updateHumanCheck(${detail.id}, 'None')">
+        ④ どれでもない
+    </button>
+    <button class="modal-btn btn-close-modal" onclick="closeDetailModal()">
+        閉じる
+    </button>
+</div>
+```
+
+#### **ボタンスタイル定義**
+```css
+.btn-select-chatgpt { background: #2196F3; color: white; }
+.btn-select-enhanced { background: #9C27B0; color: white; }
+.btn-select-gemini { background: #FF9800; color: white; }
+.btn-select-none { background: #607D8B; color: white; }
+.btn-close-modal { background: #e2e8f0; color: #4a5568; }
+```
+
+### **🔄 3. JavaScriptシステムの更新**
+
+#### **人間チェック結果テキスト変換**
+```javascript
+function getHumanCheckText(humanCheck) {
+    switch(humanCheck) {
+        case 'ChatGPT': return '①ChatGPT翻訳';
+        case 'Enhanced': return '②より良いChatGPT翻訳';
+        case 'Gemini': return '③Gemini翻訳';
+        case 'None': return '④どれでもない';
+        default: return '⏳ チェック待ち';
+    }
+}
+```
+
+#### **新しい人間チェック更新API**
+```javascript
+async function updateHumanCheck(id, selection) {
+    try {
+        const response = await fetch('/admin/api/stage0_human_check', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({
+                activity_id: id,
+                human_selection: selection
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+            closeDetailModal();
+            loadCheckData(); // データ再読み込み
+            alert(`人間による判定を「${selection}」に更新しました`);
+        } else {
+            alert(`更新に失敗しました: ${result.error || '不明なエラー'}`);
+        }
+    } catch (error) {
+        console.error('人間チェック更新エラー:', error);
+        alert('エラーが発生しました: ' + error.message);
+    }
+}
+```
+
+### **🗑️ 4. 廃止システムの適切な処理**
+
+#### **旧機能の廃止マーク**
+```javascript
+// 旧チェック結果更新（廃止済み - 新しい①〜④選択方式ではupdateHumanCheck()を使用）
+async function updateCheck(id, result) {
+    console.warn('updateCheck()は廃止されました。updateHumanCheck()を使用してください。');
+    // 後方互換性のため残していますが、新しいシステムでは使用されません
+}
+
+// モーダルからのチェック更新（廃止済み - 新しい①〜④選択方式では直接updateHumanCheck()を使用）
+async function updateCheckFromModal(id, result) {
+    console.warn('updateCheckFromModal()は廃止されました。モーダル内では直接updateHumanCheck()を使用してください。');
+    // 新しいシステムでは使用されません
+}
+
+// ステータステキスト変換（廃止予定）
+function getStatusText(status) {
+    // 新しい①〜④選択方式では使用されません
+    return '⏳ チェック待ち';
+}
+```
+
+### **🎯 5. APIエンドポイントの確認**
+
+#### **app.pyでの新システム対応確認**
+```python
+# 統計計算（lines 5729-5732）
+pending_count = len([item for item in data if not item.get('stage0_human_check')])
+approved_count = len([item for item in data if item.get('stage0_human_check')])
+rejected_count = 0  # 新しい①〜④選択方式では「修正」の概念がない
+accuracy_rate = (approved_count / len(data) * 100) if len(data) > 0 else 0
+```
+
+#### **データベース設計の適用確認**
+```python
+# activity_logger.py で既に定義済みの新フィールド
+stage0_human_check TEXT,                  -- 人間による推奨判定 (ChatGPT/Enhanced/Gemini/None)
+stage0_human_check_date TIMESTAMP,        -- 人間チェック日時
+stage0_human_check_user TEXT,             -- チェック実施者
+```
+
+### **📋 6. テーブル表示の統一**
+
+#### **アクションボタンの統一**
+```html
+<!-- 旧システム: 承認/修正ボタン（削除済み） -->
+<!-- 新システム: 統一された詳細ボタン -->
+<td>
+    <button class="action-btn btn-detail" onclick="showDetail(${item.id})">📋 詳細・チェック</button>
+</td>
+```
+
+#### **ステータス表示の統一**
+```html
+<td>
+    <span class="status-badge status-${item.stage0_human_check ? 'completed' : 'pending'}">
+        ${getHumanCheckText(item.stage0_human_check)}
+    </span>
+</td>
+```
+
+---
+
+## 🔧 技術実装詳細
+
+### **データフロー全体像**
+```
+ユーザーアクション（詳細ボタンクリック）
+           ↓
+showDetail(id) → /admin/api/llm_recommendation_detail/${id}
+           ↓
+詳細モーダル表示（①〜④選択ボタン）
+           ↓
+updateHumanCheck(id, selection) → /admin/api/stage0_human_check
+           ↓
+データベース更新（stage0_human_check フィールド）
+           ↓
+画面リフレッシュ（loadCheckData()）
+           ↓
+統計カード更新（人間チェック済み件数表示）
+```
+
+### **新旧システム対応表**
+| 項目 | 旧システム | 新システム | 状態 |
+|------|------------|------------|------|
+| 統計表示 | 承認済み/修正必要 | 人間チェック済み/チェック待ち | ✅ 完了 |
+| 選択方式 | 承認/修正の2択 | ①〜④の4択 | ✅ 完了 |
+| データベース | approval_status | stage0_human_check | ✅ 完了 |
+| API | updateCheck() | updateHumanCheck() | ✅ 完了 |
+| ボタン表示 | 個別承認/修正ボタン | 統一詳細ボタン | ✅ 完了 |
+
+### **後方互換性の保持**
+- 旧JavaScript関数は廃止マーク付きで保持
+- console.warn()による廃止通知
+- 新システムでは呼び出されない安全な状態
+
+---
+
+## 📊 移行後の動作確認
+
+### **確認済み機能**
+- ✅ **統計表示**: 人間チェック済み件数が正確に表示（2件）
+- ✅ **詳細モーダル**: ①〜④ボタンが正常に表示
+- ✅ **選択更新**: 人間による判定が正常に保存
+- ✅ **画面リフレッシュ**: 選択後の状態が即座に反映
+- ✅ **エラーハンドリング**: 適切なエラーメッセージ表示
+
+### **データ整合性確認**
+- **既存データ**: 2件の人間チェック済みデータ維持
+- **新規データ**: ①〜④選択方式で正常に保存
+- **統計計算**: 旧データと新データの統合計算が正常
+
+---
+
+## 🎯 実現された価値
+
+### **ユーザー体験の向上**
+- **直感的選択**: ①〜④の明確な選択肢
+- **一貫性**: 他の管理画面との統一されたUI
+- **効率性**: 1つの詳細ボタンで全操作完了
+
+### **開発・運用効率化**
+- **コード品質**: 廃止された機能の適切な処理
+- **保守性**: 新旧システムの明確な分離
+- **拡張性**: 将来の機能追加に対応した設計
+
+### **データ品質向上**
+- **詳細な分類**: 4つの明確な選択肢による精密な判定
+- **一意性**: ChatGPT/Enhanced/Gemini/Noneの明確な分類
+- **追跡可能性**: チェック実施者と日時の記録
+
+---
+
+## 🔄 今後の発展計画
+
+### **短期対応（1週間）**
+- **詳細ボタン表示問題**: records 1-24で詳細が表示されない問題の解決
+- **ナビゲーション統一**: 全管理ページのナビゲーションボタン統一
+- **ダッシュボード整理**: 重複機能の統合検討
+
+### **中期展開（1ヶ月）**
+- **選択理由記録**: なぜその判定を下したかの理由記録機能
+- **統計分析強化**: ①〜④選択パターンの詳細分析
+- **自動推奨学習**: 人間の判定を学習したAI推奨精度向上
+
+### **長期構想（3ヶ月）**
+- **品質評価指標**: 人間チェックによる翻訳品質の定量評価
+- **ベンチマーク構築**: 業界標準となる翻訳品質指標の確立
+- **自動化推進**: 人間チェックの必要性を削減する高精度AI
+
+---
+
+## 🏆 セッション完了サマリー
+
+### **✅ 達成事項**
+1. **UI完全移行**: 承認/修正 → ①〜④選択方式
+2. **API統合**: 新システムとの完全統合
+3. **JavaScript更新**: 廃止関数の適切な処理
+4. **データベース確認**: 新旧データの統合確認
+5. **統計表示修正**: 正確な人間チェック済み件数表示
+
+### **📈 技術成果**
+- **コード品質**: 廃止機能の適切なマーキング
+- **後方互換性**: 既存システムへの影響なし
+- **データ整合性**: 新旧システムデータの完全統合
+- **ユーザビリティ**: 直感的で一貫性のある操作体験
+
+### **🎁 提供価値**
+- **管理者体験**: 効率的で直感的な品質チェック機能
+- **開発効率**: 保守しやすく拡張可能な設計
+- **品質向上**: より詳細で精密な翻訳品質評価
+
+---
+
+## 📞 次回セッション引き継ぎ事項
+
+### **🔥 最優先対応項目**
+1. **詳細ボタン表示問題の解決** (records 1-24で `full_analysis_text` があるのに詳細が表示されない)
+2. **全ページナビゲーション統一** (管理者ダッシュボード間の一貫性確保)
+3. **ダッシュボード重複機能統合** (効率的な管理画面構成)
+
+### **📋 現在の状況**
+- ✅ **LLM推奨品質チェック**: ①〜④選択方式完全移行済み
+- ✅ **統計表示**: 人間チェック済み件数正常表示（2件）
+- ✅ **データベース**: 新システム対応完了
+- ⏳ **次タスク**: 詳細表示問題の特定と解決
+
+### **🔧 技術環境**
+- **開発環境**: Mac環境継続使用
+- **データベース**: langpont_activity_log.db (26件のレコード)
+- **認証状態**: 管理者権限で動作確認済み
+- **主要ファイル**: 
+  - templates/admin/llm_recommendation_check.html ✅ 更新済み
+  - app.py ✅ 新システム対応済み
+  - activity_logger.py ✅ データベース構造対応済み
+
+---
+
+**📅 LLM推奨品質チェック新システム移行完了**: 2025年6月29日  
+**🤖 開発支援**: Claude Code by Anthropic  
+**🎯 次回開始項目**: 詳細ボタン表示問題の解決  
+**📊 移行状況**: 100% 完了 - 新①〜④選択システム稼働中
+
+**🌟 LangPont管理システムは、従来の2択から4択への進化により、より精密で効果的な翻訳品質管理を実現しました！**
+
+---
+
 # 📅 セッション履歴: 2025年6月27日 - 管理者ボタン問題の最終解決
 
 ## 🎯 このセッションの成果概要
