@@ -228,9 +228,11 @@ try:
     from admin_routes import init_admin_routes
     from admin_logger import admin_logger, log_translation_event, log_gemini_analysis, log_api_call, log_error
     from admin_auth import admin_auth_manager, require_admin_access
+    from routes.debug_routes import debug_bp  # 🆕 デバッグルート追加
     
     # 管理者ルートを登録
     init_admin_routes(app)
+    app.register_blueprint(debug_bp)  # 🆕 デバッグBlueprintの登録
     
     print("✅ Phase B-1: 管理者システム統合完了")
     ADMIN_SYSTEM_AVAILABLE = True
