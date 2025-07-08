@@ -77,3 +77,5 @@ config.local.pycookies*.txt
 emergency_diagnostic.py
 test_cookies.txt
 start_app.sh
+*.backup*
+debug_routes_new.txt
