@@ -73,4 +73,7 @@ htmlcov/
 # 本番環境の設定ファイル
 .env.production
 .env.local
-config.local.py
+config.local.pycookies*.txt
+emergency_diagnostic.py
+test_cookies.txt
+start_app.sh
