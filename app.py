@@ -229,10 +229,12 @@ try:
     from admin_logger import admin_logger, log_translation_event, log_gemini_analysis, log_api_call, log_error
     from admin_auth import admin_auth_manager, require_admin_access
     from routes.debug_routes import debug_bp  # 🆕 デバッグルート追加
-    
+    from routes.security_routes import init_security_routes  # 🆕 セキュリティルート追加
+
     # 管理者ルートを登録
     init_admin_routes(app)
     app.register_blueprint(debug_bp)  # 🆕 デバッグBlueprintの登録
+    init_security_routes(app)  # 🆕 セキュリティBlueprintの登録
     
     print("✅ Phase B-1: 管理者システム統合完了")
     ADMIN_SYSTEM_AVAILABLE = True
@@ -4763,57 +4765,6 @@ def reverse_better_translation():
             "error": str(e)
         })
 
-# =============================================================================
-# 🆕 管理者用セキュリティ機能
-# =============================================================================
-
-@app.route("/security/status")
-def security_status():
-    """セキュリティステータス表示（管理者用）"""
-    if not session.get("logged_in"):
-        abort(403)
-    
-    status = {
-        "csrf_protection": "有効",
-        "rate_limiting": "有効",
-        "input_validation": "有効",
-        "security_logging": "有効",
-        "session_security": "有効",
-        "environment": ENVIRONMENT,
-        "debug_mode": app.config.get('DEBUG', False),
-        "version": VERSION_INFO["version"]
-    }
-    
-    return jsonify(status)
-
-@app.route("/security/logs")
-def view_security_logs():
-    """セキュリティログ表示（管理者用）"""
-    if not session.get("logged_in"):
-        abort(403)
-    
-    try:
-        logs = []
-        log_files = ['logs/security.log', 'logs/app.log', 'logs/access.log']
-        
-        for log_file in log_files:
-            if os.path.exists(log_file):
-                with open(log_file, 'r', encoding='utf-8') as f:
-                    file_logs = f.readlines()[-20:]  # 最新20行
-                    logs.extend([{
-                        'file': log_file,
-                        'content': line.strip()
-                    } for line in file_logs])
-        
-        return jsonify({
-            "success": True,
-            "logs": logs[-50:]  # 最新50件
-        })
-    except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": str(e)
-        })
 
 # =============================================================================
 # 🌍 安全版：日本語、英語、フランス語、スペイン語ランディングページ
