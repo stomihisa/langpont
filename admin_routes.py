@@ -530,6 +530,33 @@ def calculate_success_rate() -> float:
         return 0.0
 
 
+@admin_bp.route('/llm_recommendation_check')
+@require_admin_access
+def llm_recommendation_check():
+    """第0段階: LLM推奨品質チェックページ（管理者専用）"""
+    try:
+        user_info = admin_auth_manager.get_current_user_info()
+        
+        import secrets
+        csrf_token = secrets.token_urlsafe(32)
+        session['csrf_token'] = csrf_token
+        
+        # ページアクセスをログ
+        admin_auth_manager.log_admin_access(
+            action="llm_recommendation_check_accessed",
+            details=f"User: {user_info['username']}"
+        )
+        
+        return render_template('admin/llm_recommendation_check.html', 
+                             csrf_token=csrf_token,
+                             user_info=user_info,
+                             page_title='LLM推奨品質チェック')
+    except Exception as e:
+        log_error("llm_recommendation_check_error", str(e), user_info.get('username'))
+        flash(f'LLM推奨品質チェック画面エラー: {str(e)}', 'error')
+        return redirect(url_for('admin.dashboard'))
+
+
 def init_admin_routes(app):
     """管理者ルートをFlaskアプリに登録"""
     try:
