@@ -17,7 +17,18 @@
       "Bash(exec zsh)",
       "Bash(deactivate)",
       "Bash(/usr/bin/python3:*)",
-      "Bash(export PYTHONPATH=\"/Users/shintaro_imac_2/langpont\")"
+      "Bash(export PYTHONPATH=\"/Users/shintaro_imac_2/langpont\")",
+      "Bash(sqlite3:*)",
+      "Bash(pkill:*)",
+      "Bash(sed:*)",
+      "Bash(BACKUP_FILE=\"templates/index.html.task11_backup_20250710_223249\")",
+      "Bash(diff:*)",
+      "Bash(cp:*)",
+      "Bash(curl:*)",
+      "Bash(launchctl:*)",
+      "Bash(env)",
+      "Bash(sudo pkill:*)",
+      "Bash(FLASK_ENV=production FLASK_DEBUG=0 timeout 10s python app.py)"
     ],
     "deny": []
   }
