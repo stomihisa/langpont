@@ -32,12 +32,6 @@ except ImportError as e:
 # Configuration import
 from config import VERSION, ENVIRONMENT, FEATURES, DEPLOYMENT, USAGE_LIMITS
 
-# 🆕 Task B2-8: 推奨抽出システム分離
-from analysis.recommendation import extract_recommendation_from_analysis
-
-# 🆕 Task B2-9-Phase1: セキュリティモジュール分離
-from security.input_validation import EnhancedInputValidator
-
 # 🆕 認証システムインポート（緊急デバッグ版）
 try:
     from user_auth import UserAuthSystem
@@ -378,6 +372,125 @@ def csrf_protect(f):
                 abort(403)
         return f(*args, **kwargs)
     return decorated_function
+
+# 🆕 強化された入力値検証システム
+
+class EnhancedInputValidator:
+    """強化された入力値検証クラス"""
+
+    # 🆕 適切なレベルの危険パターン（翻訳プロンプト考慮）
+    DANGEROUS_PATTERNS = [
+        # 明らかに危険なスクリプトインジェクション
+        r'<script[^>]*>.*?</script>',
+        r'javascript\s*:\s*alert',
+        r'vbscript\s*:\s*',
+        r'data\s*:\s*text/html',
+
+        # 危険なイベントハンドラー（翻訳で使われる可能性のある単語は除外）
+        r'onload\s*=\s*["\']',
+        r'onerror\s*=\s*["\']',
+        r'onclick\s*=\s*["\']',
+
+        # 危険なHTMLタグ
+        r'<iframe[^>]*src\s*=',
+        r'<object[^>]*>',
+        r'<embed[^>]*>',
+        r'<applet[^>]*>',
+
+        # 明らかなSQLインジェクション（大文字小文字厳密）
+        r'\bUNION\s+SELECT\b',
+        r'\bDROP\s+TABLE\b',
+        r'\bDELETE\s+FROM\b',
+
+        # 危険なコマンド実行
+        r'[\|&;]\s*(rm|del|format)\s+',
+        r'\$\(\s*rm\s+',
+        r'`\s*rm\s+',
+    ]
+
+    @classmethod
+    def validate_text_input(cls, text: Optional[str], max_length: int = 5000, min_length: int = 1, field_name: str = "input", current_lang: str = "jp") -> Tuple[bool, str]:
+        """包括的なテキスト入力検証（多言語対応）"""
+        from labels import labels
+
+        if not text or not isinstance(text, str):
+            return False, f"{field_name}{labels[current_lang]['validation_error_empty']}"
+
+        # 長さチェック（最大長制限を10000文字まで緩和）
+        effective_max_length = max(max_length, 10000)
+
+        if len(text) < min_length:
+            return False, f"{field_name}{labels[current_lang]['validation_error_short']}（最小{min_length}文字）"
+
+        if len(text) > effective_max_length:
+            return False, f"{field_name}{labels[current_lang]['validation_error_long']}（最大{effective_max_length}文字）"
+
+        # フィールドタイプによる検証レベルの調整
+        translation_fields = ["翻訳テキスト", "会話履歴", "背景情報"]
+        is_translation_field = field_name in translation_fields
+
+        if is_translation_field:
+            # 翻訳テキスト用の緩和された危険パターンチェック
+            critical_patterns = [
+                r'<script[^>]*>.*?</script>',
+                r'javascript\s*:\s*alert',
+                r'<iframe[^>]*src\s*=',
+                r'<object[^>]*>',
+                r'\$\(\s*rm\s+',
+            ]
+            patterns_to_check = critical_patterns
+        else:
+            # その他フィールド用の厳格なチェック
+            patterns_to_check = cls.DANGEROUS_PATTERNS
+
+        # 危険パターンのチェック
+        for pattern in patterns_to_check:
+            if re.search(pattern, text, re.IGNORECASE):
+                # セキュリティログに記録
+                security_logger.warning(
+                    f"Dangerous pattern detected in {field_name} - "
+                    f"Pattern: {pattern[:30]}..., "
+                    f"Field type: {'translation' if is_translation_field else 'other'}, "
+                    f"IP: {get_client_ip_safe()}"
+                )
+                return False, f"{field_name}に潜在的に危険な文字列が含まれています"
+
+        # 🆕 制御文字チェック（翻訳フィールドでは緩和）
+        if not is_translation_field and re.search(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]', text):
+            return False, f"{field_name}に不正な制御文字が含まれています"
+
+        return True, "OK"
+
+    @classmethod
+    def validate_language_pair(cls, lang_pair: Optional[str], current_lang: str = "jp") -> Tuple[bool, str]:
+        """言語ペア検証（ホワイトリスト方式・多言語対応）"""
+        from labels import labels
+
+        valid_pairs = [
+            'ja-fr', 'fr-ja', 'ja-en', 'en-ja', 
+            'fr-en', 'en-fr', 'ja-es', 'es-ja',
+            'es-en', 'en-es', 'es-fr', 'fr-es',
+            'ja-de', 'de-ja', 'ja-it', 'it-ja'
+        ]
+
+        if not lang_pair or lang_pair not in valid_pairs:
+            return False, labels[current_lang].get('validation_error_invalid_lang_pair', "無効な言語ペアです")
+
+        return True, "OK"
+
+    @classmethod
+    def validate_email(cls, email: Optional[str], current_lang: str = "jp") -> Tuple[bool, str]:
+        """メールアドレス検証（多言語対応）"""
+        from labels import labels
+
+        if not email:
+            return False, f"メールアドレス{labels[current_lang]['validation_error_empty']}"
+
+        pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(pattern, email):
+            return False, labels[current_lang].get('validation_error_invalid_email', "無効なメールアドレス形式です")
+
+        return True, "OK"
 
 # 🆕 セッション管理強化
 
@@ -1814,6 +1927,160 @@ Your entire response must be in {analysis_language}."""
 
 # 🚀 Task 2.9.2 Phase B-3.5.2: 推奨判定システム（新規作成）
 
+def extract_recommendation_from_analysis(analysis_text: str, engine_name: str = "gemini") -> Dict[str, Any]:
+    """
+    分析結果から推奨を抽出する関数（Task 2.9.2 Phase B-3.5.2 対応）
+
+    重要: ChatGPTに「分析結果から推奨を抽出」させる正しいプロンプトを実装
+
+    間違ったアプローチ: ChatGPTに独立した翻訳判定をさせる
+    正しいアプローチ: ChatGPTに「この分析文章からLLMの推奨を特定」させる
+    """
+
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+    if not OPENAI_API_KEY:
+        return {
+            "recommendation": "none",
+            "confidence": 0.0,
+            "method": "openai_key_missing",
+            "error": "OpenAI APIキーが設定されていません"
+        }
+
+    # セッションから言語設定を取得
+    display_lang = session.get("lang", "jp")
+
+    # 正しいプロンプト: 分析結果から推奨抽出
+    if display_lang == "en":
+        prompt = f"""The following is an analysis of three translations by {engine_name} AI:
+
+{analysis_text}
+
+Read this analysis text and identify which translation {engine_name} AI recommends.
+Choose from: ChatGPT / Enhanced / Gemini
+
+Only respond with the name of the recommended translation."""
+    elif display_lang == "fr":
+        prompt = f"""Voici une analyse de trois traductions par {engine_name} IA:
+
+{analysis_text}
+
+Lisez ce texte d'analyse et identifiez quelle traduction {engine_name} IA recommande.
+Choisissez parmi: ChatGPT / Enhanced / Gemini
+
+Répondez uniquement avec le nom de la traduction recommandée."""
+    elif display_lang == "es":
+        prompt = f"""El siguiente es un análisis de tres traducciones por {engine_name} IA:
+
+{analysis_text}
+
+Lea este texto de análisis e identifique qué traducción recomienda {engine_name} IA.
+Elija entre: ChatGPT / Enhanced / Gemini
+
+Responda solo con el nombre de la traducción recomendada."""
+    else:
+        prompt = f"""以下は{engine_name}AIによる3つの翻訳の分析結果です：
+
+{analysis_text}
+
+この分析文章を読んで、{engine_name}AIが推奨している翻訳を特定してください。
+選択肢: ChatGPT / Enhanced / Gemini
+推奨されている翻訳名のみを回答してください。"""
+
+    try:
+        import openai
+        openai.api_key = OPENAI_API_KEY
+
+        # ChatGPTで推奨を抽出
+        response = openai.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{
+                "role": "system",
+                "content": "You are an expert at analyzing LLM recommendations. Extract the recommendation from the given analysis text."
+            }, {
+                "role": "user", 
+                "content": prompt
+            }],
+            max_tokens=50,
+            temperature=0.1
+        )
+
+        recommendation_text = response.choices[0].message.content.strip()
+
+        # 🆕 デバッグログ追加（Task 2.9.2 Phase B-3.5.7 Final Integration）
+        app_logger.info(f"🔍 DEBUG - Raw response: '{recommendation_text}'")
+        app_logger.info(f"🔍 DEBUG - Engine analyzed: '{engine_name}'")
+
+        # 推奨結果の正規化（簡素化・安定化）
+        recommendation_lower = recommendation_text.strip().lower()
+        app_logger.info(f"🔍 DEBUG - Cleaned: '{recommendation_lower}'")
+
+        # 🆕 単語境界を考慮した判定ロジック（安定化）
+        import re
+
+        # 完全一致を最優先
+        if recommendation_lower == 'enhanced':
+            recommendation = "Enhanced"
+            confidence = 0.95
+            method = "exact_match"
+        elif recommendation_lower == 'chatgpt':
+            recommendation = "ChatGPT"
+            confidence = 0.95
+            method = "exact_match"
+        elif recommendation_lower == 'gemini':
+            recommendation = "Gemini"
+            confidence = 0.95
+            method = "exact_match"
+        # 単語境界での部分マッチ
+        elif re.search(r'\benhanced\b', recommendation_lower):
+            recommendation = "Enhanced"
+            confidence = 0.9
+            method = "word_boundary_match"
+        elif re.search(r'\bchatgpt\b', recommendation_lower):
+            recommendation = "ChatGPT"
+            confidence = 0.9
+            method = "word_boundary_match"
+        elif re.search(r'\bgemini\b', recommendation_lower):
+            recommendation = "Gemini"
+            confidence = 0.9
+            method = "word_boundary_match"
+        # フォールバック：含有チェック
+        elif "enhanced" in recommendation_lower:
+            recommendation = "Enhanced"
+            confidence = 0.8
+            method = "substring_match"
+        elif "chatgpt" in recommendation_lower or "chat" in recommendation_lower:
+            recommendation = "ChatGPT"
+            confidence = 0.8
+            method = "substring_match"
+        elif "gemini" in recommendation_lower:
+            recommendation = "Gemini"
+            confidence = 0.8
+            method = "substring_match"
+        else:
+            recommendation = "none"
+            confidence = 0.0
+            method = "no_match"
+
+        app_logger.info(f"🔍 DEBUG - Final result: '{recommendation}' (method: {method})")
+        app_logger.info(f"🎯 推奨抽出成功: {engine_name} → {recommendation} (信頼度: {confidence})")
+
+        return {
+            "recommendation": recommendation,
+            "confidence": confidence,
+            "method": f"chatgpt_extraction_from_{engine_name}_{method}",
+            "raw_response": recommendation_text,
+            "engine_analyzed": engine_name,
+            "extraction_method": method
+        }
+
+    except Exception as e:
+        app_logger.error(f"推奨抽出エラー: {str(e)}")
+        return {
+            "recommendation": "error",
+            "confidence": 0.0,
+            "method": "extraction_failed",
+            "error": str(e)
+        }
 
 # 🚀 Task 2.9.2 Phase B-3.5.2: 分析エンジン管理クラス
 

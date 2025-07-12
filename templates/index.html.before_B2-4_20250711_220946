@@ -5,7 +5,7 @@
 {% block head %}
 <!-- 🔧 STEP 2: CSRFトークンの修正 -->
 <meta name="csrf-token" content="{{ session.get('csrf_token', '') }}">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=-apple-system,BlinkMacSystemFont,San+Francisco,Helvetica+Neue:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
 <!-- 🌍 多言語対応: JavaScriptで利用可能なラベル初期化 -->
 <script>
@@ -3856,4 +3856,27 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
   }
 
 </script>
-{% endblock %}
+{% endblock %}" id="translated-label">{{ labels["label_" + target_lang] }}</div>
+                    <button type="button" class="copy-btn" onclick="copyContent('translated-text', 'toast-translated', this)" title="{{ labels.copy_tooltip }}">
+                        <img src="{{ url_for('static', filename='copy-icon.png') }}" alt="Copy">
+                    </button>
+                    <div class="result-text" id="translated-text"></div>
+                </div>
+                <div class="result-panel">
+                    <div class="result-label" id="reverse-translated-label">{{ labels["label_" + source_lang] }}</div>
+                    <div class="result-text" id="reverse-translated-text"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 改善翻訳 -->
+        <div class="result-card" id="better-translation-card">
+            <div class="result-header">
+                <div style="display: flex; align-items: center;">
+                    <span class="result-number">2</span>
+                    <span>✨ {{ labels["section_better"] }}</span>
+                </div>
+            </div>
+            <div class="result-content">
+                <div class="result-panel">
+                    <div class="result-label

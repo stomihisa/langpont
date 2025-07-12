@@ -28,7 +28,16 @@
       "Bash(launchctl:*)",
       "Bash(env)",
       "Bash(sudo pkill:*)",
-      "Bash(FLASK_ENV=production FLASK_DEBUG=0 timeout 10s python app.py)"
+      "Bash(FLASK_ENV=production FLASK_DEBUG=0 timeout 10s python app.py)",
+      "Bash(./check_processes.sh:*)",
+      "Bash(python:*)",
+      "Bash(jobs)",
+      "Bash(awk:*)",
+      "Bash(mkdir:*)",
+      "Bash(touch:*)",
+      "Bash(chmod:*)",
+      "Bash(pip install:*)",
+      "Bash(./full_test.sh:*)"
     ],
     "deny": []
   }

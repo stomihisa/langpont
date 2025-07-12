@@ -5,7 +5,7 @@
 {% block head %}
 <!-- 🔧 STEP 2: CSRFトークンの修正 -->
 <meta name="csrf-token" content="{{ session.get('csrf_token', '') }}">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=-apple-system,BlinkMacSystemFont,San+Francisco,Helvetica+Neue:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
 <!-- 🌍 多言語対応: JavaScriptで利用可能なラベル初期化 -->
 <script>
@@ -622,7 +622,24 @@ window.currentLabels = {
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 <script>
   // 🆕 2分割言語選択システム
-  // function updateLanguagePair() - 🎯 Task B2-2 Phase 2-2: Moved to static/js/main.js
+  function updateLanguagePair() {
+    const sourceSelect = document.getElementById('source_language');
+    const targetSelect = document.getElementById('target_language');
+    const hiddenLanguagePair = document.getElementById('language_pair');
+    
+    if (sourceSelect && targetSelect && hiddenLanguagePair) {
+      const sourceLang = sourceSelect.value;
+      const targetLang = targetSelect.value;
+      const languagePair = `${sourceLang}-${targetLang}`;
+      
+      hiddenLanguagePair.value = languagePair;
+      
+      // 既存の言語ラベル更新機能を呼び出し
+      updateLanguageLabels(languagePair);
+      
+      console.log(`🔄 Language pair updated: ${languagePair}`);
+    }
+  }
 
   function initializeLanguageSelector() {
     const sourceSelect = document.getElementById('source_language');
@@ -676,7 +693,32 @@ window.currentLabels = {
   // function getLanguagePair() - 🎯 Task B2-2 Phase 2-1: Moved to static/js/main.js
 
   // 🆕 言語入れ替え機能（矢印アニメーション付き）
-  // function swapLanguages() - 🎯 Task B2-2 Phase 2-2: Moved to static/js/main.js
+  function swapLanguages() {
+    const sourceSelect = document.getElementById('source_language');
+    const targetSelect = document.getElementById('target_language');
+    const arrowButton = document.querySelector('.swap-arrow');
+    
+    if (sourceSelect && targetSelect && arrowButton) {
+      // 現在の値を取得
+      const currentSource = sourceSelect.value;
+      const currentTarget = targetSelect.value;
+      
+      // 値を入れ替え
+      sourceSelect.value = currentTarget;
+      targetSelect.value = currentSource;
+      
+      // 矢印アニメーション
+      arrowButton.classList.add('arrow-flipped');
+      setTimeout(() => {
+        arrowButton.classList.remove('arrow-flipped');
+      }, 400);
+      
+      // 言語ペアを更新
+      updateLanguagePair();
+      
+      console.log(`🔄 Languages swapped: ${currentSource}-${currentTarget} → ${currentTarget}-${currentSource}`);
+    }
+  }
 
   // =============================================================================
   // 🧠 インタラクティブQ&Aチャット履歴管理システム (修正版)
@@ -1680,13 +1722,67 @@ window.currentLabels = {
   // 既存のJavaScript関数
   // function copyContent() - 🎯 Task B2-2 Phase 2-1: Moved to static/js/main.js
 
-  // function resetApplication() - 🎯 Task B2-2 Phase 2-2: Moved to static/js/main.js
+  function resetApplication() {
+    resetForm();
+  }
 
-  // function showToastNearButton() - 🎯 Task B2-2 Phase 2-2: Moved to static/js/main.js
+  function showToastNearButton(toastId, buttonElement) {
+    const toast = document.getElementById(toastId);
+    if (!toast) return;
+    
+    if (toast.hideTimer) {
+      clearTimeout(toast.hideTimer);
+    }
+    
+    const buttonRect = buttonElement.getBoundingClientRect();
+    
+    toast.style.cssText = `
+      position: fixed !important;
+      top: ${buttonRect.top - 45}px !important;
+      left: ${buttonRect.left + buttonRect.width/2 - 60}px !important;
+      width: 120px !important;
+      height: 32px !important;
+      background: #34C759 !important;
+      color: white !important;
+      border-radius: 6px !important;
+      font-size: 12px !important;
+      font-weight: 500 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      z-index: 9999 !important;
+      box-shadow: 0 4px 12px rgba(52, 199, 89, 0.4) !important;
+      pointer-events: none !important;
+      opacity: 1 !important;
+      transform: translateY(0) !important;
+    `;
+    
+    toast.hideTimer = setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateY(-10px)';
+      setTimeout(() => {
+        toast.style.display = 'none';
+      }, 300);
+    }, 1200);
+  }
 
   // function clearContent() - 🎯 Task B2-2 Phase 2-1: Moved to static/js/main.js
 
-  // function toggleAdvanced() - 🎯 Task B2-2 Phase 2-2: Moved to static/js/main.js (template vars adapted)
+  function toggleAdvanced() {
+    const content = document.getElementById("advancedContent");
+    const button = document.querySelector(".advanced-toggle");
+    const icon = button.querySelector("span");
+    
+    if (content.classList.contains("show")) {
+      content.classList.remove("show");
+      icon.textContent = "▼";
+      button.innerHTML = button.innerHTML.replace("{{ labels['toggle_details_close'] }}", "{{ labels['toggle_details_open'] }}");
+    } else {
+      content.classList.add("show");
+      icon.textContent = "▲";
+      button.innerHTML = button.innerHTML.replace("{{ labels['toggle_details_open'] }}", "{{ labels['toggle_details_close'] }}");
+    }
+  }
 
   function updateLanguageLabels(languagePair) {
     const [source, target] = languagePair.split("-");
@@ -3856,4 +3952,27 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
   }
 
 </script>
-{% endblock %}
+{% endblock %}" id="translated-label">{{ labels["label_" + target_lang] }}</div>
+                    <button type="button" class="copy-btn" onclick="copyContent('translated-text', 'toast-translated', this)" title="{{ labels.copy_tooltip }}">
+                        <img src="{{ url_for('static', filename='copy-icon.png') }}" alt="Copy">
+                    </button>
+                    <div class="result-text" id="translated-text"></div>
+                </div>
+                <div class="result-panel">
+                    <div class="result-label" id="reverse-translated-label">{{ labels["label_" + source_lang] }}</div>
+                    <div class="result-text" id="reverse-translated-text"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 改善翻訳 -->
+        <div class="result-card" id="better-translation-card">
+            <div class="result-header">
+                <div style="display: flex; align-items: center;">
+                    <span class="result-number">2</span>
+                    <span>✨ {{ labels["section_better"] }}</span>
+                </div>
+            </div>
+            <div class="result-content">
+                <div class="result-panel">
+                    <div class="result-label
