@@ -37,6 +37,23 @@ from analysis.recommendation import extract_recommendation_from_analysis
 
 # 🆕 Task B2-9-Phase1: セキュリティモジュール分離
 from security.input_validation import EnhancedInputValidator
+from security.session_security import SecureSessionManager, SecurePasswordManager
+from security.request_helpers import (
+    get_client_ip, get_client_ip_safe, get_user_agent_safe, 
+    get_endpoint_safe, get_method_safe
+)
+from security.security_logger import log_security_event, log_access_event
+from security.protection import (
+    generate_csrf_token, validate_csrf_token,
+    enhanced_rate_limit_check, analytics_rate_limit_check
+)
+from security.decorators import (
+    csrf_protect, require_rate_limit, 
+    require_analytics_rate_limit, require_login
+)
+
+# 🆕 Task B2-10-Phase1a: 翻訳モジュール分離
+from translation import TranslationContext
 
 # 🆕 認証システムインポート（緊急デバッグ版）
 try:
@@ -340,205 +357,19 @@ def add_comprehensive_security_headers(response) -> Any:
 
 # 🆕 強化されたCSRF対策
 
-def generate_csrf_token() -> str:
-    """セキュアなCSRFトークンを生成"""
-    if 'csrf_token' not in session:
-        session['csrf_token'] = secrets.token_urlsafe(32)
-    return session['csrf_token']
-
-def validate_csrf_token(token: Optional[str]) -> bool:
-    """CSRFトークンの厳密な検証"""
-    if not token:
-        return False
-
-    session_token = session.get('csrf_token')
-    if not session_token:
-        return False
-
-    # タイミング攻撃を防ぐためのsecrets.compare_digest使用
-    return secrets.compare_digest(token, session_token)
 
 @app.context_processor
 def inject_csrf_token():
     """全テンプレートにCSRFトークンを注入"""
     return dict(csrf_token=generate_csrf_token())
 
-def csrf_protect(f):
-    """CSRF保護デコレータ（強化版）"""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if request.method == "POST":
-            token = request.form.get('csrf_token') or request.headers.get('X-CSRF-Token')
-            if not validate_csrf_token(token):
-                security_logger.warning(
-                    f"CSRF attack attempt - IP: {get_client_ip_safe()}, "
-                    f"UA: {get_user_agent_safe()}, "
-                    f"Endpoint: {get_endpoint_safe()}"
-                )
-                abort(403)
-        return f(*args, **kwargs)
-    return decorated_function
 
 # 🆕 セッション管理強化
 
-class SecureSessionManager:
-    """セキュアなセッション管理クラス"""
-
-    @staticmethod
-    def regenerate_session_id() -> None:
-        """セッションIDの再生成（セッションハイジャック対策）"""
-        # 現在のセッションデータを保存
-        old_session_data = dict(session)
-
-        # セッションをクリアして新しいIDを生成
-        session.clear()
-
-        # データを復元
-        for key, value in old_session_data.items():
-            session[key] = value
-
-        session.permanent = True
-
-    @staticmethod
-    def is_session_expired() -> bool:
-        """セッション期限切れチェック"""
-        if 'session_created' not in session:
-            session['session_created'] = time.time()
-            return False
-
-        # 1時間でセッション期限切れ
-        if time.time() - session['session_created'] > 3600:
-            return True
-
-        return False
-
-    @staticmethod
-    def cleanup_old_sessions() -> None:
-        """古いセッションのクリーンアップ（定期実行推奨）"""
-        # 実装は使用するセッションストアに依存
-        pass
-
-# 🆕 パスワード管理強化
-
-class SecurePasswordManager:
-    """セキュアなパスワード管理クラス"""
-
-    @staticmethod
-    def hash_password(password: str) -> str:
-        """パスワードのハッシュ化（bcrypt相当）"""
-        return generate_password_hash(password, method='pbkdf2:sha256', salt_length=16)
-
-    @staticmethod
-    def verify_password(password: str, password_hash: str) -> bool:
-        """パスワードの検証"""
-        return check_password_hash(password_hash, password)
-
-    @staticmethod
-    def validate_password_strength(password: str) -> Tuple[bool, str]:
-        """パスワード強度の検証"""
-        if len(password) < 8:
-            return False, "パスワードは8文字以上である必要があります"
-
-        if not re.search(r'[A-Z]', password):
-            return False, "パスワードには大文字を含む必要があります"
-
-        if not re.search(r'[a-z]', password):
-            return False, "パスワードには小文字を含む必要があります"
-
-        if not re.search(r'\d', password):
-            return False, "パスワードには数字を含む必要があります"
-
-        return True, "OK"
 
 # ヘルパー関数とセキュリティ監視（リクエストコンテキスト対応版）
 
-def get_client_ip() -> Optional[str]:
-    """クライアントIPアドレスを安全に取得"""
-    # プロキシ経由の場合のIP取得
-    forwarded_ips = request.headers.get('X-Forwarded-For')
-    if forwarded_ips:
-        # 最初のIPアドレスを取得（信頼できるプロキシの場合）
-        return forwarded_ips.split(',')[0].strip()
 
-    real_ip = request.headers.get('X-Real-IP')
-    if real_ip:
-        return real_ip
-
-    return request.remote_addr
-
-def get_client_ip_safe() -> str:
-    """リクエストコンテキスト外でも安全なIP取得"""
-    try:
-        return get_client_ip()
-    except RuntimeError:
-        return 'N/A'
-
-def get_user_agent_safe() -> str:
-    """リクエストコンテキスト外でも安全なUser-Agent取得"""
-    try:
-        return request.headers.get('User-Agent', 'Unknown')[:200]
-    except RuntimeError:
-        return 'N/A'
-
-def get_endpoint_safe() -> str:
-    """リクエストコンテキスト外でも安全なエンドポイント取得"""
-    try:
-        return request.endpoint or 'N/A'
-    except RuntimeError:
-        return 'N/A'
-
-def get_method_safe() -> str:
-    """リクエストコンテキスト外でも安全なメソッド取得"""
-    try:
-        return request.method
-    except RuntimeError:
-        return 'N/A'
-
-def log_security_event(event_type: str, details: str, severity: str = "INFO") -> None:
-    """強化されたセキュリティイベントログ（リクエストコンテキスト対応）"""
-
-    # リクエストコンテキスト外でも安全に動作するよう修正
-    client_ip = get_client_ip_safe()
-    user_agent = get_user_agent_safe()
-    endpoint = get_endpoint_safe()
-    method = get_method_safe()
-
-    log_data = {
-        'event_type': event_type,
-        'client_ip': client_ip,
-        'user_agent': user_agent,
-        'details': details,
-        'severity': severity,
-        'endpoint': endpoint,
-        'method': method,
-        'timestamp': datetime.now().isoformat()
-    }
-
-    if severity == "WARNING":
-        security_logger.warning(f"SECURITY_WARNING: {json.dumps(log_data, ensure_ascii=False)}")
-    elif severity == "ERROR":
-        security_logger.error(f"SECURITY_ERROR: {json.dumps(log_data, ensure_ascii=False)}")
-    elif severity == "CRITICAL":
-        security_logger.critical(f"SECURITY_CRITICAL: {json.dumps(log_data, ensure_ascii=False)}")
-    else:
-        security_logger.info(f"SECURITY_INFO: {json.dumps(log_data, ensure_ascii=False)}")
-
-def log_access_event(details: str) -> None:
-    """アクセスログの記録（リクエストコンテキスト対応）"""
-    client_ip = get_client_ip_safe()
-    user_agent = get_user_agent_safe()
-    endpoint = get_endpoint_safe()
-    method = get_method_safe()
-
-    access_data = {
-        'client_ip': client_ip,
-        'user_agent': user_agent,
-        'method': method,
-        'endpoint': endpoint,
-        'details': details
-    }
-
-    access_logger.info(json.dumps(access_data, ensure_ascii=False))
 
 # 🆕 レート制限強化
 
@@ -576,147 +407,7 @@ def periodic_cleanup():
 cleanup_thread = threading.Thread(target=periodic_cleanup, daemon=True)
 cleanup_thread.start()
 
-def enhanced_rate_limit_check(client_ip: str, limit: int = 50, window: int = 300, burst_limit: int = 15, burst_window: int = 60) -> bool:
-    """強化されたレート制限（通常 + バースト制限）"""
-    now = time.time()
 
-    # 通常のレート制限
-    cutoff = now - window
-    rate_limit_store.setdefault(client_ip, [])
-    rate_limit_store[client_ip] = [
-        timestamp for timestamp in rate_limit_store[client_ip]
-        if timestamp > cutoff
-    ]
-
-    current_requests = len(rate_limit_store[client_ip])
-
-    # バースト制限チェック
-    burst_cutoff = now - burst_window
-    recent_requests = [
-        timestamp for timestamp in rate_limit_store[client_ip]
-        if timestamp > burst_cutoff
-    ]
-
-    if len(recent_requests) >= burst_limit:
-        log_security_event(
-            'BURST_RATE_LIMIT_EXCEEDED',
-            f'IP {client_ip} exceeded burst limit: {len(recent_requests)}/{burst_limit} in {burst_window}s',
-            'WARNING'
-        )
-        return False
-
-    if current_requests >= limit:
-        log_security_event(
-            'RATE_LIMIT_EXCEEDED',
-            f'IP {client_ip} exceeded rate limit: {current_requests}/{limit} in {window}s',
-            'WARNING'
-        )
-        return False
-
-    # 新しいリクエストを記録
-    rate_limit_store[client_ip].append(now)
-    return True
-
-def analytics_rate_limit_check(client_ip: str, limit: int = 500, window: int = 300, burst_limit: int = 100, burst_window: int = 60) -> bool:
-    """
-    🆕 Task 2.9.1: Analytics専用の緩いレート制限
-    Analytics追跡のための高頻度リクエストに対応
-    - 通常制限: 500req/5分 (vs 一般的な50req/5分)
-    - バースト制限: 100req/1分 (vs 一般的な15req/1分)
-    """
-    now = time.time()
-
-    # Analytics専用のレート制限ストレージ
-    analytics_key = f"analytics_{client_ip}"
-    rate_limit_store.setdefault(analytics_key, [])
-
-    # 古いリクエストを削除
-    cutoff = now - window
-    rate_limit_store[analytics_key] = [
-        timestamp for timestamp in rate_limit_store[analytics_key]
-        if timestamp > cutoff
-    ]
-
-    current_requests = len(rate_limit_store[analytics_key])
-
-    # バースト制限チェック
-    burst_cutoff = now - burst_window
-    recent_requests = [
-        timestamp for timestamp in rate_limit_store[analytics_key]
-        if timestamp > burst_cutoff
-    ]
-
-    if len(recent_requests) >= burst_limit:
-        log_security_event(
-            'ANALYTICS_BURST_LIMIT_EXCEEDED',
-            f'IP {client_ip} exceeded analytics burst limit: {len(recent_requests)}/{burst_limit} in {burst_window}s',
-            'WARNING'
-        )
-        return False
-
-    if current_requests >= limit:
-        log_security_event(
-            'ANALYTICS_RATE_LIMIT_EXCEEDED',
-            f'IP {client_ip} exceeded analytics rate limit: {current_requests}/{limit} in {window}s',
-            'WARNING'
-        )
-        return False
-
-    # 新しいリクエストを記録
-    rate_limit_store[analytics_key].append(now)
-    return True
-
-def require_rate_limit(f):
-    """レート制限デコレータ（強化版）"""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        client_ip = get_client_ip_safe()
-
-        if not enhanced_rate_limit_check(client_ip):
-            log_security_event(
-                'RATE_LIMIT_BLOCKED',
-                f'Request blocked for IP {client_ip}',
-                'WARNING'
-            )
-            abort(429)
-
-        return f(*args, **kwargs)
-    return decorated_function
-
-def require_analytics_rate_limit(f):
-    """🆕 Analytics専用レート制限デコレータ（緩和版）"""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        client_ip = get_client_ip_safe()
-
-        # Analytics専用の緩い制限（500req/5min, 100burst/1min）
-        if not analytics_rate_limit_check(client_ip):
-            log_security_event(
-                'ANALYTICS_RATE_LIMIT_BLOCKED',
-                f'Analytics request blocked for IP {client_ip}',
-                'WARNING'
-            )
-            abort(429)
-
-        return f(*args, **kwargs)
-    return decorated_function
-
-def require_login(f):
-    """ログイン認証が必要なエンドポイント用デコレータ"""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        # 新旧認証システムの統合チェック
-        new_auth = session.get('authenticated') and session.get('user_id')
-        legacy_auth = session.get('logged_in')
-
-        if not new_auth and not legacy_auth:
-            log_security_event('UNAUTHORIZED_ACCESS', 
-                             f'Attempted access to protected endpoint: {request.endpoint}', 
-                             'WARNING')
-            return redirect(url_for('login'))
-
-        return f(*args, **kwargs)
-    return decorated_function
 
 # 使用制限機能（既存コード + 強化）
 
@@ -2227,93 +1918,6 @@ Responda en español con insights reflexivos."""
             }
 
 # インタラクティブ質問処理システム（セキュリティ強化版）
-
-class TranslationContext:
-    """翻訳コンテキストを管理するクラス（セキュリティ強化版）"""
-
-    @staticmethod
-    def save_context(input_text: str, translations: Dict[str, str], analysis: str, metadata: Dict[str, Any]) -> None:
-        """翻訳コンテキストをセッションに保存（入力値検証付き）"""
-
-        # 🆕 保存前の入力値検証
-        safe_translations = {}
-        for key, value in translations.items():
-            if value:
-                is_valid, _ = EnhancedInputValidator.validate_text_input(
-                    value, max_length=10000, field_name=f"translation_{key}"
-                )
-                if is_valid:
-                    safe_translations[key] = value
-
-        # 🆕 ユニークIDとタイムスタンプを追加
-        import uuid
-        context_id = str(uuid.uuid4())[:8]  # 短縮ユニークID
-        current_timestamp = time.time()
-
-        # 🆕 Cookieサイズ制限対策：大容量データを軽量化
-        session["translation_context"] = {
-            "context_id": context_id,
-            "timestamp": current_timestamp,
-            "created_at": datetime.now().isoformat(),
-            "source_lang": metadata.get("source_lang", ""),
-            "target_lang": metadata.get("target_lang", ""),
-            # 大容量データは個別のセッションキーから参照（重複排除）
-            "has_data": True
-        }
-
-        log_access_event(f'Translation context saved: ID={context_id}, timestamp={current_timestamp}')
-
-    @staticmethod
-    def get_context() -> Dict[str, Any]:
-        """保存された翻訳コンテキストを取得（期限チェック付き・Cookieサイズ対策版）"""
-        context = session.get("translation_context", {})
-
-        if context and context.get("has_data"):
-            context_id = context.get("context_id", "unknown")
-
-            # 古いコンテキストは削除（1時間以上前）
-            if time.time() - context.get("timestamp", 0) > 3600:
-                log_access_event(f'Translation context expired: ID={context_id}')
-                TranslationContext.clear_context()
-                return {}
-
-            # 🆕 大容量データを個別セッションキーから再構築（重複排除・逆翻訳含む）
-            full_context = {
-                "context_id": context_id,
-                "timestamp": context.get("timestamp"),
-                "created_at": context.get("created_at"),
-                "input_text": session.get("input_text", ""),
-                "translations": {
-                    "chatgpt": session.get("translated_text", ""),
-                    "enhanced": session.get("better_translation", ""),
-                    "gemini": session.get("gemini_translation", ""),
-                    # 🆕 逆翻訳データを追加（KeyError対策）
-                    "chatgpt_reverse": session.get("reverse_translated_text", ""),
-                    "enhanced_reverse": session.get("reverse_better_translation", ""),
-                    "gemini_reverse": session.get("gemini_reverse_translation", "")
-                },
-                "analysis": session.get("gemini_3way_analysis", ""),
-                "metadata": {
-                    "source_lang": context.get("source_lang", ""),
-                    "target_lang": context.get("target_lang", ""),
-                    "partner_message": session.get("partner_message", ""),
-                    "context_info": session.get("context_info", "")
-                }
-            }
-
-            log_access_event(f'Translation context retrieved: ID={context_id}')
-            return full_context
-
-        return {}
-
-    @staticmethod
-    def clear_context() -> None:
-        """翻訳コンテキストをクリア"""
-        context = session.get("translation_context", {})
-        if context:
-            context_id = context.get("context_id", "unknown")
-            log_access_event(f'Translation context cleared: ID={context_id}')
-        session.pop("translation_context", None)
 
 class LangPontTranslationExpertAI:
     """🎯 LangPont多言語翻訳エキスパートAI - 包括的翻訳支援システム"""
