@@ -39,7 +39,9 @@
       "Bash(pip install:*)",
       "Bash(./full_test.sh:*)",
       "Bash(# 静的ファイル\nls -la static/css/main.css 2>/dev/null || echo \"\"static/css/main.css not found\"\"\nls -la static/js/main.js 2>/dev/null || echo \"\"static/js/main.js not found\"\")",
-      "Bash(# テストファイル\nls -la test_suite/lpbasic.py 2>/dev/null || echo \"\"test_suite/lpbasic.py not found\"\")"
+      "Bash(# テストファイル\nls -la test_suite/lpbasic.py 2>/dev/null || echo \"\"test_suite/lpbasic.py not found\"\")",
+      "Bash(./test_suite/check_processes.sh:*)",
+      "Bash(git add:*)"
     ],
     "deny": []
   }
