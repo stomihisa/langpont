@@ -63,7 +63,8 @@
       "Bash(# process_question()内の全依存関係を詳細分析\necho \"\"📋 process_question()メソッド依存関係詳細分析:\"\"\necho\necho \"\"🔍 使用される関数・クラス:\"\"\nsed -n ''1530,1563p'' app.py | grep -E \"\"(EnhancedInputValidator|log_security_event|_get_complete_translation_context|_analyze_question_intent|_handle_|expert_ai)\"\" | sed ''s/^/  /''\n\necho\necho \"\"🔍 メソッド内呼び出し詳細:\"\"\nsed -n ''1530,1563p'' app.py | grep -E \"\"(\\.|_)\"\" | grep -v \"\"def \"\" | sed ''s/^/  /'')",
       "Bash(# LangPontTranslationExpertAI_Remainingクラスの全メソッド確認\necho \"\"📋 LangPontTranslationExpertAI_Remaining クラス構造:\"\"\ngrep -n \"\"def \"\" app.py | grep -A1 -B1 \"\"1520\\|1530\\|1565\\|1579\\|1588\"\")",
       "Bash(# 構文エラーがないか確認\npython -m py_compile translation/expert_ai.py)",
-      "Bash(# 構文エラーがないか確認\npython -m py_compile app.py)"
+      "Bash(# 構文エラーがないか確認\npython -m py_compile app.py)",
+      "Bash(rm:*)"
     ],
     "deny": []
   }

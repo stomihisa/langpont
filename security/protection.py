@@ -36,7 +36,7 @@ def validate_csrf_token(token: Optional[str]) -> bool:
     return secrets.compare_digest(token, session_token)
 
 
-def enhanced_rate_limit_check(client_ip: str, limit: int = 50, window: int = 300, burst_limit: int = 15, burst_window: int = 60, rate_limit_store: dict = None) -> bool:
+def enhanced_rate_limit_check(client_ip: str, limit: int = 1000, window: int = 300, burst_limit: int = 500, burst_window: int = 60, rate_limit_store: dict = None) -> bool:
     """強化されたレート制限（通常 + バースト制限）"""
     if rate_limit_store is None:
         # フォールバック用の空辞書（本来はapp.pyから渡される）
