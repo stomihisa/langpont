@@ -1,0 +1,35 @@
+<!--
+ファイル名: components/interactive/question_interface.html
+役割: インタラクティブ質問入力UI表示
+依存関係: 
+  - static/js/interactive/question_handler.js (質問処理)
+  - labels.interactive_* (多言語対応)
+  - window.currentLabels (クライアント側多言語)
+公開インターフェース:
+  - #question-input: 質問入力フィールド
+  - #question-btn: 質問送信ボタン
+  - .interactive-section: メインコンテナ
+最終更新: H2-2(B2-3) Stage 1 Phase 1
+戦略位置: 3段階戦略 Stage 1の基盤構築フェーズ
+作成者: Claude Code (完全実装戦略準拠)
+品質基準: Stage 1基準（85%+成功率目標）
+-->
+
+<!-- インタラクティブ質問セクション -->
+<div class="interactive-section" id="interactive-section">
+    <div class="interactive-header">
+        <span>🤔</span>
+        <span class="interactive-title">{{ labels["interactive_title"] }}</span>
+    </div>
+    
+    <div class="interactive-input">
+        <textarea 
+            id="question-input" 
+            class="question-input" 
+            placeholder="{{ labels['interactive_placeholder'] }}"
+            rows="2"
+        ></textarea>
+        <button type="button" class="question-btn" onclick="askInteractiveQuestion()" id="question-btn">
+            {{ labels["interactive_button"] }}
+        </button>
+    </div>
