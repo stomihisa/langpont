@@ -1,0 +1,14 @@
+{% if session.get('logged_in') %}
+<div class="auth-button">
+    <!-- 🚀 Phase B-1: 管理者ダッシュボードリンク -->
+    {% if session.get('user_role') in ['admin', 'developer'] %}
+    <a href="{{ url_for('admin_comprehensive_dashboard') }}" class="admin-btn" title="管理者ダッシュボード" onclick="event.stopPropagation(); window.location.href='{{ url_for('admin_comprehensive_dashboard') }}'; return false;">👑 {{ labels.get("admin_dashboard", "管理者") }}</a>
+    {% endif %}
+    <a href="{{ url_for('profile_redirect') }}" class="profile-btn" onclick="event.stopPropagation(); window.location.href='{{ url_for('profile_redirect') }}'; return false;">👤 {{ labels.get("user_profile", "プロフィール") }}</a>
+    <a href="{{ url_for('logout') }}" class="logout-btn" onclick="event.stopPropagation(); window.location.href='{{ url_for('logout') }}'; return false;">🔓 {{ labels["logout"] }}</a>
+</div>
+{% else %}
+<div class="auth-button">
+    <a href="{{ url_for('login') }}" class="profile-btn" onclick="event.stopPropagation(); window.location.href='{{ url_for('login') }}'; return false;">🔑 {{ labels.get("login", "ログイン") }}</a>
+</div>
+{% endif %}

@@ -1,0 +1,17 @@
+<!-- 詳細設定 -->
+<div class="advanced-section">
+    <button type="button" class="advanced-toggle" onclick="toggleAdvanced()">
+        {{ labels["toggle_details_open"] }}
+        <span>▼</span>
+    </button>
+    <div class="advanced-content" id="advancedContent">
+        <div class="form-group">
+            <label class="form-label">{{ labels["label_partner_message"] }}</label>
+            <textarea name="partner_message" class="form-textarea" placeholder="直前の会話内容があれば入力してください...">{{ partner_message }}</textarea>
+        </div>
+        <div class="form-group">
+            <label class="form-label">{{ labels["label_context_info"] }}</label>
+            <textarea name="context_info" class="form-textarea" placeholder="{{ labels['placeholder_context'] }}">{{ context_info or labels["default_context"] }}</textarea>
+        </div>
+    </div>
+</div>

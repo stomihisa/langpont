@@ -1,0 +1,14 @@
+<!-- 翻訳エリア -->
+<div class="translation-area">
+    <div class="input-panel">
+        <div class="panel-header">
+            <span id="input-language">{{ labels["input_label"] }}</span>
+            <div class="panel-actions">
+                <button type="button" class="copy-btn" onclick="copyContent('japanese_text', 'toast-japanese', this)" title="{{ labels.copy_tooltip }}">
+                    <img src="{{ url_for('static', filename='copy-icon.png') }}" alt="Copy">
+                </button>
+            </div>
+        </div>
+        <textarea id="japanese_text" name="japanese_text" class="input-area" placeholder="{{ labels['placeholder_input'] }}">{{ japanese_text }}</textarea>
+    </div>
+</div>
