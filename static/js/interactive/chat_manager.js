@@ -65,6 +65,92 @@ function setQuickQuestion(questionText) {
   }
 }
 
+// =============================================================================
+// 🛠️ ユーティリティ関数 (index.htmlから移動)
+// =============================================================================
+
+/**
+ * チャット履歴表示を強制する関数
+ */
+function forceChatHistoryDisplay() {
+  const chatHistorySection = document.getElementById('chat-history');
+  if (!chatHistorySection) return false;
+  
+  // 強制表示（!importantを使用）
+  chatHistorySection.style.cssText = `
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: auto !important;
+    max-height: none !important;
+    position: static !important;
+    z-index: 1 !important;
+  `;
+  
+  // showクラスも追加
+  chatHistorySection.classList.add('show');
+  
+  return true;
+}
+
+/**
+ * 回答タイプのラベルを取得する関数
+ */
+function getTypeName(type) {
+  const typeLabels = {
+    'translation_modification': 'Translation Edit',
+    'analysis_inquiry': 'Analysis Inquiry',
+    'linguistic_question': 'Linguistic Question',
+    'context_variation': 'Context Change',
+    'comparison_analysis': 'Comparison Analysis',
+    'general_expert': 'General Question',
+    'general': 'General',
+    'error': 'Error'
+  };
+  return typeLabels[type] || window.currentLabels?.chat_answer_label || 'Answer';
+}
+
+/**
+ * 回答テキストをフォーマットする関数
+ */
+function formatAnswerText(text, type = 'general_question') {
+  if (!text) return '';
+  
+  // HTML エスケープを行い、改行を適切に処理
+  let formatted = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+  
+  // 改行をHTMLに変換
+  formatted = formatted.replace(/\n/g, '<br>');
+  
+  return formatted;
+}
+
+/**
+ * チャット回答の展開/折りたたみ機能
+ */
+function toggleChatAnswer(chatItemId) {
+  const chatItem = document.getElementById(chatItemId);
+  if (!chatItem) return;
+  
+  const answerDiv = chatItem.querySelector('.chat-answer');
+  const expandBtn = chatItem.querySelector('.chat-expand-btn');
+  
+  if (!answerDiv || !expandBtn) return;
+  
+  if (answerDiv.classList.contains('collapsed')) {
+    answerDiv.classList.remove('collapsed');
+    expandBtn.textContent = window.currentLabels?.collapse_text || '▲ Collapse';
+  } else {
+    answerDiv.classList.add('collapsed');
+    expandBtn.textContent = window.currentLabels?.expand_full_text || '▼ Show full text';
+  }
+}
+
 /**
  * チャット履歴表示更新関数
  */
