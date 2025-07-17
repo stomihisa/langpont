@@ -103,15 +103,27 @@ async function askInteractiveQuestion() {
       console.log('  - Data.success:', data.success);
       console.log('  - Data.result exists:', !!data.result);
       console.log('  - Data.chat_history exists:', !!data.chat_history);
+      console.log('  - Data.current_chat exists:', !!data.current_chat);
       
+      // 🔧 Cookie最適化対応: current_chat → chat_history配列変換
+      let chatHistory = [];
       if (data.chat_history) {
+        // 旧形式対応
+        chatHistory = data.chat_history;
+      } else if (data.current_chat) {
+        // 新形式対応: current_chatを配列化
+        chatHistory = [data.current_chat];
+      }
+
+      if (chatHistory.length > 0) {
         console.log('📥 [RESPONSE] Chat history details:');
-        console.log('  - Chat history length:', data.chat_history.length);
-        console.log('  - First item sample:', data.chat_history[0] ? {
-          question: data.chat_history[0].question?.substring(0, 50) + '...',
-          answer: data.chat_history[0].answer?.substring(0, 50) + '...',
-          type: data.chat_history[0].type,
-          timestamp: data.chat_history[0].timestamp
+        console.log('  - Chat history length:', chatHistory.length);
+        console.log('  - Using format:', data.chat_history ? 'legacy' : 'current_chat');
+        console.log('  - First item sample:', chatHistory[0] ? {
+          question: chatHistory[0].question?.substring(0, 50) + '...',
+          answer: chatHistory[0].answer?.substring(0, 50) + '...',
+          type: chatHistory[0].type,
+          timestamp: chatHistory[0].timestamp
         } : 'No items');
       }
       
@@ -126,14 +138,14 @@ async function askInteractiveQuestion() {
         console.log('🖥️ [DISPLAY] Starting display process with 50ms delay...');
         setTimeout(() => {
           console.log('🖥️ [DISPLAY] Calling updateChatHistory...');
-          updateChatHistory(data.chat_history);
+          updateChatHistory(chatHistory);
           
           // 🆕 表示状態の強制確認
           const chatHistorySection = document.getElementById('chat-history');
           console.log('🖥️ [DISPLAY] Post-display checks:');
           console.log('  - Chat history section found:', !!chatHistorySection);
           
-          if (chatHistorySection && data.chat_history && data.chat_history.length > 0) {
+          if (chatHistorySection && chatHistory && chatHistory.length > 0) {
             chatHistorySection.style.display = 'block';
             console.log('✅ [DISPLAY] Chat history section shown');
             console.log('🖥️ [DISPLAY] Section visibility:', getComputedStyle(chatHistorySection).display);

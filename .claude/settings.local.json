@@ -64,7 +64,9 @@
       "Bash(# LangPontTranslationExpertAI_Remainingクラスの全メソッド確認\necho \"\"📋 LangPontTranslationExpertAI_Remaining クラス構造:\"\"\ngrep -n \"\"def \"\" app.py | grep -A1 -B1 \"\"1520\\|1530\\|1565\\|1579\\|1588\"\")",
       "Bash(# 構文エラーがないか確認\npython -m py_compile translation/expert_ai.py)",
       "Bash(# 構文エラーがないか確認\npython -m py_compile app.py)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(EMERGENCY_BACKUP=\"/Users/shintaro_imac_2/langpont_backups/langpont_EMERGENCY_RESTORE\")",
+      "Bash(du:*)"
     ],
     "deny": []
   }
