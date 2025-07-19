@@ -636,6 +636,12 @@ window.currentLabels = {
 
   // 🧠 選択して分析実行 - Task 2.9.2 Phase B-3.5.7 Final Integration 修正版
   function selectAndRunAnalysis(engine) {
+    /* NOTE: Phase 3分離保留
+     * 理由: HTMLイベント直結 (onclick属性3箇所)、翻訳結果DOM依存
+     * 依存: lines 162,166,170 onclick, translated-text/better-translation/gemini-translation elements
+     * 将来: Phase A-1 イベントリスナー移行 → Phase C-1 モジュール分離
+     * 参照: docs/phase3_dependency_analysis.md, docs/phase3_future_design.md
+     */
     // 🔍 デバッグログ追加
     console.log(`🧠 selectAndRunAnalysis called with engine: ${engine}`);
     
@@ -763,6 +769,12 @@ window.currentLabels = {
 
   // 🆕 分析エンジン選択（UIのみ更新）
   function setAnalysisEngine(engine) {
+    /* NOTE: Phase 3分離保留
+     * 理由: 複数DOM要素密結合 (5つ以上)、UI状態管理中核
+     * 依存: selectedAnalysisEngine, analysisEngineStatus, .engine-btn, analysis_engine hidden field
+     * 将来: Phase B-1 DOM抽象化 → Phase B-2 状態管理抽象化 → Phase C-1 モジュール分離
+     * 参照: docs/phase3_dependency_analysis.md, docs/phase3_future_design.md
+     */
     // 全ボタンから 'selected' クラスを除去
     const allButtons = document.querySelectorAll('.engine-btn');
     allButtons.forEach(btn => btn.classList.remove('selected'));
@@ -789,6 +801,12 @@ window.currentLabels = {
 
   // 初期化時に現在の分析エンジンを設定（分析は実行しない）
   function initializeAnalysisEngine() {
+    /* NOTE: Phase 3分離保留
+     * 理由: 外部初期化依存 (initializePage line 500, line 1328)、DOM準備必須
+     * 依存: .engine-btn querySelectorAll, analysis_engine hidden field, 初期化タイミング
+     * 将来: Phase A-2 初期化システム統一 → Phase C-1 モジュール分離
+     * 参照: docs/phase3_dependency_analysis.md, docs/phase3_future_design.md
+     */
     // 🆕 まず全ボタンから 'selected' と 'active' クラスを除去（中立状態）
     const allButtons = document.querySelectorAll('.engine-btn');
     allButtons.forEach(btn => {
