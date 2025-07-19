@@ -205,6 +205,135 @@ window.currentLabels = {
 
 <!-- 開発者監視パネル基本部分 -->
 {% include 'components/dev_monitor/dev_monitor_basic.html' %}
+
+    <!-- 翻訳進行状況セクション -->
+    <div class="dev-section" data-section="progress">
+        <div class="dev-section-header" onclick="toggleDevSection('progress')">
+            <h4 class="dev-section-title">⚡ 翻訳進行状況</h4>
+            <span class="dev-section-toggle">▼</span>
+        </div>
+        <div class="dev-section-content">
+            <div class="dev-metric">
+                <span class="dev-metric-label">ChatGPT翻訳</span>
+                <span class="dev-metric-value" id="chatgptStatus">待機中</span>
+            </div>
+            <div class="dev-progress-bar">
+                <div class="dev-progress-fill" id="chatgptProgress"></div>
+            </div>
+            <div class="dev-metric">
+                <span class="dev-metric-label">逆翻訳</span>
+                <span class="dev-metric-value" id="reverseStatus">待機中</span>
+            </div>
+            <div class="dev-progress-bar">
+                <div class="dev-progress-fill" id="reverseProgress"></div>
+            </div>
+            <div class="dev-metric">
+                <span class="dev-metric-label">Gemini翻訳</span>
+                <span class="dev-metric-value" id="geminiTranslationStatus">待機中</span>
+            </div>
+            <div class="dev-progress-bar">
+                <div class="dev-progress-fill" id="geminiTranslationProgress"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🧠 マルチエンジン推奨判定セクション - Task 2.9.2 Phase B-3.5.2 -->
+    <div class="dev-section" data-section="recommendation">
+        <div class="dev-section-header" onclick="toggleDevSection('recommendation')">
+            <h4 class="dev-section-title">🧠 マルチエンジン推奨判定</h4>
+            <span class="dev-section-toggle">▼</span>
+        </div>
+        <div class="dev-section-content">
+            <!-- エンジン選択情報 -->
+            <div class="dev-metric">
+                <span class="dev-metric-label">選択エンジン</span>
+                <span class="dev-metric-value engine-highlight" id="selectedAnalysisEngine">Gemini</span>
+            </div>
+            <div class="dev-metric">
+                <span class="dev-metric-label">エンジン状況</span>
+                <span class="dev-metric-value" id="analysisEngineStatus">待機中</span>
+            </div>
+            
+            <!-- 基本情報 -->
+            <div class="dev-metric">
+                <span class="dev-metric-label">推奨結果</span>
+                <span class="dev-metric-value recommendation-highlight" id="geminiRecommendation">未判定</span>
+            </div>
+            <div class="dev-metric">
+                <span class="dev-metric-label">信頼度</span>
+                <span class="dev-metric-value confidence-highlight" id="confidenceScore">-</span>
+            </div>
+            <div class="dev-metric">
+                <span class="dev-metric-label">判定手法</span>
+                <span class="dev-metric-value" id="recommendationMethod">-</span>
+            </div>
+            
+            <!-- 詳細情報（透明性向上） -->
+            <div class="dev-metric">
+                <span class="dev-metric-label">ログ詳細</span>
+                <span class="dev-metric-value log-detail" id="recommendationLog">-</span>
+            </div>
+            <div class="dev-metric">
+                <span class="dev-metric-label">判定根拠</span>
+                <div class="dev-metric-reasoning" id="recommendationReasoning">
+                    <span class="reasoning-text">分析待ち...</span>
+                </div>
+            </div>
+            
+            <!-- メタ情報 -->
+            <div class="dev-metric">
+                <span class="dev-metric-label">データソース</span>
+                <span class="dev-metric-value" id="recommendationSource">-</span>
+            </div>
+            <div class="dev-metric">
+                <span class="dev-metric-label">最終更新</span>
+                <span class="dev-metric-value" id="recommendationTimestamp">-</span>
+            </div>
+            <div class="dev-metric">
+                <span class="dev-metric-label">比較対象</span>
+                <span class="dev-metric-value" id="comparisonTargets">ChatGPT vs Enhanced vs Gemini</span>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- リアルタイムログセクション -->
+    <div class="dev-section" data-section="logs">
+        <div class="dev-section-header" onclick="toggleDevSection('logs')">
+            <h4 class="dev-section-title">📋 リアルタイムログ</h4>
+            <span class="dev-section-toggle">▼</span>
+        </div>
+        <div class="dev-section-content">
+            <div id="devLogContainer">
+                <div class="dev-log-entry">
+                    <div class="dev-log-timestamp">-</div>
+                    <div class="dev-log-message">監視開始...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- クイックアクション -->
+    <div class="dev-section" data-section="actions">
+        <div class="dev-section-header" onclick="toggleDevSection('actions')">
+            <h4 class="dev-section-title">🔧 クイックアクション</h4>
+            <span class="dev-section-toggle">▼</span>
+        </div>
+        <div class="dev-section-content">
+            <div class="dev-quick-actions">
+                <button class="dev-quick-btn dev-quick-btn-primary" onclick="clearDevMonitoringData()" title="監視データクリア">
+                    データクリア
+                </button>
+                <button class="dev-quick-btn dev-quick-btn-success" onclick="exportDevLogs()" title="ログエクスポート">
+                    ログ出力
+                </button>
+                <button class="dev-quick-btn dev-quick-btn-warning" onclick="window.open('/admin/dashboard', '_blank')" title="管理ダッシュボード">
+                    管理画面
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endif %}
 {% endblock %}
 
