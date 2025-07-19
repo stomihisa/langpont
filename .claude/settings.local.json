@@ -66,7 +66,8 @@
       "Bash(# 構文エラーがないか確認\npython -m py_compile app.py)",
       "Bash(rm:*)",
       "Bash(EMERGENCY_BACKUP=\"/Users/shintaro_imac_2/langpont_backups/langpont_EMERGENCY_RESTORE\")",
-      "Bash(du:*)"
+      "Bash(du:*)",
+      "Bash(node:*)"
     ],
     "deny": []
   }
