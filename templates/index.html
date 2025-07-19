@@ -203,76 +203,8 @@ window.currentLabels = {
     開発監視
 </button>
 
-<!-- 開発者監視パネル -->
-<div class="dev-monitoring-panel" id="devMonitoringPanel">
-    <div class="dev-panel-header">
-        <h3 class="dev-panel-title">🚀 Dev Monitor</h3>
-        <button class="dev-panel-close" onclick="toggleDevPanel()" title="監視パネルを閉じる">→</button>
-    </div>
-
-    <!-- システム状況セクション -->
-    <div class="dev-section" data-section="system">
-        <div class="dev-section-header" onclick="toggleDevSection('system')">
-            <h4 class="dev-section-title">📊 システム状況</h4>
-            <span class="dev-section-toggle">▼</span>
-        </div>
-        <div class="dev-section-content">
-            <div class="dev-metric">
-                <span class="dev-metric-label">バージョン</span>
-                <span class="dev-metric-value" id="systemVersion">-</span>
-            </div>
-            <div class="dev-metric">
-                <span class="dev-metric-label">環境</span>
-                <span class="dev-metric-value" id="systemEnvironment">-</span>
-            </div>
-            <div class="dev-metric">
-                <span class="dev-metric-label">デバッグモード</span>
-                <span class="dev-metric-value" id="systemDebugMode">-</span>
-            </div>
-            <div class="dev-metric">
-                <span class="dev-metric-label">稼働時間</span>
-                <span class="dev-metric-value" id="systemUptime">-</span>
-            </div>
-            <div class="dev-metric">
-                <span class="dev-metric-label">メモリ使用量</span>
-                <span class="dev-metric-value" id="systemMemory">-</span>
-            </div>
-            <div class="dev-progress-bar">
-                <div class="dev-progress-fill" id="memoryProgress"></div>
-            </div>
-            <div class="dev-metric">
-                <span class="dev-metric-label">CPU使用率</span>
-                <span class="dev-metric-value" id="systemCpu">-</span>
-            </div>
-            <div class="dev-progress-bar">
-                <div class="dev-progress-fill" id="cpuProgress"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- API接続状況セクション -->
-    <div class="dev-section" data-section="api">
-        <div class="dev-section-header" onclick="toggleDevSection('api')">
-            <h4 class="dev-section-title">🔗 API接続状況</h4>
-            <span class="dev-section-toggle">▼</span>
-        </div>
-        <div class="dev-section-content">
-            <div class="dev-metric">
-                <span class="dev-metric-label">
-                    <span class="dev-status-indicator" id="openaiStatus"></span>
-                    OpenAI
-                </span>
-                <span class="dev-metric-value" id="openaiStatusText">-</span>
-            </div>
-            <div class="dev-metric">
-                <span class="dev-metric-label">
-                    <span class="dev-status-indicator" id="geminiStatus"></span>
-                    Gemini
-                </span>
-                <span class="dev-metric-value" id="geminiStatusText">-</span>
-            </div>
-        </div>
-    </div>
+<!-- 開発者監視パネル基本部分 -->
+{% include 'components/dev_monitor/dev_monitor_basic.html' %}
 
     <!-- 現在のユーザー行動セクション -->
     <div class="dev-section" data-section="user">
