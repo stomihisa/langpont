@@ -662,15 +662,8 @@ window.currentLabels = {
     logOnce('analysis_engine_init', "🧠 Analysis engine selector initialization completed");
   });
 
-  function showLoading() {
-    const loading = document.getElementById("loading");
-    if (loading) loading.classList.add("show");
-  }
-
-  function hideLoading() {
-    const loading = document.getElementById("loading");
-    if (loading) loading.classList.remove("show");
-  }
+  // TaskH2-2(B2-3) Stage 3 Phase 9a: Loading制御はStateManagerに移行済み
+  // showLoading() and hideLoading() functions moved to state_manager.js
 
   function quickClearResults() {
     const criticalElements = ["translated-text", "reverse-translated-text"];
@@ -809,6 +802,12 @@ window.currentLabels = {
   }
 
   async function runFastTranslation() {
+    // 🔒 Phase 9c: Critical Security - 二重実行防止
+    if (!startApiCall('translateChatGPT')) {
+      console.warn('⚠️ Translation already in progress - preventing double execution');
+      return;
+    }
+    
     try {
       showLoading();
       const startTime = performance.now();
@@ -961,6 +960,8 @@ window.currentLabels = {
       alert("エラーが発生しました: " + error.message);
     } finally {
       hideLoading();
+      // 🔒 Phase 9c: API状態をクリア
+      completeApiCall('translateChatGPT');
     }
   }
 
@@ -1979,5 +1980,8 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
 
 <!-- TaskH2-2(B2-3) Stage 3 Phase 8b: チャット機能統合制御モジュール -->
 <script src="{{ url_for('static', filename='js/ui/chat_controller.js') }}"></script>
+
+<!-- TaskH2-2(B2-3) Stage 3 Phase 9a: 状態管理システム - Loading Control -->
+<script src="{{ url_for('static', filename='js/core/state_manager.js') }}"></script>
 
 {% endblock %}

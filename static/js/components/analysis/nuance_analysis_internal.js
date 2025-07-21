@@ -3,10 +3,18 @@
 
 // 🧠 Task 2.9.2 Phase B-3.5.2: マルチエンジン分析実行
 function fetchNuanceAnalysis(engine = 'gemini') {
+  // 🔒 Phase 9c: Critical Security - 二重実行防止
+  if (!startApiCall('nuanceAnalysis')) {
+    console.warn('⚠️ Nuance analysis already in progress - preventing double execution');
+    return;
+  }
+  
   const el = document.getElementById("gemini-3way-analysis");
   const card = document.getElementById("gemini-nuance-card");
   if (!card || !el) {
     logOnce('analysis_elements_missing', '🚨 分析要素が見つかりません', 'error');
+    // 🔒 API状態をクリア
+    completeApiCall('nuanceAnalysis');
     return;
   }
 
@@ -80,10 +88,16 @@ function fetchNuanceAnalysis(engine = 'gemini') {
         updateDevMonitorAnalysis(engine, '完了', recommendation);
         
         showToast(`${engine.toUpperCase()}分析が完了しました`, 'success');
+        
+        // 🔒 Phase 9c: API状態をクリア
+        completeApiCall('nuanceAnalysis');
       } else {
         logOnce(`analysis_empty_${engine}`, `🚨 ${engine}分析結果が空です`, 'error');
         el.textContent = `分析結果を取得できませんでした (${engine}) - データ確認が必要`;
         showToast(`${engine.toUpperCase()}分析結果が空でした`, 'error');
+        
+        // 🔒 Phase 9c: API状態をクリア
+        completeApiCall('nuanceAnalysis');
       }
     })
     .catch(error => {
@@ -94,6 +108,9 @@ function fetchNuanceAnalysis(engine = 'gemini') {
       updateDevMonitorAnalysis(engine, 'エラー');
       
       showToast(`${engine.toUpperCase()}分析でエラーが発生しました`, 'error');
+      
+      // 🔒 Phase 9c: API状態をクリア
+      completeApiCall('nuanceAnalysis');
     });
 }
 

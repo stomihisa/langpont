@@ -36,9 +36,12 @@ class StateManager {
         improvedPanel: false
       },
       
-      // 将来的に追加される状態 (Phase 9c以降)
-      // apiCalling: false,
-      // formDirty: false,
+      // 🆕 Phase 9c追加分
+      apiCalling: {                      // API呼び出し状態管理
+        translateChatGPT: false,
+        interactiveQuestion: false,
+        nuanceAnalysis: false
+      }
     };
     
     // 初期化
@@ -223,6 +226,55 @@ class StateManager {
   }
 
   // ================================================================
+  // Phase 9c: API呼び出し状態制御メソッド
+  // ================================================================
+
+  /**
+   * API呼び出し開始（二重実行防止の核心機能）
+   * @param {string} apiName - API名 (translateChatGPT, interactiveQuestion, nuanceAnalysis)
+   * @returns {boolean} - 実行可能かどうか
+   */
+  startApiCall(apiName) {
+    // 🔒 Critical Security: 二重実行防止チェック
+    if (this.states.apiCalling[apiName]) {
+      console.warn(`⚠️ API call already in progress: ${apiName} - preventing double execution`);
+      return false;
+    }
+    
+    this.states.apiCalling[apiName] = true;
+    console.log(`🚀 API call started: ${apiName}`);
+    return true;
+  }
+
+  /**
+   * API呼び出し完了
+   * @param {string} apiName - API名
+   */
+  completeApiCall(apiName) {
+    this.states.apiCalling[apiName] = false;
+    console.log(`✅ API call completed: ${apiName}`);
+  }
+
+  /**
+   * API呼び出し中かどうかを確認
+   * @param {string} apiName - API名
+   * @returns {boolean}
+   */
+  isApiCalling(apiName) {
+    return this.states.apiCalling[apiName];
+  }
+
+  /**
+   * 全てのAPI呼び出し状態をリセット（エラー回復用）
+   */
+  resetAllApiCalls() {
+    Object.keys(this.states.apiCalling).forEach(apiName => {
+      this.states.apiCalling[apiName] = false;
+    });
+    console.log('🧹 All API calls reset');
+  }
+
+  // ================================================================
   // Phase 9b: UI要素状態制御メソッド
   // ================================================================
 
@@ -287,8 +339,11 @@ class StateManager {
       resultCards: { ...this.states.resultCards },
       uiElements: { ...this.states.uiElements },
       
+      // Phase 9c: API状態情報
+      apiCalling: { ...this.states.apiCalling },
+      
       timestamp: new Date().toISOString(),
-      phase: '9b - Complete State Management'
+      phase: '9c - API State Management Integrated'
     };
   }
 
@@ -326,13 +381,30 @@ class StateManager {
             this.hideUIElement('analysisEngineTrigger');
             
             console.log('🧪 StateManager Phase 9b test cycle completed');
+            
+            // Phase 9c テスト開始
+            console.log('🧪 Testing Phase 9c (API State Management)...');
+            
+            // API状態テスト
+            console.log('API State Before:', this.states.apiCalling);
+            
+            const canStart = this.startApiCall('translateChatGPT');
+            console.log('First API call allowed:', canStart);
+            
+            const canStartDouble = this.startApiCall('translateChatGPT');
+            console.log('Double API call prevented:', !canStartDouble);
+            
+            this.completeApiCall('translateChatGPT');
+            console.log('API State After Complete:', this.states.apiCalling);
+            
+            console.log('🧪 StateManager Phase 9c test cycle completed');
             console.log('📊 Final status:', this.getStatus());
           }, 200);
         }, 200);
       }, 200);
     }, 1000);
     
-    return 'Phase 9b test initiated - check console for results';
+    return 'Phase 9c test initiated - check console for results';
   }
 
   /**
@@ -403,8 +475,27 @@ window.hideUIElement = function(elementName) {
   window.stateManager.hideUIElement(elementName);
 };
 
+// Phase 9c: API状態管理のwrap関数
+
+// API状態制御のwrap関数
+window.startApiCall = function(apiName) {
+  return window.stateManager.startApiCall(apiName);
+};
+
+window.completeApiCall = function(apiName) {
+  window.stateManager.completeApiCall(apiName);
+};
+
+window.isApiCalling = function(apiName) {
+  return window.stateManager.isApiCalling(apiName);
+};
+
+window.resetAllApiCalls = function() {
+  window.stateManager.resetAllApiCalls();
+};
+
 // デバッグ用: 元の関数も保持
 window._originalShowLoading = originalShowLoading;
 window._originalHideLoading = originalHideLoading;
 
-console.log('🎯 StateManager Phase 9b Complete State Management ready');
+console.log('🎯 StateManager Phase 9c API State Management ready');

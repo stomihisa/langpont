@@ -23,6 +23,12 @@
  * 調査で確認された2つの重複関数のうち、より完成度の高い詳細ログ版を採用
  */
 async function askInteractiveQuestion() {
+  // 🔒 Phase 9c: Critical Security - 二重実行防止
+  if (!startApiCall('interactiveQuestion')) {
+    console.warn('⚠️ Interactive question already in progress - preventing double execution');
+    return;
+  }
+  
   console.log('📤 [QUESTION] Function called');
   console.log('📤 [QUESTION] Timestamp:', new Date().toISOString());
   
@@ -177,5 +183,8 @@ async function askInteractiveQuestion() {
     questionBtn.disabled = false;
     questionBtn.textContent = window.currentLabels.interactive_button || 'Ask Question';
     console.log('🔓 [QUESTION] UI restored to normal state');
+    
+    // 🔒 Phase 9c: API状態をクリア
+    completeApiCall('interactiveQuestion');
   }
 }
