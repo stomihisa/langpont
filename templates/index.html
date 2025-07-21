@@ -196,243 +196,6 @@ window.currentLabels = {
 
 </form>
 
-<!-- 🚀 Task 2.9.2 Phase B-3.5: 開発者専用リアルタイム監視パネル -->
-{% if session.get('user_role') in ['admin', 'developer'] %}
-<!-- 開発者パネル切り替えボタン -->
-<button class="dev-panel-toggle" id="devPanelToggle" onclick="toggleDevPanel()">
-    開発監視
-</button>
-
-<!-- 開発者監視パネル -->
-<div class="dev-monitoring-panel" id="devMonitoringPanel">
-    <div class="dev-panel-header">
-        <h3 class="dev-panel-title">🚀 Dev Monitor</h3>
-        <button class="dev-panel-close" onclick="toggleDevPanel()" title="監視パネルを閉じる">→</button>
-    </div>
-
-    <!-- システム状況セクション -->
-    <div class="dev-section" data-section="system">
-        <div class="dev-section-header" onclick="toggleDevSection('system')">
-            <h4 class="dev-section-title">📊 システム状況</h4>
-            <span class="dev-section-toggle">▼</span>
-        </div>
-        <div class="dev-section-content">
-            <div class="dev-metric">
-                <span class="dev-metric-label">バージョン</span>
-                <span class="dev-metric-value" id="systemVersion">-</span>
-            </div>
-            <div class="dev-metric">
-                <span class="dev-metric-label">環境</span>
-                <span class="dev-metric-value" id="systemEnvironment">-</span>
-            </div>
-            <div class="dev-metric">
-                <span class="dev-metric-label">デバッグモード</span>
-                <span class="dev-metric-value" id="systemDebugMode">-</span>
-            </div>
-            <div class="dev-metric">
-                <span class="dev-metric-label">稼働時間</span>
-                <span class="dev-metric-value" id="systemUptime">-</span>
-            </div>
-            <div class="dev-metric">
-                <span class="dev-metric-label">メモリ使用量</span>
-                <span class="dev-metric-value" id="systemMemory">-</span>
-            </div>
-            <div class="dev-progress-bar">
-                <div class="dev-progress-fill" id="memoryProgress"></div>
-            </div>
-            <div class="dev-metric">
-                <span class="dev-metric-label">CPU使用率</span>
-                <span class="dev-metric-value" id="systemCpu">-</span>
-            </div>
-            <div class="dev-progress-bar">
-                <div class="dev-progress-fill" id="cpuProgress"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- API接続状況セクション -->
-    <div class="dev-section" data-section="api">
-        <div class="dev-section-header" onclick="toggleDevSection('api')">
-            <h4 class="dev-section-title">🔗 API接続状況</h4>
-            <span class="dev-section-toggle">▼</span>
-        </div>
-        <div class="dev-section-content">
-            <div class="dev-metric">
-                <span class="dev-metric-label">
-                    <span class="dev-status-indicator" id="openaiStatus"></span>
-                    OpenAI
-                </span>
-                <span class="dev-metric-value" id="openaiStatusText">-</span>
-            </div>
-            <div class="dev-metric">
-                <span class="dev-metric-label">
-                    <span class="dev-status-indicator" id="geminiStatus"></span>
-                    Gemini
-                </span>
-                <span class="dev-metric-value" id="geminiStatusText">-</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- 現在のユーザー行動セクション -->
-    <div class="dev-section" data-section="user">
-        <div class="dev-section-header" onclick="toggleDevSection('user')">
-            <h4 class="dev-section-title">👤 ユーザー行動</h4>
-            <span class="dev-section-toggle">▼</span>
-        </div>
-        <div class="dev-section-content">
-            <div class="dev-metric">
-                <span class="dev-metric-label">ユーザー名</span>
-                <span class="dev-metric-value" id="currentUsername">-</span>
-            </div>
-            <div class="dev-metric">
-                <span class="dev-metric-label">言語ペア</span>
-                <span class="dev-metric-value" id="currentLanguagePair">-</span>
-            </div>
-            <div class="dev-metric">
-                <span class="dev-metric-label">入力文字数</span>
-                <span class="dev-metric-value" id="currentInputLength">-</span>
-            </div>
-            <div class="dev-metric">
-                <span class="dev-metric-label">単語数</span>
-                <span class="dev-metric-value" id="currentWordCount">-</span>
-            </div>
-            <div class="dev-metric">
-                <span class="dev-metric-label">翻訳回数</span>
-                <span class="dev-metric-value" id="translationCount">-</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- 翻訳進行状況セクション -->
-    <div class="dev-section" data-section="progress">
-        <div class="dev-section-header" onclick="toggleDevSection('progress')">
-            <h4 class="dev-section-title">⚡ 翻訳進行状況</h4>
-            <span class="dev-section-toggle">▼</span>
-        </div>
-        <div class="dev-section-content">
-            <div class="dev-metric">
-                <span class="dev-metric-label">ChatGPT翻訳</span>
-                <span class="dev-metric-value" id="chatgptStatus">待機中</span>
-            </div>
-            <div class="dev-progress-bar">
-                <div class="dev-progress-fill" id="chatgptProgress"></div>
-            </div>
-            <div class="dev-metric">
-                <span class="dev-metric-label">逆翻訳</span>
-                <span class="dev-metric-value" id="reverseStatus">待機中</span>
-            </div>
-            <div class="dev-progress-bar">
-                <div class="dev-progress-fill" id="reverseProgress"></div>
-            </div>
-            <div class="dev-metric">
-                <span class="dev-metric-label">Gemini翻訳</span>
-                <span class="dev-metric-value" id="geminiTranslationStatus">待機中</span>
-            </div>
-            <div class="dev-progress-bar">
-                <div class="dev-progress-fill" id="geminiTranslationProgress"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 🧠 マルチエンジン推奨判定セクション - Task 2.9.2 Phase B-3.5.2 -->
-    <div class="dev-section" data-section="recommendation">
-        <div class="dev-section-header" onclick="toggleDevSection('recommendation')">
-            <h4 class="dev-section-title">🧠 マルチエンジン推奨判定</h4>
-            <span class="dev-section-toggle">▼</span>
-        </div>
-        <div class="dev-section-content">
-            <!-- エンジン選択情報 -->
-            <div class="dev-metric">
-                <span class="dev-metric-label">選択エンジン</span>
-                <span class="dev-metric-value engine-highlight" id="selectedAnalysisEngine">Gemini</span>
-            </div>
-            <div class="dev-metric">
-                <span class="dev-metric-label">エンジン状況</span>
-                <span class="dev-metric-value" id="analysisEngineStatus">待機中</span>
-            </div>
-            
-            <!-- 基本情報 -->
-            <div class="dev-metric">
-                <span class="dev-metric-label">推奨結果</span>
-                <span class="dev-metric-value recommendation-highlight" id="geminiRecommendation">未判定</span>
-            </div>
-            <div class="dev-metric">
-                <span class="dev-metric-label">信頼度</span>
-                <span class="dev-metric-value confidence-highlight" id="confidenceScore">-</span>
-            </div>
-            <div class="dev-metric">
-                <span class="dev-metric-label">判定手法</span>
-                <span class="dev-metric-value" id="recommendationMethod">-</span>
-            </div>
-            
-            <!-- 詳細情報（透明性向上） -->
-            <div class="dev-metric">
-                <span class="dev-metric-label">ログ詳細</span>
-                <span class="dev-metric-value log-detail" id="recommendationLog">-</span>
-            </div>
-            <div class="dev-metric">
-                <span class="dev-metric-label">判定根拠</span>
-                <div class="dev-metric-reasoning" id="recommendationReasoning">
-                    <span class="reasoning-text">分析待ち...</span>
-                </div>
-            </div>
-            
-            <!-- メタ情報 -->
-            <div class="dev-metric">
-                <span class="dev-metric-label">データソース</span>
-                <span class="dev-metric-value" id="recommendationSource">-</span>
-            </div>
-            <div class="dev-metric">
-                <span class="dev-metric-label">最終更新</span>
-                <span class="dev-metric-value" id="recommendationTimestamp">-</span>
-            </div>
-            <div class="dev-metric">
-                <span class="dev-metric-label">比較対象</span>
-                <span class="dev-metric-value" id="comparisonTargets">ChatGPT vs Enhanced vs Gemini</span>
-            </div>
-            
-        </div>
-    </div>
-
-    <!-- リアルタイムログセクション -->
-    <div class="dev-section" data-section="logs">
-        <div class="dev-section-header" onclick="toggleDevSection('logs')">
-            <h4 class="dev-section-title">📋 リアルタイムログ</h4>
-            <span class="dev-section-toggle">▼</span>
-        </div>
-        <div class="dev-section-content">
-            <div id="devLogContainer">
-                <div class="dev-log-entry">
-                    <div class="dev-log-timestamp">-</div>
-                    <div class="dev-log-message">監視開始...</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- クイックアクション -->
-    <div class="dev-section" data-section="actions">
-        <div class="dev-section-header" onclick="toggleDevSection('actions')">
-            <h4 class="dev-section-title">🔧 クイックアクション</h4>
-            <span class="dev-section-toggle">▼</span>
-        </div>
-        <div class="dev-section-content">
-            <div class="dev-quick-actions">
-                <button class="dev-quick-btn dev-quick-btn-primary" onclick="clearDevMonitoringData()" title="監視データクリア">
-                    データクリア
-                </button>
-                <button class="dev-quick-btn dev-quick-btn-success" onclick="exportDevLogs()" title="ログエクスポート">
-                    ログ出力
-                </button>
-                <button class="dev-quick-btn dev-quick-btn-warning" onclick="window.open('/admin/dashboard', '_blank')" title="管理ダッシュボード">
-                    管理画面
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
 {% endblock %}
 
 {% block scripts %}
@@ -517,83 +280,18 @@ window.currentLabels = {
   // =============================================================================
 
   // 🆕 チャット履歴を表示する関数（確実性強化版）
-  function displayChatHistory(chatHistory) {
-    const chatItemsContainer = document.getElementById('chat-items');
-    const chatHistorySection = document.getElementById('chat-history');
-    
-    if (!chatItemsContainer) return;
-
-    // 履歴をクリア
-    chatItemsContainer.innerHTML = '';
-    
-    if (!chatHistory || chatHistory.length === 0) {
-      // 履歴が空の場合はセクションを非表示
-      if (chatHistorySection) {
-        chatHistorySection.style.display = 'none';
-      }
-      return;
-    }
-    
-    // 履歴がある場合はセクションを表示
-    if (chatHistorySection) {
-      chatHistorySection.style.display = 'block';
-    }
-
-    // 各チャット項目を表示
-    chatHistory.forEach((item, index) => {
-      if (!item || !item.question || !item.answer) return;
-      
-      const chatItem = document.createElement('div');
-      chatItem.className = 'chat-item';
-      chatItem.innerHTML = `
-        <div class="chat-question">
-          <div class="chat-q-header">
-            <span class="chat-q-icon">❓</span>
-            <span class="chat-q-text">${escapeHtml(item.question)}</span>
-            <span class="chat-timestamp">${formatChatTimestamp(item.timestamp)}</span>
-          </div>
-        </div>
-        <div class="chat-answer">
-          <div class="chat-a-header">
-            <span class="chat-a-icon">💡</span>
-            <span class="chat-a-type">${getAnswerTypeLabel(item.type)}</span>
-          </div>
-          <div class="chat-a-content">${formatChatAnswer(item.answer)}</div>
-        </div>
-      `;
-      chatItemsContainer.appendChild(chatItem);
-    });
-  }
-
-  // 🆕 チャット履歴をページ読み込み時に初期化
-  function initializeChatHistory() {
-    try {
-      // ページロード時は常に空の状態から開始
-      if (typeof(Storage) !== "undefined") {
-        localStorage.removeItem('langpont_chat_history');
-        sessionStorage.removeItem('langpont_chat_history');
-      }
-      
-      // チャット履歴エリアを非表示
-      const chatHistorySection = document.getElementById('chat-history');
-      if (chatHistorySection) {
-        chatHistorySection.style.display = 'none';
-      }
-      
-      // チャット項目をクリア
-      const chatItemsContainer = document.getElementById('chat-items');
-      if (chatItemsContainer) {
-        chatItemsContainer.innerHTML = '';
-      }
-      
-      // 空の履歴を表示
-      displayChatHistory([]);
-      
-    } catch (error) {
-      console.error('Error during chat history initialization:', error);
-      displayChatHistory([]);
-    }
-  }
+  // =============================================================================
+  // 🔄 TaskH2-2(B2-3) Stage 3 Phase 8b: Chat Function Block Migration
+  // チャット機能群は機能的凝集性保持のため static/js/ui/chat_controller.js に移動済み
+  // 
+  // 移動した関数:
+  // - displayChatHistory() → ChatController.displayChatHistory()
+  // - initializeChatHistory() → ChatController.initializeChatHistory()
+  // - getAnswerTypeLabel() → ChatController.getAnswerTypeLabel()
+  // - formatChatAnswer() → ChatController.formatChatAnswer()
+  //
+  // 後方互換性のためグローバル関数は window オブジェクトにエクスポート済み
+  // =============================================================================
 
   // 🆕 インタラクティブ質問を送信する関数（詳細ログ強化版）
   // askInteractiveQuestion() function moved to static/js/interactive/question_handler.js
@@ -610,26 +308,6 @@ window.currentLabels = {
 
   // function formatChatTimestamp() - 🎯 Task B2-2 Phase 2-1: Moved to static/js/main.js
 
-  function getAnswerTypeLabel(type) {
-    const typeLabels = {
-      'translation_modification': 'Translation Edit',
-      'analysis_inquiry': 'Analysis Inquiry',
-      'linguistic_question': 'Linguistic Question',
-      'context_variation': 'Context Change',
-      'comparison_analysis': 'Comparison Analysis',
-      'general_expert': 'General Question',
-      'general': 'General',
-      'error': 'Error'
-    };
-    return typeLabels[type] || window.currentLabels.chat_answer_label || 'Answer';
-  }
-
-  function formatChatAnswer(answer) {
-    if (!answer) return '';
-    
-    // 改行をHTMLに変換
-    return escapeHtml(answer).replace(/\n/g, '<br>');
-  }
 
   // 🆕 簡易トースト通知機能（showToast関数が存在しない場合のフォールバック）
   // showToast function moved to static/js/main.js
@@ -698,74 +376,49 @@ window.currentLabels = {
   }
 
   // 🧠 ニュアンス分析エンジン選択（UIのみ更新） - Task 2.9.2 Phase B-3.5.2
+  // =============================================================================
+  // 🎯 TaskH2-2(B2-3) Stage 2 Phase 7: selectAnalysisEngine() 責務分離
+  // =============================================================================
+  // 📅 分離日: 2025年7月20日
+  // 📁 分離先: static/js/engine/engine_ui_controller.js + engine_api_client.js
+  // 📊 分離行数: 52行 (Lines 464-515)
+  //
+  // 🎯 分離理由: UI制御と通信処理の責務分離
+  // ✅ UI制御部分: engine_ui_controller.js に分離
+  //    - DOM操作のみ
+  //    - 表示更新のみ
+  //    - ユーザー体験のみ
+  // ✅ 通信処理部分: engine_api_client.js に分離
+  //    - AJAX通信のみ
+  //    - エラーハンドリングのみ
+  // ❌ 除外された責務:
+  //    - サーバー状態管理（routes/engine_management.py に分離済み）
+  //
+  // 🔧 新しい呼び出し方法:
+  //    engineUIController.updateEngineDescription(engine)
+  //    engineApiClient.syncEngineState(engine, onSuccess, onError)
+  // =============================================================================
+  
   function selectAnalysisEngine(engine) {
-    // 🆕 新しい setAnalysisEngine 関数を使用
+    // 責務分離版: UI制御と通信処理を明確に分離
+    
+    // UI更新（純粋なUI制御）
     setAnalysisEngine(engine);
     
-    // 説明文を更新
-    const descriptions = {
-      'chatgpt': '🤖 ChatGPT が論理的で詳細な分析を提供します',
-      'gemini': '💎 Gemini が翻訳の違いやニュアンスを丁寧に解説します',
-      'claude': '🎭 Claude が深いニュアンスと文化的洞察を提供します'
-    };
-    
-    const descElement = document.getElementById('engineDescText');
-    if (descElement && descriptions[engine]) {
-      descElement.textContent = descriptions[engine];
-    }
-    
-    // セッションにも保存（AJAX）- エラー処理を強化
-    fetch('/set_analysis_engine', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+    // サーバー状態同期（純粋な通信処理）
+    engineApiClient.syncEngineState(
+      engine,
+      // 成功時コールバック
+      (data, selectedEngine) => {
+        engineUIController.showSelectionSuccess(selectedEngine, data.message);
       },
-      body: JSON.stringify({
-        engine: engine
-      })
-    }).then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        return response.json();
-      })
-      .then(data => {
-        if (data.success) {
-          console.log(`🧠 Analysis engine changed to: ${engine}`);
-          console.log(`🧠 Server confirmed: ${data.message}`);
-          showToast(`Analysis engine changed to ${engine.toUpperCase()}`, 'success');
-          
-          // 🚨 自動実行を削除 - ユーザーの明示的なクリックでのみ実行
-          // fetchNuanceAnalysis(engine); // 削除
-        } else {
-          console.error('分析エンジン設定エラー:', data.error);
-          showToast(`エンジン設定エラー: ${data.error}`, 'error');
-        }
-      })
-      .catch(error => {
-        console.error('分析エンジン設定エラー:', error);
-        showToast('エンジン設定に失敗しました', 'error');
-      });
+      // エラー時コールバック  
+      (error, selectedEngine) => {
+        engineUIController.showSelectionError(selectedEngine, error);
+      }
+    );
   }
 
-  // 🔍 Dev Monitor分析エンジン更新
-  function updateDevMonitorEngine(engine) {
-    const selectedEngineElement = document.getElementById('selectedAnalysisEngine');
-    const engineStatusElement = document.getElementById('analysisEngineStatus');
-    
-    if (selectedEngineElement) {
-      selectedEngineElement.textContent = engine.toUpperCase();
-    }
-    
-    if (engineStatusElement) {
-      engineStatusElement.textContent = window.currentLabels.loading_text || 'Available';
-      engineStatusElement.style.color = '#34C759';
-    }
-  }
-  
-  // 🔍 Dev Monitor分析実行状況更新
-  // updateDevMonitorAnalysis関数は外部ファイルに移動済み
 
   // 🆕 分析エンジン選択（UIのみ更新）
   function setAnalysisEngine(engine) {
@@ -792,34 +445,42 @@ window.currentLabels = {
     }
     
     // 開発者モニターを更新
-    if (typeof updateDevMonitorEngine === 'function') {
-      updateDevMonitorEngine(engine);
-    }
+    // updateDevMonitorEngine は開発監視パネル削除により無効化
     
     console.log(`🧠 Analysis engine selected: ${engine}`);
   }
 
-  // 初期化時に現在の分析エンジンを設定（分析は実行しない）
+  // =============================================================================
+  // 🎯 TaskH2-2(B2-3) Stage 2 Phase 7: initializeAnalysisEngine() 責務分離
+  // =============================================================================
+  // 📅 分離日: 2025年7月20日
+  // 📁 分離先: static/js/engine/engine_ui_controller.js (UI初期化部分)
+  // 📊 分離行数: 21行 (Lines 547-567)
+  //
+  // 🎯 分離理由: UI初期化ロジックの純粋化
+  // ✅ 分離された責務:
+  //    - エンジンボタンの初期状態設定
+  //    - 隠しフィールドのデフォルト値設定
+  //    - 中立状態の維持
+  // ⚠️ 注意: 外部から2箇所で呼び出し (Lines 263, 732)
+  //
+  // 🔧 新しい呼び出し方法:
+  //    engineUIController.initializeEngineUI()
+  // =============================================================================
+  
   function initializeAnalysisEngine() {
-    /* NOTE: Phase 3分離保留
-     * 理由: 外部初期化依存 (initializePage line 500, line 1328)、DOM準備必須
-     * 依存: .engine-btn querySelectorAll, analysis_engine hidden field, 初期化タイミング
-     * 将来: Phase A-2 初期化システム統一 → Phase C-1 モジュール分離
-     * 参照: docs/phase3_dependency_analysis.md, docs/phase3_future_design.md
-     */
-    // 🆕 まず全ボタンから 'selected' と 'active' クラスを除去（中立状態）
-    const allButtons = document.querySelectorAll('.engine-btn');
-    allButtons.forEach(btn => {
-      btn.classList.remove('selected', 'active');
-    });
+    // 責務分離版: UI初期化の委譲
+    if (typeof engineUIController !== 'undefined') {
+      engineUIController.initializeEngineUI();
+    }
     
-    // デフォルトエンジンの値はセットするが、UIでは中立状態を維持
+    // デフォルトエンジンの値設定（後方互換性維持）
     const hiddenField = document.getElementById('analysis_engine');
     if (hiddenField && !hiddenField.value) {
       hiddenField.value = 'gemini'; // デフォルト値
     }
     
-    console.log('🧠 Analysis engine initialized in neutral state');
+    console.log('🧠 Analysis engine initialized (responsibility separated)');
   }
 
   // 🚀 ページ読み込み完了時の初期化
@@ -840,76 +501,9 @@ window.currentLabels = {
 </script>
 <script>
   // 🆕 ユーザー別使用制限関連の処理
-  function updateUsageStatus(usageInfo) {
-    const statusBar = document.getElementById('usage-status-bar');
-    const translateBtn = document.getElementById('translate-btn');
-    
-    if (usageInfo && statusBar) {
-      const usageCount = statusBar.querySelector('.usage-count');
-      const usageRemaining = statusBar.querySelector('.usage-remaining');
-      
-      if (usageCount) {
-        if (usageInfo.is_unlimited) {
-          usageCount.textContent = `🔰 ${usageInfo.username} (${usageInfo.user_role}): ${usageLabels.unlimited} ✨`;
-        } else {
-          usageCount.textContent = `📊 ${usageInfo.username} (${usageInfo.user_role}): ${usageInfo.current_usage}/${usageInfo.daily_limit} ${usageLabels.countTimes}`;
-        }
-      }
-      
-      if (usageRemaining) {
-        if (usageInfo.is_unlimited) {
-          usageRemaining.textContent = `💎 ${usageLabels.unlimitedDesc}`;
-          statusBar.className = 'usage-status';
-        } else if (usageInfo.current_usage >= usageInfo.daily_limit) {
-          usageRemaining.textContent = `❌ ${usageLabels.limitReached}`;
-          statusBar.className = 'usage-status usage-exceeded';
-          
-          // 翻訳ボタンを無効化
-          if (translateBtn) {
-            translateBtn.disabled = true;
-            translateBtn.innerHTML = `<span>❌</span>${usageLabels.limitReached.split('（')[0]}`;
-          }
-        } else if (usageInfo.remaining <= 2) {
-          usageRemaining.textContent = `⚠️ ${usageLabels.remainingPrefix}${usageInfo.remaining} ${usageLabels.remainingWarningSuffix}`;
-          statusBar.className = 'usage-status usage-warning';
-        } else {
-          usageRemaining.textContent = `${usageLabels.remainingPrefix}${usageInfo.remaining} ${usageLabels.remainingSuffix}`;
-          statusBar.className = 'usage-status';
-        }
-      }
-    }
-  }
+  // function updateUsageStatus() - 🎯 Task H2-2(B2-3) Stage 2 Phase 5: Moved to static/js/utilities/utility_functions.js
 
-  function showUsageLimitError(errorData) {
-    const resultArea = document.querySelector('.results-section');
-    
-    const errorCard = document.createElement('div');
-    errorCard.className = 'result-card show';
-    errorCard.style.background = 'linear-gradient(135deg, #FF3B30, #D70015)';
-    errorCard.style.color = 'white';
-    
-    errorCard.innerHTML = `
-      <div class="result-header" style="background: rgba(255, 255, 255, 0.1);">
-        <div style="display: flex; align-items: center;">
-          <span>❌ 利用制限に達しました</span>
-        </div>
-      </div>
-      <div style="padding: 20px;">
-        <p style="margin-bottom: 16px;">${errorData.message}</p>
-        <p style="margin-bottom: 16px;">📊 本日の利用: ${errorData.current_usage}/${errorData.daily_limit} 回</p>
-        <p style="margin-bottom: 20px;">🕐 ${errorData.reset_time}に制限がリセットされます</p>
-        <div style="text-align: center;">
-          <a href="/alpha" style="background: rgba(255, 255, 255, 0.2); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 500;">
-            Early Access版を試す
-          </a>
-        </div>
-      </div>
-    `;
-    
-    // 既存の結果をクリア
-    resultArea.innerHTML = '';
-    resultArea.appendChild(errorCard);
-  }
+  // function showUsageLimitError() - 🎯 Task H2-2(B2-3) Stage 2 Phase 5: Moved to static/js/utilities/utility_functions.js
 
   /**
    * 🔧 クライアントサイドチャット履歴管理
@@ -920,25 +514,12 @@ window.currentLabels = {
   /**
    * 🔧 節度あるログ出力（重複ログ解決）
    */
-  function logOnce(key, message, level = 'log') {
-    if (!window.loggedMessages) window.loggedMessages = new Set();
-    if (!window.loggedMessages.has(key)) {
-      console[level](message);
-      window.loggedMessages.add(key);
-    }
-  }
+  // function logOnce() - 🎯 Task H2-2(B2-3) Stage 2 Phase 5: Moved to static/js/utilities/utility_functions.js
   
   /**
    * 🔧 IME関連ログの節度ある出力（重複ログ解決）
    */
-  let lastIMELog = 0;
-  function logIME(message, level = 'log') {
-    const now = Date.now();
-    if (now - lastIMELog > 2000) { // 2秒間隔でのみログ出力
-      console[level](message);
-      lastIMELog = now;
-    }
-  }
+  // function logIME() - 🎯 Task H2-2(B2-3) Stage 2 Phase 5: Moved to static/js/utilities/utility_functions.js
 
   /**
    * 🔧 追加質問機能（Cookie最適化版）
@@ -952,308 +533,30 @@ window.currentLabels = {
    * @param {string} type - 質問タイプ（オプション）
    * @returns {string} - フォーマット済みテキスト
    */
-  function formatAnswerText(text, type = 'general_question') {
-    if (!text) return '';
-    
-    // HTML エスケープを行い、改行を適切に処理
-    let formatted = text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-    
-    // 🆕 タイプ別特別フォーマット
-    switch (type) {
-      case 'comparison':
-        // 比較分析の場合、番号付きリストやブレットポイントを強調
-        formatted = formatted
-          .replace(/(\d+\.)\s/g, '<strong>$1</strong> ')
-          .replace(/•\s/g, '<span style="color: #007AFF;">•</span> ')
-          .replace(/・\s/g, '<span style="color: #007AFF;">・</span> ');
-        break;
-      
-      case 'term_explanation':
-        // 用語解説の場合、重要な用語を強調
-        formatted = formatted
-          .replace(/「([^」]+)」/g, '<strong style="color: #007AFF;">「$1」</strong>')
-          .replace(/\"([^\"]+)\"/g, '<strong style="color: #007AFF;">"$1"</strong>');
-        break;
-      
-      case 'style_adjustment':
-        // 文体調整の場合、Before/Afterを明確に区別
-        formatted = formatted
-          .replace(/(元の文章|Before|Original)([:：])/gi, '<strong style="color: #FF3B30;">$1$2</strong>')
-          .replace(/(推奨文章|After|Recommended)([:：])/gi, '<strong style="color: #34C759;">$1$2</strong>');
-        break;
-      
-      case 'custom_translation':
-        // カスタム翻訳の場合、翻訳例を強調
-        formatted = formatted
-          .replace(/([\u2192←⇔])/g, '<span style="color: #007AFF; font-weight: bold;">$1</span>');
-        break;
-    }
-    
-    // 🆕 改行と段落の適切な処理
-    return formatted
-      .replace(/\n\n/g, '</p><p style="margin: 2px 0;">') /* 🎯 8px → 2px 段落間余白削減 */
-      .replace(/\n/g, '<br>')
-      .replace(/^(.*)$/s, '<p style="margin: 0;">$1</p>'); // 全体をpタグで囲む
-  }
+  // function formatAnswerText() - 🎯 Task H2-2(B2-3) Stage 2 Phase 5: Moved to static/js/utilities/utility_functions.js
 
   /**
    * 🆕 チャット回答の展開・折りたたみ機能
    * @param {string} chatItemId - チャット項目のID
    */
-  function toggleChatAnswer(chatItemId) {
-    const chatAnswer = document.querySelector(`#${chatItemId} .chat-answer`);
-    const expandBtn = document.querySelector(`#${chatItemId} .chat-expand-btn`);
-    
-    if (!chatAnswer || !expandBtn) return;
-    
-    const isCollapsed = chatAnswer.classList.contains('collapsed');
-    
-    // 🌍 多言語対応: 動的ラベルを取得
-    const expandLabel = window.currentLabels?.expand_full_text || "▼ Show full text";
-    const collapseLabel = window.currentLabels?.collapse_text || "▲ Collapse";
-    
-    if (isCollapsed) {
-      chatAnswer.classList.remove('collapsed');
-      expandBtn.textContent = collapseLabel;
-    } else {
-      chatAnswer.classList.add('collapsed');
-      expandBtn.textContent = expandLabel;
-    }
-  }
+  // function toggleChatAnswer() - 🎯 Task H2-2(B2-3) Stage 2 Phase 5: Moved to static/js/utilities/utility_functions.js
 
   /**
    * チャット履歴更新
    * 受信したチャット履歴データを画面に表示
    * @param {Array} chatHistory - サーバーから受信したチャット履歴配列
    */
-  function updateChatHistory(chatHistory) {
-    const chatHistorySection = document.getElementById('chat-history');
-    const chatItemsContainer = document.getElementById('chat-items');
-    
-    if (!chatHistory || chatHistory.length === 0) {
-      if (chatHistorySection) {
-        chatHistorySection.classList.remove('show');
-      }
-      return;
-    }
-    
-    // チャット履歴を表示
-    if (chatHistorySection) {
-      chatHistorySection.classList.add('show');
-      
-      // 表示問題の自動修正
-      setTimeout(() => {
-        const computedStyle = window.getComputedStyle(chatHistorySection);
-        if (computedStyle.display === 'none') {
-          forceChatHistoryDisplay();
-        }
-      }, 100);
-    }
-    
-    // 最新の5件のみ表示
-    const recentChats = chatHistory.slice(-5);
-    
-    if (!chatItemsContainer) return;
-    
-    chatItemsContainer.innerHTML = '';
-    
-    recentChats.forEach((chat, index) => {
-      const chatItem = document.createElement('div');
-      chatItem.className = 'chat-item';
-      const chatItemId = `chat-item-${Date.now()}-${index}`;
-      chatItem.id = chatItemId;
-      
-      const typeClass = chat.type || 'general_question';
-      const typeName = getTypeName(typeClass);
-      
-      // 🔧 デバッグログ追加で問題表示を確認
-      console.log('🔧 Chat item data:', {
-        question: chat.question,
-        answer: chat.answer?.substring(0, 100),
-        type: chat.type
-      });
-      
-      // 🔧 質問はシンプルなエスケープのみ、回答はフルフォーマット
-      const formattedAnswer = formatAnswerText(chat.answer || '', typeClass);
-      const formattedQuestion = (chat.question || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-      const isLongAnswer = (chat.answer || '').length > 1500; /* 🎯 300 → 1500 展開ボタン闾値調整 */
-      
-      // 🎯 UI最終調整: 質問・回答タイトル、フォントサイズ統一、高さ自動調整
-      // 🌍 多言語対応: 動的ラベルを取得
-      const questionLabel = window.currentLabels?.chat_question_label || "Question";
-      const answerLabel = window.currentLabels?.chat_answer_label || "Answer";
-      const expandLabel = window.currentLabels?.expand_full_text || "▼ Show full text";
-      
-      chatItem.innerHTML = `
-        <div class="chat-question">
-          <div class="chat-type-badge ${typeClass}">💡 ${questionLabel}: ${formattedQuestion}</div>
-        </div>
-        <div class="chat-answer${isLongAnswer ? ' collapsed' : ''}">
-          <div class="chat-answer-title">💬 ${answerLabel}:</div>
-          <div class="chat-a-content">${formattedAnswer}</div>
-          ${isLongAnswer ? `<button class="chat-expand-btn" onclick="toggleChatAnswer('${chatItemId}')">${expandLabel}</button>` : ''}
-        </div>
-      `;
-      
-      chatItemsContainer.appendChild(chatItem);
-    });
-    
-    // 🆕 チャット履歴を一番下にスクロール（新しいメッセージを表示）
-    setTimeout(() => {
-      if (chatItemsContainer) {
-        chatItemsContainer.scrollTop = chatItemsContainer.scrollHeight;
-      }
-    }, 100);
-  }
+  // function updateChatHistory() - 🎯 Task H2-2(B2-3) Stage 2 Phase 5: Moved to static/js/utilities/utility_functions.js
 
-  function getTypeName(type) {
-    // 動的言語対応のタイプ名
-    const typeNames = {
-      'jp': {
-        'style_adjustment': '文体調整',
-        'term_explanation': '用語解説', 
-        'custom_translation': 'カスタム翻訳',
-        'comparison': '比較分析',
-        'contextual_adjustment': '文脈調整',
-        'general_question': '一般質問'
-      },
-      'en': {
-        'style_adjustment': 'Style Adjustment',
-        'term_explanation': 'Term Explanation', 
-        'custom_translation': 'Custom Translation',
-        'comparison': 'Comparison',
-        'contextual_adjustment': 'Context Adjustment',
-        'general_question': 'General Question'
-      },
-      'fr': {
-        'style_adjustment': 'Ajustement de Style',
-        'term_explanation': 'Explication de Terme', 
-        'custom_translation': 'Traduction Personnalisée',
-        'comparison': 'Comparaison',
-        'contextual_adjustment': 'Ajustement Contextuel',
-        'general_question': 'Question Générale'
-      },
-      'es': {
-        'style_adjustment': 'Ajuste de Estilo',
-        'term_explanation': 'Explicación de Término', 
-        'custom_translation': 'Traducción Personalizada',
-        'comparison': 'Comparación',
-        'contextual_adjustment': 'Ajuste Contextual',
-        'general_question': 'Pregunta General'
-      }
-    };
-    
-    // 現在の言語を取得（デフォルトは日本語）
-    const currentLang = '{{ session.get("lang", "jp") }}';
-    const langTypes = typeNames[currentLang] || typeNames['jp'];
-    
-    return langTypes[type] || window.currentLabels.chat_question_label || 'Question';
-  }
+  // function getTypeName() - 🎯 Task H2-2(B2-3) Stage 2 Phase 5: Moved to static/js/utilities/utility_functions.js
 
-  // 🔧 CSS表示問題の強制修正機能（本番用簡潔版）
-  function forceChatHistoryDisplay() {
-    const chatHistorySection = document.getElementById('chat-history');
-    if (!chatHistorySection) return false;
-    
-    // 強制表示（!importantを使用）
-    chatHistorySection.style.cssText = `
-      display: block !important;
-      visibility: visible !important;
-      opacity: 1 !important;
-      height: auto !important;
-      max-height: none !important;
-      position: static !important;
-      z-index: 1 !important;
-    `;
-    
-    // showクラスも追加
-    chatHistorySection.classList.add('show');
-    
-    return true;
-  }
+  // function forceChatHistoryDisplay() - 🎯 Task H2-2(B2-3) Stage 2 Phase 5: Moved to static/js/utilities/utility_functions.js
   
-  // CSS表示問題の詳細診断機能（開発モード専用）
-  function diagnoseChatHistoryDisplay() {
-    // 本番環境では診断機能を無効化
-    const isDebugMode = false;
-    if (!isDebugMode) return;
-    
-    console.log('🔍 [DIAGNOSIS] Starting chat history display diagnosis...');
-    
-    const chatHistorySection = document.getElementById('chat-history');
-    const chatItemsContainer = document.getElementById('chat-items');
-    
-    if (!chatHistorySection) {
-      console.error('❌ [DIAGNOSIS] chat-history element not found in DOM!');
-      return;
-    }
-  }
+  // function diagnoseChatHistoryDisplay() - 🎯 Task H2-2(B2-3) Stage 2 Phase 5: Moved to static/js/utilities/utility_functions.js
 
-  // 🔧 setupQuestionInputEvents関数の実装
-  function setupQuestionInputEvents() {
-    const questionInput = document.getElementById('question-input');
-    const questionBtn = document.getElementById('question-btn');
-    
-    if (questionInput) {
-      // Enterキーでの送信（IME対応）
-      let isComposing = false;
-      
-      questionInput.addEventListener('compositionstart', () => {
-        isComposing = true;
-      });
-      
-      questionInput.addEventListener('compositionend', () => {
-        isComposing = false;
-      });
-      
-      questionInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey && !isComposing) {
-          e.preventDefault();
-          askInteractiveQuestion();
-        }
-      });
-    }
-  }
+  // function setupQuestionInputEvents() - 🎯 Task H2-2(B2-3) Stage 2 Phase 5: Moved to static/js/utilities/utility_functions.js
   
-  function showToast(message, type = 'info') {
-    const toast = document.createElement('div');
-    toast.className = 'toast-notification';
-    toast.textContent = message;
-    toast.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      padding: 12px 20px;
-      background: ${type === 'success' ? '#34C759' : '#007AFF'};
-      color: white;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 500;
-      z-index: 9999;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-      transition: opacity 0.3s ease, transform 0.3s ease;
-    `;
-    
-    document.body.appendChild(toast);
-    
-    setTimeout(() => {
-      toast.style.opacity = '0';
-      toast.style.transform = 'translateY(-10px)';
-      setTimeout(() => {
-        document.body.removeChild(toast);
-      }, 300);
-    }, 3000);
-  }
+  // function showToast() - 🎯 Task H2-2(B2-3) Stage 2 Phase 5: Moved to static/js/utilities/utility_functions.js
 
   // Note: This function is already defined above at line 2810, removing duplicate
 
@@ -1533,7 +836,7 @@ window.currentLabels = {
       {% if session.get('user_role') in ['admin', 'developer'] %}
       if (typeof recordTranslationStart === 'function') {
         recordTranslationStart();
-        addDevLogEntry('info', '翻訳開始', `言語ペア: ${languagePair}, 入力文字数: ${inputText.length}`);
+        // 開発監視ログは削除により無効化
       }
       {% endif %}
       
@@ -1714,125 +1017,18 @@ window.currentLabels = {
   // 🧠 Task 2.9.2 Phase B-3.5.2: マルチエンジン分析実行
   // Task H2-2(B2-3) Stage 1 Phase 2により外部ファイルに移動済み
   
-  function resetForm() {
-    logOnce('reset_form_called', 'resetForm() called');
-    
-    // 🆕 完全なリセット処理
-    resetNuanceAnalysisArea();
-    resetTranslationResults();
-    resetFormInputs();
-    resetInteractiveSections();
-  }
-
-  function resetNuanceAnalysisArea() {
-    // ニュアンス分析カードを完全に非表示
-    const nuanceCard = document.getElementById('gemini-nuance-card');
-    if (nuanceCard) {
-      nuanceCard.style.display = 'none';
-      nuanceCard.classList.remove('show');
-    }
-    
-    // 分析テキストをクリア
-    const analysisText = document.getElementById('gemini-3way-analysis');
-    if (analysisText) {
-      analysisText.textContent = '';
-      analysisText.innerHTML = '';
-    }
-    
-    // エンジン選択ボタンエリアを非表示
-    const engineTrigger = document.getElementById("analysis-engine-trigger");
-    if (engineTrigger) {
-      engineTrigger.style.display = "none";
-    }
-    
-    logOnce('nuance_area_reset', '🧹 ニュアンス分析エリアをリセット');
-  }
-
-  function resetTranslationResults() {
-    // 全ての翻訳結果カードを非表示
-    const resultCards = document.querySelectorAll(".result-card");
-    resultCards.forEach(card => {
-      card.classList.remove("show");
-      if (card.id === 'gemini-nuance-card') {
-        card.style.display = 'none';
-      }
-    });
-    
-    // テキスト内容もクリア
-    const textElements = [
-      'translated-text', 'reverse-translated-text',
-      'better-translation', 'reverse-better-translation',
-      'gemini-translation', 'gemini-reverse-translation'
-    ];
-    
-    textElements.forEach(id => {
-      const element = document.getElementById(id);
-      if (element) {
-        element.textContent = '';
-        element.innerHTML = '';
-      }
-    });
-    
-    logOnce('translation_area_reset', '🧹 翻訳結果エリアをリセット');
-  }
-
-  function resetFormInputs() {
-    // フォーム入力フィールドをクリア
-    const inputField = document.getElementById("japanese_text");
-    const partnerField = document.querySelector("[name='partner_message']");
-    const contextField = document.querySelector("[name='context_info']");
-    
-    if (inputField) inputField.value = "";
-    if (partnerField) partnerField.value = "";
-    if (contextField) contextField.value = "";
-    
-    logOnce('input_field_reset', '🧹 入力フィールドをリセット');
-  }
-
-  function resetInteractiveSections() {
-    // インタラクティブセクションも非表示に
-    const interactiveSection = document.getElementById("interactive-section");
-    if (interactiveSection) interactiveSection.classList.remove("show");
-    
-    const chatHistory = document.getElementById("chat-history");
-    if (chatHistory) chatHistory.classList.remove("show");
-
-    logOnce('interactive_section_reset', '🧹 インタラクティブセクションをリセット');
-    
-    // 🆕 サーバー側リセットを実行
-    performServerReset();
-  }
-
-  function performServerReset() {
-    try {
-      const form = document.querySelector("form");
-      if (!form) {
-        logOnce('form_not_found', 'Form not found', 'error');
-        return;
-      }
-      
-      // 既存のreset inputがあれば削除
-      const existingReset = form.querySelector('input[name="reset"]');
-      if (existingReset) {
-        existingReset.remove();
-      }
-      
-      // 新しいreset inputを追加
-      const resetInput = document.createElement("input");
-      resetInput.type = "hidden";
-      resetInput.name = "reset";
-      resetInput.value = "true";
-      form.appendChild(resetInput);
-      
-      logOnce('reset_form_submit', 'Submitting reset form');
-      form.submit();
-      
-    } catch (error) {
-      logOnce('reset_form_error', `Reset form submission failed: ${error.message}`, 'error');
-      // フォールバック：ページをリロード
-      window.location.reload();
-    }
-  }
+  // 🔄 TaskH2-2(B2-3) Stage 3 Phase 8a: Reset Function Block Migration
+  // リセット機能群は機能的凝集性保持のため static/js/ui/reset_controller.js に移動済み
+  // 
+  // 移動した関数:
+  // - resetForm() → ResetController.resetForm()
+  // - resetNuanceAnalysisArea() → ResetController.resetNuanceAnalysisArea()
+  // - resetTranslationResults() → ResetController.resetTranslationResults()
+  // - resetFormInputs() → ResetController.resetFormInputs()
+  // - resetInteractiveSections() → ResetController.resetInteractiveSections()
+  // - performServerReset() → ResetController.performServerReset()
+  //
+  // 後方互換性のためグローバル関数は window オブジェクトにエクスポート済み
 
   // Enter キーでの質問送信機能（日本語入力対応版）
   document.addEventListener('DOMContentLoaded', function() {
@@ -2207,187 +1403,12 @@ window.currentLabels = {
 
   // function getCurrentLanguagePair() - 🎯 Task B2-2 Phase 2-1: Moved to static/js/main.js
 
-  // 🚀 Task 2.9.2 Phase B-3.5 改良版: 受動監視システム JavaScript
-  let devMonitoringActive = false;
-  let timestampUpdateInterval = null;
   
-  // 接続状態の履歴
-  let connectionHistory = {
-    openai: { status: 'unknown', lastCheck: null, responseTime: null, error: null },
-    gemini: { status: 'unknown', lastCheck: null, responseTime: null, error: null },
-    system: { startTime: new Date(), lastTranslation: null }
-  };
   
-  // 🚨 開発者パネルの表示/非表示切り替え（タブ制御修正）
-  function toggleDevPanel() {
-    const panel = document.getElementById('devMonitoringPanel');
-    const toggle = document.getElementById('devPanelToggle');
-    
-    if (panel.classList.contains('open')) {
-      // パネルを閉じる
-      panel.classList.remove('open');
-      document.body.classList.remove('dev-panel-open');
-      toggle.textContent = '開発監視';
-      toggle.style.display = 'block';  // ボタンを表示
-      devMonitoringActive = false;
-      
-      if (timestampUpdateInterval) {
-        clearInterval(timestampUpdateInterval);
-        timestampUpdateInterval = null;
-      }
-      
-      console.log('🔧 Dev Monitor パネル閉じました - タブ表示');
-    } else {
-      // パネルを開く
-      panel.classList.add('open');
-      document.body.classList.add('dev-panel-open');
-      toggle.textContent = '監視中';
-      
-      // 🚨 重要修正：パネル表示中はタブを非表示
-      setTimeout(() => {
-        toggle.style.display = 'none';  // タブを非表示
-      }, 300);  // アニメーション後に非表示
-      
-      devMonitoringActive = true;
-      startPassiveMonitoring();
-      
-      console.log('🔧 Dev Monitor パネル開きました - タブ非表示');
-    }
-  }
   
-  // セクションの折りたたみ切り替え
-  function toggleDevSection(sectionName) {
-    const section = document.querySelector(`[data-section="${sectionName}"]`);
-    section.classList.toggle('collapsed');
-  }
   
-  // 軽量受動監視開始
-  function startPassiveMonitoring() {
-    if (timestampUpdateInterval) {
-      clearInterval(timestampUpdateInterval);
-    }
-    
-    // 初期状態を表示
-    initializeStaticDisplay();
-    
-    // 1分間隔でタイムスタンプのみ更新（API呼び出しなし）
-    timestampUpdateInterval = setInterval(updateTimeStamps, 60000);
-    
-    // ログエントリ追加
-    addDevLogEntry('success', '受動監視開始', 'Rate Limit回避の軽量監視を開始しました');
-    console.log('🚀 Passive monitoring started - No API polling, event-driven only');
-  }
   
-  // 🚀 初期静的表示設定
-  function initializeStaticDisplay() {
-    // 基本システム情報（静的）
-    document.getElementById('systemVersion').textContent = '2.0.0';
-    document.getElementById('systemEnvironment').textContent = 'development';
-    document.getElementById('systemDebugMode').textContent = 'ON';
-    document.getElementById('systemUptime').textContent = formatUptime(connectionHistory.system.startTime);
-    
-    // CPU・メモリ情報（推定値）
-    document.getElementById('systemMemory').textContent = '推定 45.2%';
-    document.getElementById('memoryProgress').style.width = '45%';
-    document.getElementById('systemCpu').textContent = '推定 12.3%';
-    document.getElementById('cpuProgress').style.width = '12%';
-    
-    // 初期接続状態
-    updateConnectionDisplay();
-    updateUserDisplay();
-    
-    addDevLogEntry('info', '静的表示初期化', '基本情報を表示しました');
-  }
   
-  // 🚀 タイムスタンプ更新（軽量・API呼び出しなし）
-  function updateTimeStamps() {
-    if (!devMonitoringActive) return;
-    
-    // 稼働時間更新
-    document.getElementById('systemUptime').textContent = formatUptime(connectionHistory.system.startTime);
-    
-    // 接続状態の相対時間更新
-    updateConnectionDisplay();
-    
-    // 最終翻訳時刻更新
-    if (connectionHistory.system.lastTranslation) {
-      const elapsed = getRelativeTime(connectionHistory.system.lastTranslation);
-      // 最終翻訳時刻を表示する要素があれば更新
-    }
-    
-    console.log('📅 Timestamps updated - No API calls made');
-  }
-  
-  // 🚀 接続状態表示更新（正確な状態判定）
-  function updateConnectionDisplay() {
-    // OpenAI状態表示
-    const openaiHistory = connectionHistory.openai;
-    let openaiStatusText, openaiIndicator;
-    
-    if (openaiHistory.status === 'connected' && openaiHistory.lastCheck) {
-      const elapsed = getRelativeTime(openaiHistory.lastCheck);
-      // 5分以内の成功接続のみ「接続中」とする
-      const minutesElapsed = (new Date() - new Date(openaiHistory.lastCheck)) / (1000 * 60);
-      if (minutesElapsed <= 5) {
-        openaiStatusText = `接続中 (応答: ${openaiHistory.responseTime}ms, ${elapsed})`;
-        // 応答時間に基づいて色分け
-        if (openaiHistory.responseTime < 3000) {
-          openaiIndicator = 'connected'; // 緑色 - 良好
-        } else if (openaiHistory.responseTime < 8000) {
-          openaiIndicator = 'connected-slow'; // 橙色 - やや遅い
-        } else {
-          openaiIndicator = 'connected-very-slow'; // 赤色 - 遅い
-        }
-      } else {
-        openaiStatusText = `未確認 (最終接続: ${elapsed})`;
-        openaiIndicator = 'unknown';
-      }
-    } else if (openaiHistory.status === 'disconnected' && openaiHistory.lastCheck) {
-      const elapsed = getRelativeTime(openaiHistory.lastCheck);
-      openaiStatusText = `切断中 (エラー: ${elapsed})`;
-      openaiIndicator = 'disconnected';
-    } else {
-      openaiStatusText = '状態不明 (未確認)';
-      openaiIndicator = 'loading';
-    }
-    
-    document.getElementById('openaiStatus').className = `dev-status-indicator ${openaiIndicator}`;
-    document.getElementById('openaiStatusText').textContent = openaiStatusText;
-    
-    // Gemini状態表示（正確な状態判定）
-    const geminiHistory = connectionHistory.gemini;
-    let geminiStatusText, geminiIndicator;
-    
-    if (geminiHistory.status === 'connected' && geminiHistory.lastCheck) {
-      const elapsed = getRelativeTime(geminiHistory.lastCheck);
-      // 5分以内の成功接続のみ「接続中」とする
-      const minutesElapsed = (new Date() - new Date(geminiHistory.lastCheck)) / (1000 * 60);
-      if (minutesElapsed <= 5) {
-        geminiStatusText = `接続中 (応答: ${geminiHistory.responseTime}ms, ${elapsed})`;
-        // 応答時間に基づいて色分け
-        if (geminiHistory.responseTime < 3000) {
-          geminiIndicator = 'connected'; // 緑色 - 良好
-        } else if (geminiHistory.responseTime < 8000) {
-          geminiIndicator = 'connected-slow'; // 橙色 - やや遅い
-        } else {
-          geminiIndicator = 'connected-very-slow'; // 赤色 - 遅い
-        }
-      } else {
-        geminiStatusText = `未確認 (最終接続: ${elapsed})`;
-        geminiIndicator = 'unknown';
-      }
-    } else if (geminiHistory.status === 'disconnected' && geminiHistory.lastCheck) {
-      const elapsed = getRelativeTime(geminiHistory.lastCheck);
-      geminiStatusText = `切断中 (エラー: ${elapsed})`;
-      geminiIndicator = 'disconnected';
-    } else {
-      geminiStatusText = '未確認 (接続テスト未実行)';
-      geminiIndicator = 'unknown';
-    }
-    
-    document.getElementById('geminiStatus').className = `dev-status-indicator ${geminiIndicator}`;
-    document.getElementById('geminiStatusText').textContent = geminiStatusText;
-  }
 
   // 🧠 Gemini推奨判定更新（データ整合性確保版）
   // 🚨 拡張版：推奨判定の詳細情報更新関数（透明性向上）
@@ -2625,26 +1646,6 @@ window.currentLabels = {
     }
   }
   
-  // 🚀 ユーザー表示更新
-  function updateUserDisplay() {
-    // 現在のセッション情報（静的）
-    document.getElementById('currentUsername').textContent = '{% if session.get("username") %}{{ session.get("username") }}{% else %}unknown{% endif %}';
-    
-    // 現在の入力を監視（軽量）
-    const inputField = document.getElementById('japanese_text');
-    if (inputField) {
-      const inputText = inputField.value || '';
-      document.getElementById('currentInputLength').textContent = inputText.length;
-      document.getElementById('currentWordCount').textContent = inputText.split(/\s+/).filter(w => w.length > 0).length;
-    }
-    
-    // 言語ペア取得
-    const languagePair = getCurrentLanguagePair();
-    document.getElementById('currentLanguagePair').textContent = languagePair;
-    
-    // 翻訳回数（推定）
-    document.getElementById('translationCount').textContent = localStorage.getItem('devTranslationCount') || '0';
-  }
   
   // 🚀 時間関連ユーティリティ関数
   function formatUptime(startTime) {
@@ -2670,155 +1671,37 @@ window.currentLabels = {
     return '今';
   }
   
-  // 🚀 イベント駆動API状態更新（翻訳時のみ）
-  function onTranslationAPISuccess(apiName, responseTime) {
-    connectionHistory[apiName] = {
-      status: 'connected',
-      lastCheck: new Date(),
-      responseTime: responseTime,
-      error: null
-    };
-    
-    // 翻訳回数を増加
-    const currentCount = parseInt(localStorage.getItem('devTranslationCount') || '0');
-    localStorage.setItem('devTranslationCount', (currentCount + 1).toString());
-    
-    connectionHistory.system.lastTranslation = new Date();
-    
-    updateConnectionDisplay();
-    updateUserDisplay();
-    
-    addDevLogEntry('success', `${apiName.toUpperCase()}接続成功`, `応答時間: ${responseTime}ms`);
-  }
-
-  // 🔌 翻訳開始時にAPI状態を記録（実際の翻訳処理と連携）
-  function recordTranslationStart() {
-    connectionHistory.system.lastTranslation = new Date();
-    updateConnectionDisplay();
-    addDevLogEntry('info', '翻訳プロセス開始', '新しい翻訳要求を処理中');
-  }
   
-  function onTranslationAPIError(apiName, error, statusCode) {
-    connectionHistory[apiName] = {
-      status: 'disconnected',
-      lastCheck: new Date(),
-      responseTime: null,
-      error: error
-    };
-    
-    updateConnectionDisplay();
-    
-    addDevLogEntry('error', `${apiName.toUpperCase()}接続エラー`, `${statusCode}: ${error}`);
-  }
   
   // システム状況更新（レガシー関数 - 使用しない）
-  function updateSystemStatus(data) {
-    // この関数は互換性のために残すが、API呼び出しは行わない
-    console.log('⚠️ Legacy updateSystemStatus called - Using static display instead');
-    
-    try {
-      // システム状況の安全な更新
-      if (data.system_status) {
-        const sysStatus = data.system_status;
-        console.log('🔍 Debug: System status data:', sysStatus);
-        
-        document.getElementById('systemVersion').textContent = sysStatus.version || 'N/A';
-        document.getElementById('systemEnvironment').textContent = sysStatus.environment || 'N/A';
-        document.getElementById('systemDebugMode').textContent = sysStatus.debug_mode ? 'ON' : 'OFF';
-        document.getElementById('systemUptime').textContent = sysStatus.uptime || 'N/A';
-        
-        console.log('🔍 Debug: System info updated - Version:', sysStatus.version, 'Environment:', sysStatus.environment);
-        
-        // メモリ使用量の安全な処理
-        if (sysStatus.memory_usage && typeof sysStatus.memory_usage.percent === 'number') {
-          const memPercent = sysStatus.memory_usage.percent;
-          document.getElementById('systemMemory').textContent = `${memPercent.toFixed(1)}%`;
-          document.getElementById('memoryProgress').style.width = `${memPercent}%`;
-        } else {
-          document.getElementById('systemMemory').textContent = 'N/A';
-          document.getElementById('memoryProgress').style.width = '0%';
-        }
-        
-        // CPU使用率の安全な処理
-        if (typeof sysStatus.cpu_usage === 'number') {
-          const cpuPercent = sysStatus.cpu_usage;
-          document.getElementById('systemCpu').textContent = `${cpuPercent.toFixed(1)}%`;
-          document.getElementById('cpuProgress').style.width = `${cpuPercent}%`;
-        } else {
-          document.getElementById('systemCpu').textContent = 'N/A';
-          document.getElementById('cpuProgress').style.width = '0%';
-        }
-      }
-      
-      // API状況の安全な更新
-      if (data.api_status) {
-        const apiStatus = data.api_status;
-        
-        if (apiStatus.openai) {
-          const openaiStatus = apiStatus.openai.status;
-          document.getElementById('openaiStatus').className = 
-            `dev-status-indicator ${openaiStatus}`;
-          document.getElementById('openaiStatusText').textContent = 
-            openaiStatus === 'connected' ? '接続中' : '切断';
-        }
-        
-        if (apiStatus.gemini) {
-          const geminiStatus = apiStatus.gemini.status;
-          document.getElementById('geminiStatus').className = 
-            `dev-status-indicator ${geminiStatus}`;
-          document.getElementById('geminiStatusText').textContent = 
-            geminiStatus === 'connected' ? '接続中' : '切断';
-        }
-      }
-      
-      addDevLogEntry('success', 'システム状況更新', 'データ更新完了');
-      
-    } catch (error) {
-      console.error('System status update error:', error);
-      addDevLogEntry('error', 'システム状況更新エラー', error.message);
-      
-      // エラー時のフォールバック表示
-      document.getElementById('systemVersion').textContent = 'エラー';
-      document.getElementById('systemEnvironment').textContent = 'エラー';
-      document.getElementById('systemDebugMode').textContent = 'エラー';
-    }
-  }
+  // =============================================================================
+  // 🖥️ TaskH2-2(B2-3) Stage 2 Phase 6: updateSystemStatus() 関数分離
+  // =============================================================================
+  // 📅 分離日: 2025年7月20日  
+  // 📁 分離先: static/js/admin/monitoring_functions.js
+  // 📊 分離行数: 71行 (Lines 1867-1937)
+  //
+  // 🎯 分離された機能: システム状態表示の更新処理
+  // ⚠️ 分離理由: Stage 1 Phase 4でHTMLパネル削除により完全なデッドコード化
+  // 🔮 依存要素: #systemVersion, #systemEnvironment, #systemDebugMode, #systemUptime,
+  //           #systemMemory, #memoryProgress, #systemCpu, #cpuProgress,
+  //           #openaiStatus, #openaiStatusText, #geminiStatus, #geminiStatusText
+  // 🔧 復活方法: 監視パネル復活時に外部ファイルをincludeして使用
+  // =============================================================================
   
-  // ユーザー行動更新
-  function updateUserActivity(data) {
-    try {
-      if (data.current_session) {
-        const session = data.current_session;
-        document.getElementById('currentUsername').textContent = session.username || 'N/A';
-        document.getElementById('currentLanguagePair').textContent = session.language_pair || 'N/A';
-        document.getElementById('translationCount').textContent = session.translations_count || 0;
-      }
-      
-      // 現在の入力を監視
-      const inputField = document.getElementById('japanese_text');
-      if (inputField) {
-        const inputText = inputField.value || '';
-        document.getElementById('currentInputLength').textContent = inputText.length;
-        document.getElementById('currentWordCount').textContent = inputText.split(/\s+/).filter(w => w.length > 0).length;
-      } else {
-        document.getElementById('currentInputLength').textContent = '0';
-        document.getElementById('currentWordCount').textContent = '0';
-      }
-      
-      // 最新のアクティビティをログに追加
-      if (data.recent_activity && Array.isArray(data.recent_activity) && data.recent_activity.length > 0) {
-        const latestActivity = data.recent_activity[data.recent_activity.length - 1];
-        if (latestActivity && latestActivity.timestamp !== window.lastActivityTimestamp) {
-          const details = latestActivity.details ? JSON.stringify(latestActivity.details) : '';
-          addDevLogEntry('info', latestActivity.action || 'unknown', details);
-          window.lastActivityTimestamp = latestActivity.timestamp;
-        }
-      }
-    } catch (error) {
-      console.error('User activity update error:', error);
-      addDevLogEntry('error', 'ユーザー行動更新エラー', error.message);
-    }
-  }
+  // =============================================================================
+  // 🖥️ TaskH2-2(B2-3) Stage 2 Phase 6: updateUserActivity() 関数分離
+  // =============================================================================
+  // 📅 分離日: 2025年7月20日
+  // 📁 分離先: static/js/admin/monitoring_functions.js  
+  // 📊 分離行数: 36行 (Lines 1940-1975)
+  //
+  // 🎯 分離された機能: ユーザー活動状況の更新処理
+  // ⚠️ 分離理由: Stage 1 Phase 4でHTMLパネル削除により完全なデッドコード化
+  // 🔮 依存要素: #currentUsername, #currentLanguagePair, #translationCount,
+  //           #currentInputLength, #currentWordCount, #japanese_text
+  // 🔧 復活方法: 監視パネル復活時に外部ファイルをincludeして使用
+  // =============================================================================
   
   // 翻訳進行状況更新
   function updateTranslationProgress(data) {
@@ -2852,58 +1735,8 @@ window.currentLabels = {
     }
   }
   
-  // ログエントリ追加
-  function addDevLogEntry(type, action, message) {
-    const container = document.getElementById('devLogContainer');
-    const timestamp = new Date().toLocaleTimeString();
-    
-    const entry = document.createElement('div');
-    entry.className = `dev-log-entry ${type}`;
-    entry.innerHTML = `
-      <div class="dev-log-timestamp">${timestamp}</div>
-      <div class="dev-log-message">${action}: ${message}</div>
-    `;
-    
-    container.insertBefore(entry, container.firstChild);
-    
-    // 最新50件のみ保持
-    const entries = container.querySelectorAll('.dev-log-entry');
-    if (entries.length > 50) {
-      entries[entries.length - 1].remove();
-    }
-  }
   
-  // 監視データクリア
-  async function clearDevMonitoringData() {
-    try {
-      const response = await fetch('/api/dev/clear-monitoring');
-      if (response.ok) {
-        document.getElementById('devLogContainer').innerHTML = 
-          '<div class="dev-log-entry"><div class="dev-log-timestamp">-</div><div class="dev-log-message">監視データをクリアしました</div></div>';
-        addDevLogEntry('success', 'データクリア', '監視データがクリアされました');
-      }
-    } catch (error) {
-      addDevLogEntry('error', 'クリアエラー', error.message);
-    }
-  }
   
-  // ログエクスポート
-  function exportDevLogs() {
-    const logs = [];
-    document.querySelectorAll('.dev-log-entry').forEach(entry => {
-      const timestamp = entry.querySelector('.dev-log-timestamp').textContent;
-      const message = entry.querySelector('.dev-log-message').textContent;
-      logs.push({ timestamp, message });
-    });
-    
-    const blob = new Blob([JSON.stringify(logs, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `dev-monitoring-logs-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
 
   // 🚨 6回目修正：API接続状況の丸サイズを強制的に8pxに設定
   function forceApiCircleSize() {
@@ -2976,80 +1809,19 @@ window.currentLabels = {
   }
 
 
-  // 🎨 Dev Monitor UI改善の適用
-  function applyDevMonitorUIImprovements() {
-    // ログ出力を大幅削減（2%の確率でのみ）
-    if (Math.random() < 0.02) {
-      logOnce('ui_improvements_applied', "🎨 UI improvements applied");
-    }
-    
-    // 判定根拠テキストの強制改善
-    const reasoningTexts = document.querySelectorAll('.reasoning-text');
-    reasoningTexts.forEach(element => {
-      element.style.color = '#E5E7EB';
-      element.style.fontSize = '13px';
-      element.style.lineHeight = '1.6';
-      element.style.fontWeight = '400';
-    });
-    
-    // 判定根拠セクションの改善
-    const reasoningElement = document.getElementById('recommendationReasoning');
-    if (reasoningElement) {
-      reasoningElement.style.backgroundColor = '#1F2937';
-      reasoningElement.style.padding = '12px';
-      reasoningElement.style.borderRadius = '6px';
-      
-      const text = reasoningElement.querySelector('.reasoning-text');
-      if (text) {
-        text.style.color = '#F3F4F6';
-        text.style.fontSize = '13px';
-        text.style.lineHeight = '1.6';
-      }
-    }
-    
-    // 全体の文字サイズ強制適用
-    const devMonitorPanel = document.getElementById('devMonitorPanel');
-    if (devMonitorPanel) {
-      devMonitorPanel.style.fontSize = '14px';
-      devMonitorPanel.style.lineHeight = '1.5';
-      
-      // セクションタイトル
-      const titles = devMonitorPanel.querySelectorAll('h3, h4, .dev-section-title');
-      titles.forEach(title => {
-        title.style.fontSize = '16px';
-        title.style.fontWeight = '600';
-      });
-      
-      // メトリクスラベル
-      const labels = devMonitorPanel.querySelectorAll('.dev-metric-label');
-      labels.forEach(label => {
-        label.style.fontSize = '12px';
-        label.style.fontWeight = '500';
-        label.style.color = '#9CA3AF';
-      });
-      
-      // メトリクス値
-      const values = devMonitorPanel.querySelectorAll('.dev-metric-value');
-      values.forEach(value => {
-        if (!value.classList.contains('recommendation-highlight') && 
-            !value.classList.contains('confidence-highlight')) {
-          value.style.fontSize = '13px';
-          value.style.color = '#E5E7EB';
-        }
-      });
-      
-      // ログエントリ
-      const logEntries = devMonitorPanel.querySelectorAll('.dev-log-entry, .dev-log-timestamp, .dev-log-message');
-      logEntries.forEach(entry => {
-        entry.style.fontSize = '12px';
-      });
-    }
-    
-    // 完了ログも削減
-    if (Math.random() < 0.02) {
-      logOnce('ui_improvements_complete', "✅ UI improvements complete");
-    }
-  }
+  // =============================================================================
+  // 🖥️ TaskH2-2(B2-3) Stage 2 Phase 6: applyDevMonitorUIImprovements() 関数分離
+  // =============================================================================
+  // 📅 分離日: 2025年7月20日
+  // 📁 分離先: static/js/admin/monitoring_functions.js
+  // 📊 分離行数: 73行 (Lines 2082-2154)
+  //
+  // 🎯 分離された機能: 開発監視パネルのUI改善処理  
+  // ⚠️ 分離理由: Stage 1 Phase 4でHTMLパネル削除により完全なデッドコード化
+  // 🔮 依存要素: #devMonitorPanel, .reasoning-text, #recommendationReasoning,
+  //           .dev-section-title, .dev-metric-label, .dev-metric-value, .dev-log-entry
+  // 🔧 復活方法: 監視パネル復活時に外部ファイルをincludeして使用
+  // =============================================================================
 
   // ページロード時に開発者パネルを初期化
   document.addEventListener('DOMContentLoaded', function() {
@@ -3086,11 +1858,13 @@ window.currentLabels = {
     // 🚨 6回目修正：間隔を10秒に延長（スパムログ対策）
     setInterval(forceApiCircleSize, 10000);
     
-    // 🎨 Dev Monitor UI改善の適用
-    applyDevMonitorUIImprovements();
-    
-    // 🎨 30秒ごとにUI改善を再適用（スパムログ対策）
-    setInterval(applyDevMonitorUIImprovements, 30000);
+    // =============================================================================
+    // 🖥️ TaskH2-2(B2-3) Stage 2 Phase 6: applyDevMonitorUIImprovements() 呼び出し削除
+    // =============================================================================
+    // 📅 削除日: 2025年7月20日
+    // ⚠️ 削除理由: 関数が外部ファイルに分離され、監視パネルも削除済みのため
+    // 🔧 復活方法: 監視パネル復活時に外部ファイルinclude + 呼び出し復活
+    // =============================================================================
     
     // 入力フィールドの変更を監視（Rate Limit対策のため監視のみ）
     const inputField = document.getElementById('japanese_text');
@@ -3170,9 +1944,40 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
     }
   }
 
+  // === 開発監視パネル削除に伴うスタブ実装 ===
+  // 最小限のスタブ実装
+  function addDevLogEntry(type, action, message) {
+    if (typeof console !== 'undefined') {
+      console.log(`[${type.toUpperCase()}] ${action}: ${message}`);
+    }
+  }
+
+  function updateUserDisplay() {
+    // 開発監視パネル削除済みのため空実装
+  }
+  // === スタブ実装終了 ===
+
 </script>
 
 <!-- Task H2-2(B2-3) Stage 1 Phase 2: 分離されたニュアンス分析内部処理関数 -->
 <script src="{{ url_for('static', filename='js/components/analysis/nuance_analysis_internal.js') }}"></script>
+
+<!-- Task H2-2(B2-3) Stage 2 Phase 5: 分離されたユーティリティ関数群 -->
+<script src="{{ url_for('static', filename='js/utilities/utility_functions.js') }}"></script>
+
+<!-- TaskH2-2(B2-3) Stage 2 Phase 6: 監視パネル関連関数（将来復活用） -->
+<!-- 
+<script src="{{ url_for('static', filename='js/admin/monitoring_functions.js') }}"></script>
+-->
+
+<!-- TaskH2-2(B2-3) Stage 2 Phase 7: エンジン選択システム責務分離モジュール -->
+<script src="{{ url_for('static', filename='js/engine/engine_api_client.js') }}"></script>
+<script src="{{ url_for('static', filename='js/engine/engine_ui_controller.js') }}"></script>
+
+<!-- TaskH2-2(B2-3) Stage 3 Phase 8a: リセット機能統合制御モジュール -->
+<script src="{{ url_for('static', filename='js/ui/reset_controller.js') }}"></script>
+
+<!-- TaskH2-2(B2-3) Stage 3 Phase 8b: チャット機能統合制御モジュール -->
+<script src="{{ url_for('static', filename='js/ui/chat_controller.js') }}"></script>
 
 {% endblock %}

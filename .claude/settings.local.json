@@ -67,7 +67,9 @@
       "Bash(rm:*)",
       "Bash(EMERGENCY_BACKUP=\"/Users/shintaro_imac_2/langpont_backups/langpont_EMERGENCY_RESTORE\")",
       "Bash(du:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(# 2025年6月のセッション履歴を抽出\nsed -n ''1456,3496p'' CLAUDE.md > CLAUDE_HISTORY_202506.md\n\n# ファイルの先頭に説明を追加\n{\n  echo \"\"# LangPont プロジェクト - Claude Code 作業履歴 (2025年6月)\"\"\n  echo \"\"\"\"\n  echo \"\"このファイルは、CLAUDE.mdから分割された2025年6月のセッション履歴です。\"\"\n  echo \"\"分割日: 2025年7月20日\"\"\n  echo \"\"\"\"\n  echo \"\"---\"\"\n  echo \"\"\"\"\n  cat CLAUDE_HISTORY_202506.md\n} > temp_june.md && mv temp_june.md CLAUDE_HISTORY_202506.md)",
+      "Bash(# 2025年7月のセッション履歴を抽出（最新セッションまで含む）\nsed -n ''9,1455p'' CLAUDE.md > july_part1.tmp\nsed -n ''3497,$p'' CLAUDE.md > july_part2.tmp\n\n# 7月履歴ファイルを作成\n{\n  echo \"\"# LangPont プロジェクト - Claude Code 作業履歴 (2025年7月)\"\"\n  echo \"\"\"\"\n  echo \"\"このファイルは、CLAUDE.mdから分割された2025年7月のセッション履歴です。\"\"\n  echo \"\"分割日: 2025年7月20日\"\"\n  echo \"\"\"\"\n  echo \"\"---\"\"\n  echo \"\"\"\"\n  cat july_part1.tmp\n  cat july_part2.tmp\n} > CLAUDE_HISTORY_202507.md\n\nrm july_part1.tmp july_part2.tmp)"
     ],
     "deny": []
   }

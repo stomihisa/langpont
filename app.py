@@ -61,6 +61,9 @@ from translation.analysis_engine import AnalysisEngineManager
 # 🆕 Task B2-10-Phase1c: 翻訳エキスパートAI安全部分分離
 from translation.expert_ai import LangPontTranslationExpertAI
 
+# 🎯 TaskH2-2(B2-3) Stage 2 Phase 7: エンジン状態管理モジュール統合
+from routes.engine_management import create_engine_management_blueprint
+
 # 🆕 認証システムインポート（緊急デバッグ版）
 try:
     from user_auth import UserAuthSystem
@@ -252,6 +255,18 @@ try:
         print("✅ Phase 4b-3: Landing routes Blueprint registered successfully")
     except ImportError as e:
         print(f"❌ Phase 4b-3: Landing routes Blueprint import failed: {e}")
+
+    # 🎯 TaskH2-2(B2-3) Stage 2 Phase 7: エンジン管理Blueprint登録
+    try:
+        engine_management_bp = create_engine_management_blueprint(
+            app_logger=app_logger,
+            log_access_event=log_access_event,
+            require_rate_limit=require_rate_limit
+        )
+        app.register_blueprint(engine_management_bp)
+        print("✅ Phase 7: Engine management Blueprint registered successfully")
+    except ImportError as e:
+        print(f"❌ Phase 7: Engine management Blueprint import failed: {e}")
 
     print("✅ Phase B-1: 管理者システム統合完了")
     ADMIN_SYSTEM_AVAILABLE = True
@@ -2494,41 +2509,25 @@ def save_gemini_analysis_to_db(session_id: str, analysis_result: str, recommenda
             pass
         return False
 
-@app.route("/set_analysis_engine", methods=["POST"])
-@require_rate_limit
-def set_analysis_engine():
-    """分析エンジンを設定するエンドポイント"""
-    try:
-        data = request.get_json() or {}
-        engine = data.get("engine", "gemini")
-
-        # 有効なエンジンのリスト
-        valid_engines = ["gemini", "claude", "gpt4", "openai", "chatgpt"]
-
-        if engine not in valid_engines:
-            return jsonify({
-                "success": False,
-                "error": f"無効なエンジン: {engine}. 有効なエンジン: {', '.join(valid_engines)}"
-            }), 400
-
-        # セッションにエンジンを保存
-        session["analysis_engine"] = engine
-
-        app_logger.info(f"Analysis engine set to: {engine}")
-        log_access_event(f'Analysis engine changed to: {engine}')
-
-        return jsonify({
-            "success": True,
-            "engine": engine,
-            "message": f"分析エンジンを{engine}に設定しました"
-        })
-
-    except Exception as e:
-        app_logger.error(f"Set analysis engine error: {str(e)}")
-        return jsonify({
-            "success": False,
-            "error": str(e)
-        }), 500
+# =============================================================================
+# 🎯 TaskH2-2(B2-3) Stage 2 Phase 7: set_analysis_engine() 責務分離
+# =============================================================================
+# 📅 分離日: 2025年7月20日
+# 📁 分離先: routes/engine_management.py
+# 📊 分離行数: 35行 (Lines 2497-2531)
+#
+# 🎯 分離理由: サーバー層の純粋な状態管理として独立化
+# ✅ 分離された責務: 
+#    - エンジン状態管理のみ
+#    - セッション更新のみ
+#    - バリデーションのみ
+# ❌ 除外された責務:
+#    - UI操作なし
+#    - DOM操作なし
+#
+# 🔧 復活方法: routes/engine_management.py のBlueprintとして統合済み
+# 🔗 エンドポイント: /set_analysis_engine (同一URL維持)
+# =============================================================================
 
 @app.route("/get_nuance", methods=["POST"])
 @require_rate_limit
