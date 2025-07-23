@@ -666,7 +666,8 @@ window.currentLabels = {
   // showLoading() and hideLoading() functions moved to state_manager.js
 
   function quickClearResults() {
-    const criticalElements = ["translated-text", "reverse-translated-text"];
+    // 🆕 Phase B-3: translated-text を除外（StateManager管理下のため）
+    const criticalElements = ["reverse-translated-text"];  // translated-text を除外
     
     criticalElements.forEach(id => {
       const element = document.getElementById(id);
@@ -675,15 +676,11 @@ window.currentLabels = {
       }
     });
     
-    logOnce('quick_clear_results', "🧹 軽量版: 重要エリアをクリアしました");
+    logOnce('quick_clear_results', "🧹 Phase B-3: reverse-translated-textをクリアしました（translated-textは除外）");
   }
 
-  function setQuickProcessingState() {
-    const translatedText = document.getElementById("translated-text");
-    if (translatedText) {
-      translatedText.innerText = window.currentLabels.loading_text || "翻訳中...";
-    }
-  }
+  // 🆕 Phase B-2: setQuickProcessingState() 関数を完全削除
+  // Loading表示責任はStateManagerのshowLoading()に統一
 
   function displayChatGPTResultsFast(data) {
     const translatedText = document.getElementById("translated-text");
@@ -810,6 +807,13 @@ window.currentLabels = {
     
     try {
       showLoading();
+      
+      // 🆕 Phase B-4: Single Source of Truth - translated-textにloading表示
+      const translatedTextElement = document.getElementById("translated-text");
+      if (translatedTextElement) {
+        translatedTextElement.innerText = window.currentLabels.loading_text || "翻訳中...";
+      }
+      
       const startTime = performance.now();
       
       quickClearResults();
@@ -839,7 +843,8 @@ window.currentLabels = {
       }
       {% endif %}
       
-      setQuickProcessingState();
+      // 🆕 Phase B-2: setQuickProcessingState() 呼び出しを削除
+      // Loading表示はshowLoading()で既に実行済み
       
       const response = await fetch("/translate_chatgpt", {
         method: "POST",
