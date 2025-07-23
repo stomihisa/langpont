@@ -174,6 +174,16 @@ async function askInteractiveQuestion() {
       showToast(window.currentLabels.api_error_general || 'Server error occurred', 'error');
     }
   } catch (error) {
+    // 🆕 Phase C: StateManager統合
+    if (window.integrateErrorWithStateManager) {
+      window.integrateErrorWithStateManager(error, {
+        function: 'askInteractiveQuestion',
+        apiType: 'interactiveQuestion',
+        location: 'question_handler.js'
+      });
+    }
+    
+    // 既存のエラー処理継続
     console.error('❌ [QUESTION] Fetch error occurred:');
     console.error('  - Error message:', error.message);
     console.error('  - Error stack:', error.stack);

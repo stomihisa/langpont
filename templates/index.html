@@ -218,6 +218,38 @@ window.currentLabels = {
 <script src="{{ url_for('static', filename='js/interactive/question_handler.js') }}"></script>
 <script src="{{ url_for('static', filename='js/interactive/chat_manager.js') }}"></script>
 <script>
+  // 🔧 Phase C: Global Error Integration Wrapper
+  window.integrateErrorWithStateManager = function(error, context) {
+    // Error classification
+    let errorType = 'unknown_error';
+    const msg = error.message ? error.message.toLowerCase() : '';
+    
+    if (msg.includes('fetch') || msg.includes('network')) {
+      errorType = 'network_error';
+    } else if (msg.includes('json') || msg.includes('parse')) {
+      errorType = 'parse_error';
+    } else if (msg.includes('timeout')) {
+      errorType = 'timeout_error';
+    } else if (msg.includes('abort')) {
+      errorType = 'abort_error';
+    }
+    
+    // StateManager integration (using existing Phase A function)
+    if (window.stateManager && window.stateManager.handleApiError) {
+      window.stateManager.handleApiError(error, {
+        ...context,
+        errorType: errorType,
+        timestamp: new Date().toISOString(),
+        errorMessage: error.message || 'Unknown error'
+      });
+    }
+    
+    console.log('🔧 Phase C: Error integrated with StateManager', { 
+      context: context, 
+      errorType: errorType 
+    });
+  };
+
   // 🆕 2分割言語選択システム
   // function updateLanguagePair() - 🎯 Task B2-2 Phase 2-2: Moved to static/js/main.js
 
@@ -248,6 +280,15 @@ window.currentLabels = {
     try {
       initializeLanguageSelector();
     } catch (error) {
+      // 🆕 Phase C: StateManager統合
+      window.integrateErrorWithStateManager(error, {
+        function: 'initializePage',
+        apiType: 'initialization',
+        location: 'index.html',
+        component: 'languageSelector'
+      });
+      
+      // 既存のエラー処理継続
       console.error('Language selector initialization failed:', error);
     }
     
@@ -255,6 +296,15 @@ window.currentLabels = {
     try {
       initializeChatHistory();
     } catch (error) {
+      // 🆕 Phase C: StateManager統合
+      window.integrateErrorWithStateManager(error, {
+        function: 'initializePage',
+        apiType: 'initialization',
+        location: 'index.html',
+        component: 'chatHistory'
+      });
+      
+      // 既存のエラー処理継続
       console.error('Chat history initialization failed:', error);
     }
     
@@ -262,6 +312,15 @@ window.currentLabels = {
     try {
       initializeAnalysisEngine();
     } catch (error) {
+      // 🆕 Phase C: StateManager統合
+      window.integrateErrorWithStateManager(error, {
+        function: 'initializePage',
+        apiType: 'initialization',
+        location: 'index.html',
+        component: 'analysisEngine'
+      });
+      
+      // 既存のエラー処理継続
       console.error('Analysis engine initialization failed:', error);
     }
     
@@ -749,6 +808,14 @@ window.currentLabels = {
         betterTranslationElement.innerText = `[改善翻訳エラー: ${improveData.error || "不明なエラー"}]`;
       }
     } catch (error) {
+      // 🆕 Phase C: StateManager統合
+      window.integrateErrorWithStateManager(error, {
+        function: 'processImprovedTranslationAsync',
+        apiType: 'improveTranslation',
+        location: 'index.html'
+      });
+      
+      // 既存のエラー処理継続
       logOnce('improved_translation_error', `改善翻訳処理エラー: ${error.message}`, 'error');
       const betterTranslationElement = document.getElementById("better-translation");
       if (betterTranslationElement) {
@@ -790,6 +857,14 @@ window.currentLabels = {
         }
       }
     } catch (reverseErr) {
+      // 🆕 Phase C: StateManager統合
+      window.integrateErrorWithStateManager(reverseErr, {
+        function: 'processReverseBetterTranslationAsync',
+        apiType: 'reverseBetterTranslation',
+        location: 'index.html'
+      });
+      
+      // 既存のエラー処理継続
       logOnce('reverse_better_error', `改善翻訳の逆翻訳エラー: ${reverseErr.message}`, 'error');
       const reverseBetterElement = document.getElementById("reverse-better-translation");
       if (reverseBetterElement) {
@@ -951,6 +1026,14 @@ window.currentLabels = {
       logOnce(`early_access_complete_${requestId}`, `⏱ Early Access版翻訳処理完了[${requestId}]: ${Math.round(performance.now() - startTime)}ms`);
       
     } catch (error) {
+      // 🆕 Phase C: StateManager統合
+      window.integrateErrorWithStateManager(error, {
+        function: 'runFastTranslation',
+        apiType: 'translateChatGPT',
+        location: 'index.html'
+      });
+      
+      // 既存のエラー処理継続
       logOnce('early_access_error', `Early Access版翻訳エラー: ${error.message}`, 'error');
       
       // 🚀 翻訳エラーを監視システムに記録
@@ -1562,6 +1645,14 @@ window.currentLabels = {
 
       return null;
     } catch (error) {
+      // 🆕 Phase C: StateManager統合
+      window.integrateErrorWithStateManager(error, {
+        function: 'extractGeminiImprovedTranslation',
+        apiType: 'parseResponse',
+        location: 'index.html'
+      });
+      
+      // 既存のエラー処理継続
       console.error('改良版翻訳抽出エラー:', error);
       return null;
     }
@@ -1945,6 +2036,14 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
       }, 200);
       
     } catch (error) {
+      // 🆕 Phase C: StateManager統合
+      window.integrateErrorWithStateManager(error, {
+        function: 'debugAdminButton',
+        apiType: 'navigation',
+        location: 'index.html'
+      });
+      
+      // 既存のエラー処理継続
       console.error("🚨 DEBUG: Error in admin button:", error);
       alert("管理者ボタンエラー: " + error.message);
     }
