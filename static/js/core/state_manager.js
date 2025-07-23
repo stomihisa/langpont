@@ -56,7 +56,21 @@ class StateManager {
       // 🆕 Phase C: エラー状態管理追加
       error: false,
       lastError: null,
-      errorHistory: []
+      errorHistory: [],
+      
+      // 🆕 Phase 9d: フォーム状態管理追加
+      form: {
+        isDirty: false,
+        fields: {
+          japanese_text: { value: '', isDirty: false, originalValue: '' },
+          context_info: { value: '', isDirty: false, originalValue: '' },
+          partner_message: { value: '', isDirty: false, originalValue: '' },
+          language_pair: { value: 'ja-en', isDirty: false, originalValue: 'ja-en' },
+          analysis_engine: { value: '', isDirty: false, originalValue: '' }
+        },
+        lastSaved: null,
+        validationErrors: {}
+      }
     };
     
     // 初期化
@@ -98,6 +112,24 @@ class StateManager {
       improvedPanel: document.getElementById('gemini-improved-result')
     };
     
+    // Phase 9d: フォーム要素
+    this.formElements = {
+      japanese_text: document.getElementById('japanese_text'),
+      context_info: document.querySelector('[name="context_info"]'),
+      partner_message: document.querySelector('[name="partner_message"]'),
+      language_pair: document.getElementById('language_pair'),
+      analysis_engine: document.getElementById('analysis_engine')
+    };
+    
+    // Phase 9d: フォームイベントリスナーの設定
+    this.initFormEventListeners();
+    
+    // Phase 9d: ページ離脱時の警告設定
+    this.initBeforeUnloadHandler();
+    
+    // Phase 9d: ページ読み込み時のセッション復元
+    this.loadFormFromSession();
+    
     this.initialized = !!this.loadingElement;
     
     if (this.initialized) {
@@ -111,6 +143,48 @@ class StateManager {
     }
   }
 
+  /**
+   * Phase 9d: フォームイベントリスナーの初期化
+   */
+  initFormEventListeners() {
+    Object.keys(this.formElements).forEach(fieldName => {
+      const element = this.formElements[fieldName];
+      if (element) {
+        // 初期値を設定
+        const initialValue = element.value || '';
+        this.setFormFieldValue(fieldName, initialValue, true);
+        
+        // inputイベントリスナーを追加
+        element.addEventListener('input', (e) => {
+          this.setFormFieldValue(fieldName, e.target.value);
+        });
+        
+        // changeイベントリスナーも追加（select要素等）
+        element.addEventListener('change', (e) => {
+          this.setFormFieldValue(fieldName, e.target.value);
+        });
+      }
+    });
+    
+    console.log('🔧 StateManager: Form event listeners initialized');
+  }
+  
+  /**
+   * Phase 9d: ページ離脱時の警告ハンドラー初期化
+   */
+  initBeforeUnloadHandler() {
+    window.addEventListener('beforeunload', (e) => {
+      const warning = this.beforeUnloadWarning();
+      if (warning) {
+        e.preventDefault();
+        e.returnValue = warning; // 標準仕様
+        return warning; // レガシー対応
+      }
+    });
+    
+    console.log('🔧 StateManager: Before unload handler initialized');
+  }
+  
   /**
    * Loading状態を表示
    * 元: showLoading() (index.html lines 665-668)
@@ -525,10 +599,217 @@ class StateManager {
   }
 
   /**
+   * Phase 9d: フォーム状態管理メソッド群
+   */
+  
+  /**
+   * フォーム状態の取得
+   * @returns {Object} - フォーム状態全体
+   */
+  getFormState() {
+    return {
+      isDirty: this.states.form.isDirty,
+      fields: { ...this.states.form.fields },
+      lastSaved: this.states.form.lastSaved,
+      validationErrors: { ...this.states.form.validationErrors }
+    };
+  }
+  
+  /**
+   * フォームフィールドの値を設定
+   * @param {string} fieldName - フィールド名
+   * @param {string} value - 設定する値
+   * @param {boolean} updateOriginal - 元の値も更新するか
+   */
+  setFormFieldValue(fieldName, value, updateOriginal = false) {
+    if (!this.states.form.fields[fieldName]) {
+      console.warn(`🔧 StateManager: Unknown form field: ${fieldName}`);
+      return;
+    }
+    
+    const field = this.states.form.fields[fieldName];
+    field.value = value;
+    
+    // 元の値と比較してdirty状態を更新
+    field.isDirty = value !== field.originalValue;
+    
+    if (updateOriginal) {
+      field.originalValue = value;
+      field.isDirty = false;
+    }
+    
+    // フォーム全体のdirty状態を更新
+    this.updateFormDirtyState();
+    
+    console.log(`🔧 StateManager: Form field updated - ${fieldName}:`, {
+      value: value.substring(0, 50) + (value.length > 50 ? '...' : ''),
+      isDirty: field.isDirty
+    });
+  }
+  
+  /**
+   * フォームデータ一括取得
+   * @returns {Object} - フォームフィールドの値のみ
+   */
+  getFormData() {
+    const data = {};
+    Object.keys(this.states.form.fields).forEach(fieldName => {
+      data[fieldName] = this.states.form.fields[fieldName].value;
+    });
+    return data;
+  }
+  
+  /**
+   * フォームデータ一括設定
+   * @param {Object} data - 設定するフォームデータ
+   * @param {boolean} updateOriginal - 元の値も更新するか
+   */
+  setFormData(data, updateOriginal = false) {
+    Object.keys(data).forEach(fieldName => {
+      if (this.states.form.fields[fieldName]) {
+        this.setFormFieldValue(fieldName, data[fieldName], updateOriginal);
+      }
+    });
+    
+    if (updateOriginal) {
+      this.states.form.lastSaved = new Date().toISOString();
+    }
+  }
+  
+  /**
+   * フォーム状態のリセット
+   * @param {boolean} clearValues - 値もクリアするか
+   */
+  resetFormState(clearValues = true) {
+    Object.keys(this.states.form.fields).forEach(fieldName => {
+      const field = this.states.form.fields[fieldName];
+      if (clearValues) {
+        field.value = '';
+        field.originalValue = '';
+      } else {
+        // 値はそのままで、dirty状態だけリセット
+        field.originalValue = field.value;
+      }
+      field.isDirty = false;
+    });
+    
+    this.states.form.isDirty = false;
+    this.states.form.validationErrors = {};
+    
+    console.log('🔧 StateManager: Form state reset', { clearValues });
+  }
+  
+  /**
+   * フォーム全体のdirty状態を更新
+   * @private
+   */
+  updateFormDirtyState() {
+    this.states.form.isDirty = Object.values(this.states.form.fields)
+      .some(field => field.isDirty);
+  }
+  
+  /**
+   * フォームフィールドの値を取得
+   * @param {string} fieldName - フィールド名
+   * @returns {string|null} - フィールドの値
+   */
+  getFormFieldValue(fieldName) {
+    if (!this.states.form.fields[fieldName]) {
+      console.warn(`🔧 StateManager: Unknown form field: ${fieldName}`);
+      return null;
+    }
+    return this.states.form.fields[fieldName].value;
+  }
+  
+  /**
+   * フォームのdirty状態を取得
+   * @returns {boolean} - フォームが変更されているか
+   */
+  isFormDirty() {
+    return this.states.form.isDirty;
+  }
+  
+  /**
+   * Phase 9d: セッション連携メソッド群
+   */
+  
+  /**
+   * フォーム状態をローカルストレージに保存
+   * @param {string} key - 保存キー（オプション）
+   */
+  saveFormToSession(key = 'langpont_form_state') {
+    try {
+      const formData = this.getFormData();
+      localStorage.setItem(key, JSON.stringify({
+        data: formData,
+        timestamp: new Date().toISOString(),
+        isDirty: this.states.form.isDirty
+      }));
+      
+      console.log('🔧 StateManager: Form state saved to session');
+    } catch (error) {
+      console.error('🚨 StateManager: Failed to save form to session:', error);
+    }
+  }
+  
+  /**
+   * ローカルストレージからフォーム状態を復元
+   * @param {string} key - 復元キー（オプション）
+   * @returns {boolean} - 復元に成功したか
+   */
+  loadFormFromSession(key = 'langpont_form_state') {
+    try {
+      const saved = localStorage.getItem(key);
+      if (!saved) return false;
+      
+      const { data, timestamp, isDirty } = JSON.parse(saved);
+      
+      // セッションデータをフォームに復元
+      this.setFormData(data, true); // 復元時はoriginalValueも更新
+      
+      console.log('🔧 StateManager: Form state loaded from session', {
+        timestamp,
+        fieldsCount: Object.keys(data).length
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('🚨 StateManager: Failed to load form from session:', error);
+      return false;
+    }
+  }
+  
+  /**
+   * セッション状態をクリア
+   * @param {string} key - クリアキー（オプション）
+   */
+  clearFormSession(key = 'langpont_form_state') {
+    try {
+      localStorage.removeItem(key);
+      console.log('🔧 StateManager: Form session cleared');
+    } catch (error) {
+      console.error('🚨 StateManager: Failed to clear form session:', error);
+    }
+  }
+  
+  /**
+   * ページ離脱時の確認
+   * @returns {string|undefined} - 確認メッセージまたはundefined
+   */
+  beforeUnloadWarning() {
+    if (this.states.form.isDirty) {
+      const message = '未保存の変更があります。ページを離れますか？';
+      // 自動保存
+      this.saveFormToSession();
+      return message;
+    }
+    return undefined;
+  }
+  
+  /**
    * 将来の拡張用メソッド（Phase 9b以降）
    */
   // setTranslatingState(state) { ... }
-  // setFormDirtyState(state) { ... }
   // getState(key) { ... }
   // setState(key, value) { ... }
 }
@@ -625,5 +906,51 @@ window.integrateErrorWithStateManager = function(error, context) {
   }
 };
 
+// 🆕 Phase 9d: フォーム管理のwrap関数
+window.getFormData = function() {
+  console.log('getFormData() called - redirecting to StateManager');
+  return window.stateManager.getFormData();
+};
+
+window.setFormData = function(data, updateOriginal = false) {
+  console.log('setFormData() called - redirecting to StateManager');
+  return window.stateManager.setFormData(data, updateOriginal);
+};
+
+window.getFormFieldValue = function(fieldName) {
+  console.log(`getFormFieldValue(${fieldName}) called - redirecting to StateManager`);
+  return window.stateManager.getFormFieldValue(fieldName);
+};
+
+window.setFormFieldValue = function(fieldName, value, updateOriginal = false) {
+  console.log(`setFormFieldValue(${fieldName}) called - redirecting to StateManager`);
+  return window.stateManager.setFormFieldValue(fieldName, value, updateOriginal);
+};
+
+window.resetFormState = function(clearValues = true) {
+  console.log('resetFormState() called - redirecting to StateManager');
+  return window.stateManager.resetFormState(clearValues);
+};
+
+window.isFormDirty = function() {
+  return window.stateManager.isFormDirty();
+};
+
+window.saveFormToSession = function(key) {
+  console.log('saveFormToSession() called - redirecting to StateManager');
+  return window.stateManager.saveFormToSession(key);
+};
+
+window.loadFormFromSession = function(key) {
+  console.log('loadFormFromSession() called - redirecting to StateManager');
+  return window.stateManager.loadFormFromSession(key);
+};
+
+window.clearFormSession = function(key) {
+  console.log('clearFormSession() called - redirecting to StateManager');
+  return window.stateManager.clearFormSession(key);
+};
+
+console.log('🎯 StateManager Phase 9d Form Management ready');
 console.log('🎯 StateManager Phase C Error Integration ready');
 console.log('🎯 StateManager Phase 9c API State Management ready');
