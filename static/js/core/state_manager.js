@@ -6,6 +6,16 @@
  * 移動理由: 状態管理の一元化、将来的な拡張性確保
  */
 
+// Phase C: Error handling constants
+const ERROR_TYPES = {
+  NETWORK_ERROR: 'network_error',
+  PARSE_ERROR: 'parse_error', 
+  TIMEOUT_ERROR: 'timeout_error',
+  ABORT_ERROR: 'abort_error',
+  API_ERROR: 'api_error',
+  UNKNOWN_ERROR: 'unknown_error'
+};
+
 /**
  * StateManager Class
  * DOM状態、セッション状態、API状態の統合管理
@@ -41,7 +51,12 @@ class StateManager {
         translateChatGPT: false,
         interactiveQuestion: false,
         nuanceAnalysis: false
-      }
+      },
+      
+      // 🆕 Phase C: エラー状態管理追加
+      error: false,
+      lastError: null,
+      errorHistory: []
     };
     
     // 初期化
@@ -408,6 +423,108 @@ class StateManager {
   }
 
   /**
+   * Phase C: API エラーの統一処理
+   * @param {Error} error - エラーオブジェクト
+   * @param {Object} context - エラーコンテキスト情報
+   */
+  handleApiError(error, context = {}) {
+    try {
+      // エラー情報の構築
+      const errorInfo = {
+        timestamp: new Date().toISOString(),
+        message: error.message || 'Unknown error',
+        stack: error.stack,
+        context: context,
+        errorType: context.errorType || ERROR_TYPES.UNKNOWN_ERROR
+      };
+      
+      // エラー状態の更新
+      this.states.error = true;
+      this.states.lastError = errorInfo;
+      this.states.errorHistory.push(errorInfo);
+      
+      // エラー履歴のサイズ制限（最新20件のみ保持）
+      if (this.states.errorHistory.length > 20) {
+        this.states.errorHistory = this.states.errorHistory.slice(-20);
+      }
+      
+      // コンソールログ出力（統一フォーマット）
+      console.error('🔧 StateManager: API Error Processed', {
+        function: context.function || 'unknown',
+        apiType: context.apiType || 'unknown',
+        location: context.location || 'unknown',
+        errorType: errorInfo.errorType,
+        message: errorInfo.message,
+        timestamp: errorInfo.timestamp
+      });
+      
+      // UI通知（showToast使用）
+      if (typeof showToast === 'function') {
+        const userMessage = this.formatErrorMessage(errorInfo);
+        showToast(userMessage, 'error');
+      }
+      
+      // Loading状態のクリア（エラー時は確実にLoading解除）
+      if (this.states.loading) {
+        this.hideLoading();
+      }
+      
+      return errorInfo;
+      
+    } catch (handlingError) {
+      console.error('🚨 StateManager: Error in handleApiError:', handlingError);
+      return null;
+    }
+  }
+
+  /**
+   * エラーメッセージのユーザー向けフォーマット
+   * @param {Object} errorInfo - エラー情報
+   * @returns {string} - ユーザー向けメッセージ
+   */
+  formatErrorMessage(errorInfo) {
+    const { errorType, context } = errorInfo;
+    
+    switch (errorType) {
+      case ERROR_TYPES.NETWORK_ERROR:
+        return 'ネットワークエラーが発生しました。接続を確認してください。';
+      case ERROR_TYPES.TIMEOUT_ERROR:
+        return 'タイムアウトが発生しました。しばらく待ってから再試行してください。';
+      case ERROR_TYPES.PARSE_ERROR:
+        return 'データの処理中にエラーが発生しました。';
+      case ERROR_TYPES.API_ERROR:
+        return `${context.apiType || 'API'}でエラーが発生しました。`;
+      default:
+        return 'エラーが発生しました。しばらく待ってから再試行してください。';
+    }
+  }
+
+  /**
+   * エラー状態のクリア
+   * @param {string} source - エラーソース（オプション）
+   */
+  clearError(source = null) {
+    this.states.error = false;
+    this.states.lastError = null;
+    
+    console.log('🔧 StateManager: Error state cleared', { source });
+  }
+
+  /**
+   * 現在のエラー状態取得
+   * @param {string} source - エラーソース（オプション）
+   * @returns {Object} - エラー状態情報
+   */
+  getErrorState(source = null) {
+    return {
+      hasError: this.states.error,
+      lastError: this.states.lastError,
+      errorCount: this.states.errorHistory.length,
+      source: source
+    };
+  }
+
+  /**
    * 将来の拡張用メソッド（Phase 9b以降）
    */
   // setTranslatingState(state) { ... }
@@ -498,4 +615,15 @@ window.resetAllApiCalls = function() {
 window._originalShowLoading = originalShowLoading;
 window._originalHideLoading = originalHideLoading;
 
+// 🆕 Phase C: エラー処理統合
+window.integrateErrorWithStateManager = function(error, context) {
+  if (window.stateManager && typeof window.stateManager.handleApiError === 'function') {
+    return window.stateManager.handleApiError(error, context);
+  } else {
+    console.error('🚨 StateManager not available for error handling:', error);
+    return null;
+  }
+};
+
+console.log('🎯 StateManager Phase C Error Integration ready');
 console.log('🎯 StateManager Phase 9c API State Management ready');
