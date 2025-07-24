@@ -133,10 +133,8 @@ class StateManager {
     this.initialized = !!this.loadingElement;
     
     if (this.initialized) {
-      console.log('📊 StateManager initialized successfully (Phase 9b) - Complete state management integrated');
       // 初期化完了後にステータス表示
       setTimeout(() => {
-        console.log('📊 StateManager Status:', this.getStatus());
       }, 0);
     } else {
       console.warn('⚠️ StateManager: Loading element not found - fallback mode');
@@ -166,7 +164,6 @@ class StateManager {
       }
     });
     
-    console.log('🔧 StateManager: Form event listeners initialized');
   }
   
   /**
@@ -182,7 +179,6 @@ class StateManager {
       }
     });
     
-    console.log('🔧 StateManager: Before unload handler initialized');
   }
   
   /**
@@ -440,23 +436,17 @@ class StateManager {
    * StateManager動作テスト（開発用）
    */
   testStateManager() {
-    console.log('🧪 StateManager Phase 9b Test Methods Available:');
-    console.log('- getStatus():', this.getStatus());
-    console.log('🧪 Testing Phase 9a (Loading control)...');
     
     // Phase 9a テスト
     this.showLoading();
     setTimeout(() => {
       this.hideLoading();
-      console.log('✅ Phase 9a test completed');
       
       // Phase 9b テスト開始
-      console.log('🧪 Testing Phase 9b (Complete state management)...');
       
       // 翻訳状態テスト
       this.startTranslation();
       setTimeout(() => {
-        console.log('Translation in progress:', this.isTranslationInProgress());
         this.completeTranslation();
         
         // 結果カードテスト
@@ -469,25 +459,17 @@ class StateManager {
           setTimeout(() => {
             this.hideUIElement('analysisEngineTrigger');
             
-            console.log('🧪 StateManager Phase 9b test cycle completed');
             
             // Phase 9c テスト開始
-            console.log('🧪 Testing Phase 9c (API State Management)...');
             
             // API状態テスト
-            console.log('API State Before:', this.states.apiCalling);
             
             const canStart = this.startApiCall('translateChatGPT');
-            console.log('First API call allowed:', canStart);
             
             const canStartDouble = this.startApiCall('translateChatGPT');
-            console.log('Double API call prevented:', !canStartDouble);
             
             this.completeApiCall('translateChatGPT');
-            console.log('API State After Complete:', this.states.apiCalling);
             
-            console.log('🧪 StateManager Phase 9c test cycle completed');
-            console.log('📊 Final status:', this.getStatus());
           }, 200);
         }, 200);
       }, 200);
@@ -581,7 +563,6 @@ class StateManager {
     this.states.error = false;
     this.states.lastError = null;
     
-    console.log('🔧 StateManager: Error state cleared', { source });
   }
 
   /**
@@ -641,10 +622,6 @@ class StateManager {
     // フォーム全体のdirty状態を更新
     this.updateFormDirtyState();
     
-    console.log(`🔧 StateManager: Form field updated - ${fieldName}:`, {
-      value: value.substring(0, 50) + (value.length > 50 ? '...' : ''),
-      isDirty: field.isDirty
-    });
   }
   
   /**
@@ -696,7 +673,6 @@ class StateManager {
     this.states.form.isDirty = false;
     this.states.form.validationErrors = {};
     
-    console.log('🔧 StateManager: Form state reset', { clearValues });
   }
   
   /**
@@ -746,7 +722,6 @@ class StateManager {
         isDirty: this.states.form.isDirty
       }));
       
-      console.log('🔧 StateManager: Form state saved to session');
     } catch (error) {
       console.error('🚨 StateManager: Failed to save form to session:', error);
     }
@@ -767,10 +742,6 @@ class StateManager {
       // セッションデータをフォームに復元
       this.setFormData(data, true); // 復元時はoriginalValueも更新
       
-      console.log('🔧 StateManager: Form state loaded from session', {
-        timestamp,
-        fieldsCount: Object.keys(data).length
-      });
       
       return true;
     } catch (error) {
@@ -786,7 +757,6 @@ class StateManager {
   clearFormSession(key = 'langpont_form_state') {
     try {
       localStorage.removeItem(key);
-      console.log('🔧 StateManager: Form session cleared');
     } catch (error) {
       console.error('🚨 StateManager: Failed to clear form session:', error);
     }
@@ -825,12 +795,10 @@ const originalHideLoading = window.hideLoading;
 
 // 新しい実装で上書き（後方互換性維持）
 window.showLoading = function() {
-  console.log('showLoading() called - redirecting to StateManager');
   window.stateManager.showLoading();
 };
 
 window.hideLoading = function() {
-  console.log('hideLoading() called - redirecting to StateManager');
   window.stateManager.hideLoading();
 };
 
@@ -838,23 +806,19 @@ window.hideLoading = function() {
 
 // 結果カード制御のwrap関数
 window.showResultCard = function(cardName) {
-  console.log(`showResultCard(${cardName}) called - redirecting to StateManager`);
   window.stateManager.showResultCard(cardName);
 };
 
 window.hideResultCard = function(cardName) {
-  console.log(`hideResultCard(${cardName}) called - redirecting to StateManager`);
   window.stateManager.hideResultCard(cardName);
 };
 
 // 翻訳状態制御のwrap関数
 window.startTranslation = function() {
-  console.log('startTranslation() called - redirecting to StateManager');
   window.stateManager.startTranslation();
 };
 
 window.completeTranslation = function() {
-  console.log('completeTranslation() called - redirecting to StateManager');
   window.stateManager.completeTranslation();
 };
 
@@ -864,12 +828,10 @@ window.isTranslationInProgress = function() {
 
 // UI要素制御のwrap関数
 window.showUIElement = function(elementName) {
-  console.log(`showUIElement(${elementName}) called - redirecting to StateManager`);
   window.stateManager.showUIElement(elementName);
 };
 
 window.hideUIElement = function(elementName) {
-  console.log(`hideUIElement(${elementName}) called - redirecting to StateManager`);
   window.stateManager.hideUIElement(elementName);
 };
 
@@ -908,27 +870,22 @@ window.integrateErrorWithStateManager = function(error, context) {
 
 // 🆕 Phase 9d: フォーム管理のwrap関数
 window.getFormData = function() {
-  console.log('getFormData() called - redirecting to StateManager');
   return window.stateManager.getFormData();
 };
 
 window.setFormData = function(data, updateOriginal = false) {
-  console.log('setFormData() called - redirecting to StateManager');
   return window.stateManager.setFormData(data, updateOriginal);
 };
 
 window.getFormFieldValue = function(fieldName) {
-  console.log(`getFormFieldValue(${fieldName}) called - redirecting to StateManager`);
   return window.stateManager.getFormFieldValue(fieldName);
 };
 
 window.setFormFieldValue = function(fieldName, value, updateOriginal = false) {
-  console.log(`setFormFieldValue(${fieldName}) called - redirecting to StateManager`);
   return window.stateManager.setFormFieldValue(fieldName, value, updateOriginal);
 };
 
 window.resetFormState = function(clearValues = true) {
-  console.log('resetFormState() called - redirecting to StateManager');
   return window.stateManager.resetFormState(clearValues);
 };
 
@@ -937,20 +894,14 @@ window.isFormDirty = function() {
 };
 
 window.saveFormToSession = function(key) {
-  console.log('saveFormToSession() called - redirecting to StateManager');
   return window.stateManager.saveFormToSession(key);
 };
 
 window.loadFormFromSession = function(key) {
-  console.log('loadFormFromSession() called - redirecting to StateManager');
   return window.stateManager.loadFormFromSession(key);
 };
 
 window.clearFormSession = function(key) {
-  console.log('clearFormSession() called - redirecting to StateManager');
   return window.stateManager.clearFormSession(key);
 };
 
-console.log('🎯 StateManager Phase 9d Form Management ready');
-console.log('🎯 StateManager Phase C Error Integration ready');
-console.log('🎯 StateManager Phase 9c API State Management ready');
