@@ -1,0 +1,32 @@
+<!--
+ファイル名: components/interactive/quick_questions.html
+役割: クイック質問ボタン群表示
+依存関係: 
+  - static/js/interactive/chat_manager.js (setQuickQuestion関数)
+  - labels.quick_* (多言語対応)
+公開インターフェース:
+  - .quick-question-btn: クイック質問ボタン群
+  - .quick-questions: ボタンコンテナ
+最終更新: H2-2(B2-3) Stage 1 Phase 1
+戦略位置: 3段階戦略 Stage 1の基盤構築フェーズ
+作成者: Claude Code (完全実装戦略準拠)
+品質基準: Stage 1基準（85%+成功率目標）
+-->
+
+<div class="quick-questions">
+    <button type="button" class="quick-question-btn" onclick="setQuickQuestion('{{ labels["quick_friendly"] }}')">
+        {{ labels["quick_friendly"] }}
+    </button>
+    <button type="button" class="quick-question-btn" onclick="setQuickQuestion('{{ labels["quick_formal"] }}')">
+        {{ labels["quick_formal"] }}
+    </button>
+    <button type="button" class="quick-question-btn" onclick="setQuickQuestion('{{ labels["quick_combine"] }}')">
+        {{ labels["quick_combine"] }}
+    </button>
+    <button type="button" class="quick-question-btn" onclick="setQuickQuestion('{{ labels["quick_natural"] }}')">
+        {{ labels["quick_natural"] }}
+    </button>
+    <button type="button" class="quick-question-btn" onclick="setQuickQuestion('{{ labels["quick_business"] }}')">
+        {{ labels["quick_business"] }}
+    </button>
+</div>

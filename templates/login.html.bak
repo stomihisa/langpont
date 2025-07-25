@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="{{ current_lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LangPont</title>
+    
+    <!-- 🆕 Favicon設定 -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32.svg') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='favicon-180.svg') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='favicon-192.svg') }}">
+    <link rel="icon" type="image/png" sizes="512x512" href="{{ url_for('static', filename='favicon-512.svg') }}">
+    <meta name="theme-color" content="#007AFF">
+    
+    <!-- Inter & Noto Sans JP フォント -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+JP:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- 🍎 LangPont統一カラーシステム -->
+    <style>
+        :root {
+            /* 🍎 Apple Blue メインカラー */
+            --color-primary: #007AFF;
+            --color-primary-dark: #5856D6;
+            --color-primary-gradient: linear-gradient(135deg, #007AFF 0%, #5856D6 100%);
+            
+            /* 🌟 アクセントカラー */
+            --color-accent: #34C759;
+            --color-accent-dark: #30B352;
+            
+            /* 🎯 背景色 */
+            --color-background: #F2F2F7;
+            --color-background-secondary: #FFFFFF;
+            --color-background-tertiary: #FAFAFA;
+            
+            /* 📝 テキストカラー */
+            --color-text-primary: #1D1D1F;
+            --color-text-secondary: #6B6B6B;
+            --color-text-tertiary: #8E8E93;
+            
+            /* 🔲 ボーダー・分割線 */
+            --color-border: #E5E5E7;
+            --color-border-light: #F2F2F7;
+            
+            /* ⚠️ ステータスカラー */
+            --color-error: #FF453A;
+            --color-warning: #FF9F0A;
+            --color-success: #34C759;
+            
+            /* 🎨 グラデーション */
+            --gradient-primary: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+            --gradient-accent: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-dark) 100%);
+            
+            /* 📱 Apple風シャドウ */
+            --shadow-small: 0 2px 8px rgba(0, 122, 255, 0.1);
+            --shadow-medium: 0 4px 16px rgba(0, 122, 255, 0.15);
+            --shadow-large: 0 8px 32px rgba(0, 122, 255, 0.2);
+        }
+    </style>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: {% if current_lang == 'jp' %}'Noto Sans JP', {% endif %}'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 50%, #f093fb 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* 背景アニメーション */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") repeat;
+            animation: backgroundMove 20s linear infinite;
+        }
+        
+        @keyframes backgroundMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(60px, 60px); }
+        }
+        
+        /* 言語切り替えボタン */
+        .language-selector {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        
+        .language-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 25px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: white;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .language-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        .language-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            min-width: 150px;
+            display: none;
+            z-index: 1001;
+            margin-top: 8px;
+        }
+        
+        .language-dropdown.show {
+            display: block;
+            animation: fadeInDown 0.3s ease-out;
+        }
+        
+        .language-option {
+            display: block;
+            padding: 12px 16px;
+            text-decoration: none;
+            color: #4a4a4a;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            border-radius: 12px;
+            margin: 4px;
+        }
+        
+        .language-option:hover {
+            background: rgba(0, 122, 255, 0.1);
+            color: var(--color-primary);
+        }
+        
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* メインコンテナ */
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 25px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 50px;
+            width: 100%;
+            max-width: 450px;
+            position: relative;
+            z-index: 1;
+            animation: slideInUp 0.8s ease-out;
+        }
+        
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* ヘッダー */
+        .login-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .logo {
+            font-size: 36px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        
+        .tagline {
+            font-size: 18px;
+            color: #666;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+        
+        .description {
+            font-size: 14px;
+            color: #888;
+            line-height: 1.5;
+        }
+        
+        /* フォーム */
+        .login-form {
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 15px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid #e0e6ed;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+            background: rgba(255, 255, 255, 1);
+        }
+        
+        .form-input::placeholder {
+            color: #aaa;
+        }
+        
+        /* ログインボタン */
+        .login-button {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .login-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 122, 255, 0.3);
+        }
+        
+        .login-button:active {
+            transform: translateY(0);
+        }
+        
+        .login-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .login-button:hover::before {
+            left: 100%;
+        }
+        
+        /* エラーメッセージ */
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #dc2626;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: shake 0.5s ease-in-out;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        .error-icon {
+            font-size: 16px;
+        }
+        
+        /* フッター */
+        .login-footer {
+            text-align: center;
+            color: #888;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+        
+        /* レスポンシブ */
+        @media (max-width: 768px) {
+            .login-container {
+                margin: 20px;
+                padding: 30px;
+                max-width: none;
+            }
+            
+            .language-selector {
+                top: 10px;
+                right: 10px;
+            }
+            
+            .logo {
+                font-size: 28px;
+            }
+            
+            .tagline {
+                font-size: 16px;
+            }
+        }
+        
+        /* CSRFトークン非表示 */
+        input[name="csrf_token"] {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- 言語切り替えボタン -->
+    <div class="language-selector">
+        <button class="language-btn" onclick="toggleLanguageDropdown()">
+            {% if current_lang == 'jp' %}🇯🇵 日本語
+            {% elif current_lang == 'en' %}🇺🇸 English
+            {% elif current_lang == 'fr' %}🇫🇷 Français
+            {% elif current_lang == 'es' %}🇪🇸 Español
+            {% endif %} ▼
+        </button>
+        <div class="language-dropdown" id="languageDropdown">
+            <a href="/set_language/jp" class="language-option">🇯🇵 日本語</a>
+            <a href="/set_language/en" class="language-option">🇺🇸 English</a>
+            <a href="/set_language/fr" class="language-option">🇫🇷 Français</a>
+            <a href="/set_language/es" class="language-option">🇪🇸 Español</a>
+        </div>
+    </div>
+
+    <!-- メインコンテナ -->
+    <div class="login-container">
+        <div class="login-header">
+            <div class="logo">
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="LangPont" style="width: 32px; height: 32px; border-radius: 6px; margin-right: 10px; vertical-align: middle;">
+                LangPont
+            </div>
+            <div class="tagline">{{ labels.tagline }}</div>
+            <div class="description">{{ labels.description }}</div>
+        </div>
+        
+        <!-- エラーメッセージ -->
+        {% if error %}
+        <div class="error-message">
+            <span class="error-icon">⚠️</span>
+            <span>{{ error }}</span>
+        </div>
+        {% endif %}
+        
+        <!-- ログインフォーム -->
+        <form method="POST" class="login-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}"/>
+            
+            <!-- 🆕 ユーザー名フィールド -->
+            <div class="form-group">
+                <label for="username" class="form-label">
+                    {% if current_lang == 'jp' %}ユーザー名{% elif current_lang == 'en' %}Username{% elif current_lang == 'fr' %}Nom d'utilisateur{% elif current_lang == 'es' %}Nombre de usuario{% endif %}
+                    <span style="color: #888; font-weight: 400; font-size: 12px;">
+                        ({% if current_lang == 'jp' %}空欄の場合はゲストアカウント{% elif current_lang == 'en' %}Leave empty for guest access{% elif current_lang == 'fr' %}Laisser vide pour l'accès invité{% elif current_lang == 'es' %}Dejar vacío para acceso de invitado{% endif %})
+                    </span>
+                </label>
+                <input 
+                    type="text" 
+                    id="username" 
+                    name="username" 
+                    class="form-input"
+                    placeholder="{% if current_lang == 'jp' %}admin, developer, guest または空欄{% elif current_lang == 'en' %}admin, developer, guest or empty{% elif current_lang == 'fr' %}admin, developer, guest ou vide{% elif current_lang == 'es' %}admin, developer, guest o vacío{% endif %}"
+                    autocomplete="username"
+                />
+            </div>
+            
+            <div class="form-group">
+                <label for="password" class="form-label">{{ labels.password_label }}</label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    name="password" 
+                    class="form-input"
+                    placeholder="{{ labels.password_placeholder }}"
+                    required
+                    autocomplete="current-password"
+                />
+            </div>
+            
+            <button type="submit" class="login-button">
+                {{ labels.login_button }}
+            </button>
+        </form>
+        
+        <div class="login-footer">
+            <p>&copy; 2025 LangPont. All rights reserved.</p>
+        </div>
+    </div>
+    
+    <script>
+        // 言語切り替えドロップダウン
+        function toggleLanguageDropdown() {
+            const dropdown = document.getElementById('languageDropdown');
+            dropdown.classList.toggle('show');
+        }
+        
+        // 外部クリックでドロップダウンを閉じる
+        document.addEventListener('click', function(event) {
+            const selector = document.querySelector('.language-selector');
+            if (!selector.contains(event.target)) {
+                document.getElementById('languageDropdown').classList.remove('show');
+            }
+        });
+        
+        // フォームのオートフォーカス（ユーザー名フィールドに変更）
+        document.addEventListener('DOMContentLoaded', function() {
+            const usernameInput = document.getElementById('username');
+            setTimeout(() => {
+                usernameInput.focus();
+            }, 500);
+        });
+        
+        // エンターキーでフォーム送信（両フィールドで対応）
+        document.getElementById('username').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('password').focus();
+            }
+        });
+        
+        document.getElementById('password').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.querySelector('.login-form').submit();
+            }
+        });
+        
+        // 背景クリックでフォーカス
+        document.addEventListener('click', function(event) {
+            if (event.target === document.body) {
+                document.getElementById('username').focus();
+            }
+        });
+    </script>
+</body>
+</html>

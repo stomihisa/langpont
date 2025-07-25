@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 LangPont 統合活動ダッシュボード</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .dashboard-header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .dashboard-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #2d3748;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+        
+        .dashboard-subtitle {
+            text-align: center;
+            color: #718096;
+            font-size: 14px;
+        }
+        
+        .stat-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .stat-card h3 {
+            font-size: 14px;
+            color: #718096;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .stat-card .value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2d3748;
+        }
+        
+        .filters-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+        
+        .filters-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #2d3748;
+        }
+        
+        .filter-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            align-items: center;
+        }
+        
+        .filter-row select,
+        .filter-row input {
+            padding: 10px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            transition: border-color 0.2s;
+        }
+        
+        .filter-row select:focus,
+        .filter-row input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .filter-btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .filter-btn.primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .filter-btn.primary:hover {
+            background: #5a67d8;
+        }
+        
+        .filter-btn.secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+        
+        .filter-btn.secondary:hover {
+            background: #cbd5e0;
+        }
+        
+        .results-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 20px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+        
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .results-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .table-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .export-btn {
+            padding: 8px 14px;
+            background: #48bb78;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .export-btn:hover {
+            background: #38a169;
+        }
+        
+        .table-info {
+            font-size: 12px;
+            color: #718096;
+        }
+        
+        .activity-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+        
+        .activity-table th {
+            background: #f7fafc;
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 12px;
+            color: #4a5568;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .activity-table td {
+            padding: 12px 8px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 12px;
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .activity-table tr:hover {
+            background: #f7fafc;
+        }
+        
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .badge.normal {
+            background: #bee3f8;
+            color: #2b6cb0;
+        }
+        
+        .badge.test {
+            background: #fed7d7;
+            color: #c53030;
+        }
+        
+        .badge.match {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        
+        .badge.mismatch {
+            background: #fed7d7;
+            color: #c53030;
+        }
+        
+        .badge.error {
+            background: #fed7d7;
+            color: #c53030;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+            gap: 12px;
+        }
+        
+        .pagination button {
+            padding: 8px 12px;
+            border: 1px solid #e2e8f0;
+            background: white;
+            color: #4a5568;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .pagination button:hover:not(:disabled) {
+            background: #f7fafc;
+            border-color: #cbd5e0;
+        }
+        
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+        }
+        
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        .tab-buttons {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .tab-btn {
+            padding: 8px 16px;
+            border: none;
+            background: #e2e8f0;
+            color: #4a5568;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .tab-btn.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .detail-field {
+            margin-bottom: 12px;
+        }
+        
+        .detail-field label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #4a5568;
+        }
+        
+        .detail-field textarea,
+        .detail-field pre {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 12px;
+            background: #f7fafc;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-container {
+                padding: 12px;
+            }
+            
+            .stat-cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .filter-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .table-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .activity-table {
+                font-size: 10px;
+            }
+            
+            .activity-table th,
+            .activity-table td {
+                padding: 8px 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- ヘッダー -->
+        <div class="dashboard-header">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <div>
+                    <h1 class="dashboard-title">📊 LangPont 統合活動ダッシュボード</h1>
+                    <p class="dashboard-subtitle">全ての分析活動（通常利用・手動テスト・自動テスト）を統合管理</p>
+                </div>
+                <div style="display: flex; gap: 12px; align-items: center;">
+                    <a href="/admin/dashboard" style="padding: 8px 16px; background: #667eea; color: white; text-decoration: none; border-radius: 6px; font-size: 14px;">📊 メインダッシュボード</a>
+                    <a href="/admin/task292_monitor" style="padding: 8px 16px; background: #667eea; color: white; text-decoration: none; border-radius: 6px; font-size: 14px;">🔍 Task 2.9.2</a>
+                    <a href="/" style="padding: 8px 16px; background: #48bb78; color: white; text-decoration: none; border-radius: 6px; font-size: 14px;">メインアプリ</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 統計サマリー -->
+        <div class="stat-cards">
+            <div class="stat-card">
+                <h3>総活動数</h3>
+                <div class="value" id="totalActivities">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>今日の活動</h3>
+                <div class="value" id="todayActivities">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>エラー率</h3>
+                <div class="value" id="errorRate">0%</div>
+            </div>
+            <div class="stat-card">
+                <h3>LLM一致率</h3>
+                <div class="value" id="llmMatchRate">0%</div>
+            </div>
+            <div class="stat-card">
+                <h3>平均処理時間</h3>
+                <div class="value" id="avgProcessingTime">0s</div>
+            </div>
+        </div>
+        
+        <!-- フィルター -->
+        <div class="filters-section">
+            <h2 class="filters-title">🔍 フィルター</h2>
+            <div class="filter-row">
+                <select id="activityType">
+                    <option value="">全活動タイプ</option>
+                    <option value="normal_use">通常利用</option>
+                    <option value="manual_test">手動テスト</option>
+                    <option value="automated_test">自動テスト</option>
+                </select>
+                
+                <select id="userFilter">
+                    <option value="">全ユーザー</option>
+                    <option value="admin">admin</option>
+                    <option value="developer">developer</option>
+                    <option value="guest">guest</option>
+                </select>
+                
+                <select id="engineFilter">
+                    <option value="">全エンジン</option>
+                    <option value="ChatGPT">ChatGPT</option>
+                    <option value="Gemini">Gemini</option>
+                    <option value="Claude">Claude</option>
+                </select>
+                
+                <input type="date" id="dateFrom" placeholder="開始日">
+                <input type="date" id="dateTo" placeholder="終了日">
+                
+                <button class="filter-btn primary" onclick="applyFilters()">🔍 適用</button>
+                <button class="filter-btn secondary" onclick="clearFilters()">🗑️ クリア</button>
+            </div>
+        </div>
+        
+        <!-- メイン結果 -->
+        <div class="results-section">
+            <div class="results-header">
+                <h2 class="results-title">📋 活動履歴</h2>
+                <div class="table-controls">
+                    <button class="export-btn" onclick="exportAllToCsv()">📥 全データCSV</button>
+                    <button class="export-btn" onclick="exportFilteredToCsv()">📥 フィルター結果CSV</button>
+                    <div class="table-info">
+                        表示: <span id="displayCount">0</span>件 / 総数: <span id="totalCount">0</span>件
+                    </div>
+                </div>
+            </div>
+            
+            <div id="loadingIndicator" class="loading">
+                📊 データを読み込み中...
+            </div>
+            
+            <table class="activity-table" id="activityTable" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>タイプ</th>
+                        <th>ユーザー</th>
+                        <th>日時</th>
+                        <th>日本語文章</th>
+                        <th>押下ボタン</th>
+                        <th>実際LLM</th>
+                        <th>一致</th>
+                        <th>推奨結果</th>
+                        <th>信頼度</th>
+                        <th>処理時間</th>
+                        <th>エラー</th>
+                        <th>詳細</th>
+                    </tr>
+                </thead>
+                <tbody id="activityTableBody">
+                </tbody>
+            </table>
+            
+            <!-- ページング -->
+            <div class="pagination">
+                <button onclick="prevPage()" id="prevBtn">◀ 前</button>
+                <span id="pageInfo">1 / 1</span>
+                <button onclick="nextPage()" id="nextBtn">次 ▶</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 詳細表示モーダル -->
+    <div id="activityDetailModal" class="modal">
+        <div class="modal-content">
+            <h2>📋 活動詳細 #<span id="detailId">-</span></h2>
+            
+            <div class="tab-buttons">
+                <button class="tab-btn active" onclick="showTab('basic')">基本情報</button>
+                <button class="tab-btn" onclick="showTab('translation')">翻訳データ</button>
+                <button class="tab-btn" onclick="showTab('analysis')">分析結果</button>
+                <button class="tab-btn" onclick="showTab('logs')">ログ</button>
+            </div>
+            
+            <div id="basicTab" class="tab-content active">
+                <div class="detail-field">
+                    <label>活動タイプ:</label>
+                    <div id="detailActivityType">-</div>
+                </div>
+                <div class="detail-field">
+                    <label>ユーザー:</label>
+                    <div id="detailUser">-</div>
+                </div>
+                <div class="detail-field">
+                    <label>実行時刻:</label>
+                    <div id="detailDateTime">-</div>
+                </div>
+                <div class="detail-field">
+                    <label>言語ペア:</label>
+                    <div id="detailLanguagePair">-</div>
+                </div>
+                <div class="detail-field">
+                    <label>処理時間:</label>
+                    <div id="detailProcessingTime">-</div>
+                </div>
+            </div>
+            
+            <div id="translationTab" class="tab-content">
+                <div class="detail-field">
+                    <label>日本語原文:</label>
+                    <textarea id="detailJapaneseText" rows="3" readonly></textarea>
+                </div>
+                <div class="detail-field">
+                    <label>ChatGPT翻訳:</label>
+                    <textarea id="detailChatgptTranslation" rows="2" readonly></textarea>
+                </div>
+                <div class="detail-field">
+                    <label>Enhanced翻訳:</label>
+                    <textarea id="detailEnhancedTranslation" rows="2" readonly></textarea>
+                </div>
+                <div class="detail-field">
+                    <label>Gemini翻訳:</label>
+                    <textarea id="detailGeminiTranslation" rows="2" readonly></textarea>
+                </div>
+            </div>
+            
+            <div id="analysisTab" class="tab-content">
+                <div class="detail-field">
+                    <label>分析結果全文:</label>
+                    <textarea id="detailAnalysisText" rows="15" readonly></textarea>
+                </div>
+                <div class="detail-field">
+                    <label>推奨結果:</label>
+                    <div id="detailRecommendation">-</div>
+                </div>
+                <div class="detail-field">
+                    <label>信頼度:</label>
+                    <div id="detailConfidence">-</div>
+                </div>
+            </div>
+            
+            <div id="logsTab" class="tab-content">
+                <div class="detail-field">
+                    <label>デバッグログ:</label>
+                    <pre id="detailDebugLogs">-</pre>
+                </div>
+                <div class="detail-field">
+                    <label>ターミナルログ:</label>
+                    <pre id="detailTerminalLogs">-</pre>
+                </div>
+                <div class="detail-field">
+                    <label>エラー情報:</label>
+                    <pre id="detailErrorInfo">-</pre>
+                </div>
+            </div>
+            
+            <button onclick="closeModal()" style="margin-top: 20px; padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;">閉じる</button>
+        </div>
+    </div>
+    
+    <script>
+        // グローバル変数
+        let currentPage = 1;
+        let totalPages = 1;
+        let currentFilters = {};
+        
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStatistics();
+            loadActivities();
+        });
+        
+        // 統計データ読み込み
+        async function loadStatistics() {
+            try {
+                const response = await fetch('/admin/api/activity_stats');
+                const stats = await response.json();
+                
+                document.getElementById('totalActivities').textContent = stats.basic.total_activities;
+                document.getElementById('todayActivities').textContent = stats.basic.today_activities;
+                document.getElementById('errorRate').textContent = stats.basic.error_rate + '%';
+                document.getElementById('llmMatchRate').textContent = stats.basic.llm_match_rate + '%';
+                document.getElementById('avgProcessingTime').textContent = stats.basic.avg_processing_time + 's';
+            } catch (error) {
+                console.error('統計データの読み込みに失敗:', error);
+            }
+        }
+        
+        // 活動データ読み込み
+        async function loadActivities(page = 1) {
+            try {
+                document.getElementById('loadingIndicator').style.display = 'block';
+                document.getElementById('activityTable').style.display = 'none';
+                
+                const params = new URLSearchParams({
+                    page: page,
+                    limit: 50,
+                    ...currentFilters
+                });
+                
+                const response = await fetch(`/admin/api/activity_log?${params}`);
+                const data = await response.json();
+                
+                displayActivities(data.activities);
+                updatePagination(data.current_page, data.page_count, data.total_count);
+                
+                document.getElementById('displayCount').textContent = data.activities.length;
+                document.getElementById('totalCount').textContent = data.total_count;
+                
+                document.getElementById('loadingIndicator').style.display = 'none';
+                document.getElementById('activityTable').style.display = 'table';
+                
+            } catch (error) {
+                console.error('活動データの読み込みに失敗:', error);
+                document.getElementById('loadingIndicator').textContent = '❌ データの読み込みに失敗しました';
+            }
+        }
+        
+        // 活動データ表示
+        function displayActivities(activities) {
+            const tbody = document.getElementById('activityTableBody');
+            tbody.innerHTML = '';
+            
+            activities.forEach(activity => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${activity.id}</td>
+                    <td><span class="badge ${activity.activity_type === 'normal_use' ? 'normal' : 'test'}">${activity.activity_type}</span></td>
+                    <td>${activity.user_id}</td>
+                    <td>${new Date(activity.created_at).toLocaleString('ja-JP')}</td>
+                    <td title="${activity.japanese_text}">${activity.japanese_text || '-'}</td>
+                    <td>${activity.button_pressed || '-'}</td>
+                    <td>${activity.actual_analysis_llm || '-'}</td>
+                    <td><span class="badge ${activity.llm_match ? 'match' : 'mismatch'}">${activity.llm_match ? '✓' : '✗'}</span></td>
+                    <td>${activity.recommendation_result || '-'}</td>
+                    <td>${activity.confidence ? (activity.confidence * 100).toFixed(1) + '%' : '-'}</td>
+                    <td>${activity.processing_duration ? activity.processing_duration.toFixed(2) + 's' : '-'}</td>
+                    <td><span class="badge ${activity.error_occurred ? 'error' : 'normal'}">${activity.error_occurred ? 'エラー' : '正常'}</span></td>
+                    <td><button onclick="showDetail(${activity.id})" style="padding: 4px 8px; font-size: 10px; border: none; background: #667eea; color: white; border-radius: 4px; cursor: pointer;">詳細</button></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        // ページング更新
+        function updatePagination(current, total, totalCount) {
+            currentPage = current;
+            totalPages = total;
+            
+            document.getElementById('pageInfo').textContent = `${current} / ${total}`;
+            document.getElementById('prevBtn').disabled = current <= 1;
+            document.getElementById('nextBtn').disabled = current >= total;
+        }
+        
+        // フィルター適用
+        function applyFilters() {
+            currentFilters = {
+                activity_type: document.getElementById('activityType').value,
+                user_id: document.getElementById('userFilter').value,
+                button_pressed: document.getElementById('engineFilter').value,
+                date_from: document.getElementById('dateFrom').value,
+                date_to: document.getElementById('dateTo').value
+            };
+            
+            // 空の値を削除
+            Object.keys(currentFilters).forEach(key => {
+                if (!currentFilters[key]) {
+                    delete currentFilters[key];
+                }
+            });
+            
+            currentPage = 1;
+            loadActivities(1);
+            loadStatistics();
+        }
+        
+        // フィルタークリア
+        function clearFilters() {
+            document.getElementById('activityType').value = '';
+            document.getElementById('userFilter').value = '';
+            document.getElementById('engineFilter').value = '';
+            document.getElementById('dateFrom').value = '';
+            document.getElementById('dateTo').value = '';
+            
+            currentFilters = {};
+            currentPage = 1;
+            loadActivities(1);
+            loadStatistics();
+        }
+        
+        // ページング操作
+        function prevPage() {
+            if (currentPage > 1) {
+                loadActivities(currentPage - 1);
+            }
+        }
+        
+        function nextPage() {
+            if (currentPage < totalPages) {
+                loadActivities(currentPage + 1);
+            }
+        }
+        
+        // 詳細表示
+        async function showDetail(activityId) {
+            try {
+                const response = await fetch(`/admin/api/activity_detail/${activityId}`);
+                const detail = await response.json();
+                
+                // 基本情報
+                document.getElementById('detailId').textContent = detail.id;
+                document.getElementById('detailActivityType').textContent = detail.activity_type;
+                document.getElementById('detailUser').textContent = detail.user_id;
+                document.getElementById('detailDateTime').textContent = new Date(detail.created_at).toLocaleString('ja-JP');
+                document.getElementById('detailLanguagePair').textContent = detail.language_pair;
+                document.getElementById('detailProcessingTime').textContent = detail.processing_duration ? detail.processing_duration.toFixed(2) + 's' : '-';
+                
+                // 翻訳データ
+                document.getElementById('detailJapaneseText').value = detail.japanese_text || '';
+                document.getElementById('detailChatgptTranslation').value = detail.chatgpt_translation || '';
+                document.getElementById('detailEnhancedTranslation').value = detail.enhanced_translation || '';
+                document.getElementById('detailGeminiTranslation').value = detail.gemini_translation || '';
+                
+                // 分析結果
+                document.getElementById('detailAnalysisText').value = detail.full_analysis_text || '';
+                document.getElementById('detailRecommendation').textContent = detail.recommendation_result || '-';
+                document.getElementById('detailConfidence').textContent = detail.confidence ? (detail.confidence * 100).toFixed(1) + '%' : '-';
+                
+                // ログ
+                document.getElementById('detailDebugLogs').textContent = detail.debug_logs || '-';
+                document.getElementById('detailTerminalLogs').textContent = detail.terminal_logs || '-';
+                document.getElementById('detailErrorInfo').textContent = detail.error_message || '正常';
+                
+                document.getElementById('activityDetailModal').style.display = 'block';
+                
+            } catch (error) {
+                console.error('詳細データの読み込みに失敗:', error);
+                alert('詳細データの読み込みに失敗しました');
+            }
+        }
+        
+        // モーダル関連
+        function showTab(tabName) {
+            // 全てのタブを非表示
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // 選択されたタブを表示
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            event.target.classList.add('active');
+        }
+        
+        function closeModal() {
+            document.getElementById('activityDetailModal').style.display = 'none';
+        }
+        
+        // CSV出力
+        async function exportAllToCsv() {
+            try {
+                const response = await fetch('/admin/api/export_activity_log?type=all');
+                const blob = await response.blob();
+                downloadCsv(blob, 'langpont_all_activities.csv');
+            } catch (error) {
+                console.error('CSV出力に失敗:', error);
+                alert('CSV出力に失敗しました');
+            }
+        }
+        
+        async function exportFilteredToCsv() {
+            try {
+                const params = new URLSearchParams(currentFilters);
+                const response = await fetch(`/admin/api/export_activity_log?type=filtered&${params}`);
+                const blob = await response.blob();
+                downloadCsv(blob, 'langpont_filtered_activities.csv');
+            } catch (error) {
+                console.error('CSV出力に失敗:', error);
+                alert('CSV出力に失敗しました');
+            }
+        }
+        
+        function downloadCsv(blob, filename) {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+        
+        // モーダル外クリックで閉じる
+        window.onclick = function(event) {
+            const modal = document.getElementById('activityDetailModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>

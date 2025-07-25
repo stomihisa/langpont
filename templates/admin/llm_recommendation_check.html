@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>🔍 LLM推奨品質チェック（第0段階） - LangPont</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        .dashboard-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+        
+        /* ヘッダー */
+        .dashboard-header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 20px 24px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        
+        .dashboard-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #2d3748;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .nav-link {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 8px 16px;
+            border: 1px solid #667eea;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+        
+        .nav-link:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        /* 統計カード */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            margin: 8px 0;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #718096;
+        }
+        
+        /* チェックセクション */
+        .check-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .check-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+        
+        .check-table th {
+            background: #f7fafc;
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 12px;
+            color: #4a5568;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .check-table td {
+            padding: 12px 8px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 12px;
+            vertical-align: top;
+        }
+        
+        .check-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        /* ステータス表示 */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-align: center;
+        }
+        
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-approved {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-rejected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        /* アクションボタン */
+        .action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            margin: 0 2px;
+            transition: all 0.3s;
+        }
+        
+        .btn-approve {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-approve:hover {
+            background: #218838;
+        }
+        
+        .btn-reject {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-reject:hover {
+            background: #c82333;
+        }
+        
+        .btn-detail {
+            background: #007bff;
+            color: white;
+        }
+        
+        .btn-detail:hover {
+            background: #0069d9;
+        }
+        
+        /* ローディング */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- ヘッダー -->
+        <div class="dashboard-header">
+            <div class="header-content">
+                <h1 class="dashboard-title">
+                    🔍 LLM推奨品質チェック（第0段階）
+                </h1>
+                <div class="nav-links">
+                    <a href="/admin/dashboard" class="nav-link">🏠 管理ホーム</a>
+                    <a href="/admin/four_stage_dashboard" class="nav-link">🎯 4段階分析</a>
+                    <a href="/admin/comprehensive_dashboard" class="nav-link">📋 統合活動ログ</a>
+                    <a href="/" class="nav-link">🔙 メインアプリ</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 統計カード -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">📋 チェック待ち</div>
+                <div class="stat-value" id="pending-count">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">✅ 人間チェック済み</div>
+                <div class="stat-value" id="approved-count">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">🎯 LLM推奨一致率</div>
+                <div class="stat-value" id="accuracy-rate">-</div>
+            </div>
+        </div>
+        
+        <!-- チェック対象一覧 -->
+        <div class="check-section">
+            <h2 class="section-title">📊 LLM推奨チェック対象</h2>
+            <div id="check-loading" class="loading">
+                <div class="spinner"></div>
+                <p>データを読み込み中...</p>
+            </div>
+            <div id="check-content" style="display: none;">
+                <table class="check-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>日時</th>
+                            <th>原文</th>
+                            <th>LLM推奨</th>
+                            <th>信頼度</th>
+                            <th>分析エンジン</th>
+                            <th>ステータス</th>
+                            <th>アクション</th>
+                        </tr>
+                    </thead>
+                    <tbody id="check-tbody">
+                        <!-- データは動的に挿入 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 詳細表示モーダル -->
+    <div id="detail-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🔍 LLM推奨品質チェック詳細</h2>
+                <button class="modal-close" onclick="closeDetailModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="detail-content">
+                <!-- 詳細内容がここに表示される -->
+            </div>
+        </div>
+    </div>
+    
+    <style>
+        /* モーダルスタイル */
+        .modal {
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+        
+        .modal-content {
+            background-color: #fefefe;
+            margin: 2% auto;
+            padding: 0;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 1200px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .modal-header {
+            padding: 20px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h2 {
+            margin: 0;
+            font-size: 24px;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 30px;
+            cursor: pointer;
+            padding: 0;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+        }
+        
+        .modal-close:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .modal-body {
+            padding: 24px;
+        }
+        
+        .detail-section {
+            margin-bottom: 24px;
+            padding: 16px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .detail-section h3 {
+            margin: 0 0 12px 0;
+            color: #2d3748;
+            font-size: 18px;
+        }
+        
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        
+        .translation-card {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            position: relative;
+        }
+        
+        .translation-card.recommended {
+            border-color: #48bb78;
+            background: #f0fff4;
+        }
+        
+        .translation-card.user-selected {
+            border-color: #ed8936;
+            background: #fffaf0;
+        }
+        
+        .translation-header {
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .translation-badge {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .badge-recommended {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .badge-selected {
+            background: #ed8936;
+            color: white;
+        }
+        
+        .translation-text {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.4;
+            white-space: pre-wrap;
+        }
+        
+        .analysis-section {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+        
+        .confidence-meter {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        
+        .confidence-bar {
+            flex: 1;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .confidence-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+        
+        .confidence-high { background: #48bb78; }
+        .confidence-medium { background: #ed8936; }
+        .confidence-low { background: #f56565; }
+        
+        .check-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .modal-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .btn-select-chatgpt {
+            background: #2196F3;
+            color: white;
+        }
+        
+        .btn-select-enhanced {
+            background: #9C27B0;
+            color: white;
+        }
+        
+        .btn-select-gemini {
+            background: #FF9800;
+            color: white;
+        }
+        
+        .btn-select-none {
+            background: #607D8B;
+            color: white;
+        }
+        
+        .btn-close-modal {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+        
+        .modal-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+    </style>
+    
+    <script>
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCheckData();
+        });
+        
+        // チェックデータ読み込み
+        async function loadCheckData() {
+            document.getElementById('check-loading').style.display = 'block';
+            document.getElementById('check-content').style.display = 'none';
+            
+            try {
+                const response = await fetch('/admin/api/llm_recommendation_check');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                displayCheckData(data);
+                
+            } catch (error) {
+                console.error('データ読み込みエラー:', error);
+                document.getElementById('check-loading').innerHTML = 
+                    '<p style="color: #e53e3e;">データの読み込みに失敗しました</p>';
+            }
+        }
+        
+        // データ表示
+        function displayCheckData(data) {
+            // 統計更新
+            document.getElementById('pending-count').textContent = data.pending_count || 0;
+            document.getElementById('approved-count').textContent = data.approved_count || 0;
+            document.getElementById('accuracy-rate').textContent = 
+                data.accuracy_rate ? `${data.accuracy_rate.toFixed(1)}%` : '-';
+            
+            // テーブル更新
+            const tbody = document.getElementById('check-tbody');
+            tbody.innerHTML = '';
+            
+            if (!data.items || data.items.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #718096;">チェック対象がありません</td></tr>';
+                document.getElementById('check-loading').style.display = 'none';
+                document.getElementById('check-content').style.display = 'block';
+                return;
+            }
+            
+            data.items.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.id}</td>
+                    <td>${new Date(item.created_at).toLocaleString('ja-JP', {
+                        month: 'numeric',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    })}</td>
+                    <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${item.japanese_text}">${item.japanese_text}</td>
+                    <td><span class="recommendation ${item.recommendation_result?.toLowerCase()}">${item.recommendation_result || '-'}</span></td>
+                    <td>${item.confidence ? (item.confidence * 100).toFixed(1) + '%' : '-'}</td>
+                    <td>${item.actual_analysis_llm || '-'}</td>
+                    <td><span class="status-badge status-${item.stage0_human_check ? 'completed' : 'pending'}">${getHumanCheckText(item.stage0_human_check)}</span></td>
+                    <td>
+                        <button class="action-btn btn-detail" onclick="showDetail(${item.id})">📋 詳細・チェック</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            document.getElementById('check-loading').style.display = 'none';
+            document.getElementById('check-content').style.display = 'block';
+        }
+        
+        // ステータステキスト変換（廃止予定）
+        function getStatusText(status) {
+            // 新しい①〜④選択方式では使用されません
+            return '⏳ チェック待ち';
+        }
+        
+        // 人間チェック結果テキスト変換
+        function getHumanCheckText(humanCheck) {
+            switch(humanCheck) {
+                case 'ChatGPT': return '①ChatGPT翻訳';
+                case 'Enhanced': return '②より良いChatGPT翻訳';
+                case 'Gemini': return '③Gemini翻訳';
+                case 'None': return '④どれでもない';
+                default: return '⏳ チェック待ち';
+            }
+        }
+        
+        // 旧チェック結果更新（廃止済み - 新しい①〜④選択方式ではupdateHumanCheck()を使用）
+        async function updateCheck(id, result) {
+            console.warn('updateCheck()は廃止されました。updateHumanCheck()を使用してください。');
+            // 後方互換性のため残していますが、新しいシステムでは使用されません
+        }
+        
+        // 詳細表示
+        async function showDetail(id) {
+            try {
+                // 詳細データを取得
+                const response = await fetch(`/admin/api/llm_recommendation_detail/${id}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                if (result.success) {
+                    displayDetailModal(result.data);
+                } else {
+                    throw new Error(result.error || 'データ取得に失敗しました');
+                }
+                
+            } catch (error) {
+                console.error('詳細データ取得エラー:', error);
+                alert('詳細データの取得に失敗しました');
+            }
+        }
+        
+        // 詳細モーダル表示
+        function displayDetailModal(detail) {
+            const modal = document.getElementById('detail-modal');
+            const content = document.getElementById('detail-content');
+            
+            // 信頼度に応じたクラス設定
+            const confidenceClass = detail.confidence > 0.8 ? 'confidence-high' : 
+                                   detail.confidence > 0.6 ? 'confidence-medium' : 'confidence-low';
+            
+            // LLM推奨と実際の選択が一致しているかチェック
+            const isRecommendationCorrect = detail.recommendation_result === detail.actual_user_choice;
+            const matchStatus = isRecommendationCorrect ? '✅ 一致' : '❌ 不一致';
+            const matchClass = isRecommendationCorrect ? 'text-success' : 'text-danger';
+            
+            content.innerHTML = `
+                <div class="detail-section">
+                    <h3>📄 原文</h3>
+                    <div class="translation-text" style="background: #f0f8ff; border-color: #667eea;">
+                        ${detail.japanese_text || '原文なし'}
+                    </div>
+                </div>
+                
+                <div class="detail-section">
+                    <h3>🎯 3つの翻訳文と推奨判定</h3>
+                    <div class="detail-grid">
+                        <!-- ChatGPT翻訳 -->
+                        <div class="translation-card ${detail.recommendation_result === 'ChatGPT' ? 'recommended' : ''}">
+                            <div class="translation-header">
+                                <span>ChatGPT翻訳</span>
+                                ${detail.recommendation_result === 'ChatGPT' ? 
+                                    '<span class="translation-badge badge-recommended">LLM推奨</span>' : ''}
+                            </div>
+                            <div class="translation-text">
+                                ${detail.chatgpt_translation || '翻訳データなし'}
+                            </div>
+                        </div>
+                        
+                        <!-- Enhanced翻訳 -->
+                        <div class="translation-card ${detail.recommendation_result === 'Enhanced' ? 'recommended' : ''}">
+                            <div class="translation-header">
+                                <span>Enhanced翻訳</span>
+                                ${detail.recommendation_result === 'Enhanced' ? 
+                                    '<span class="translation-badge badge-recommended">LLM推奨</span>' : ''}
+                            </div>
+                            <div class="translation-text">
+                                ${detail.enhanced_translation || '翻訳データなし'}
+                            </div>
+                        </div>
+                        
+                        <!-- Gemini翻訳 -->
+                        <div class="translation-card ${detail.recommendation_result === 'Gemini' ? 'recommended' : ''}">
+                            <div class="translation-header">
+                                <span>Gemini翻訳</span>
+                                ${detail.recommendation_result === 'Gemini' ? 
+                                    '<span class="translation-badge badge-recommended">LLM推奨</span>' : ''}
+                            </div>
+                            <div class="translation-text">
+                                ${detail.gemini_translation || '翻訳データなし'}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="detail-section">
+                    <h3>🤖 LLM分析結果</h3>
+                    <div class="analysis-section">
+                        <p><strong>分析エンジン:</strong> ${detail.actual_analysis_llm || '不明'}</p>
+                        <p><strong>推奨結果:</strong> <span class="recommendation ${detail.recommendation_result?.toLowerCase()}">${detail.recommendation_result || '推奨なし'}</span></p>
+                        <p><strong>信頼度:</strong> ${detail.confidence ? (detail.confidence * 100).toFixed(1) + '%' : '不明'}</p>
+                        
+                        <div class="confidence-meter">
+                            <span>信頼度:</span>
+                            <div class="confidence-bar">
+                                <div class="confidence-fill ${confidenceClass}" 
+                                     style="width: ${detail.confidence ? (detail.confidence * 100) + '%' : '0%'}"></div>
+                            </div>
+                            <span>${detail.confidence ? (detail.confidence * 100).toFixed(1) + '%' : '0%'}</span>
+                        </div>
+                        
+                        <div style="margin-top: 16px;">
+                            <strong>LLM分析内容:</strong>
+                            <div class="translation-text" style="margin-top: 8px; max-height: 200px; overflow-y: auto;">
+                                ${detail.full_analysis_text || '分析内容なし'}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="detail-section">
+                    <h3>👤 ユーザー選択状況</h3>
+                    <div class="analysis-section">
+                        <p><strong>実際の選択:</strong> ${detail.actual_user_choice || '選択なし'}</p>
+                        <p><strong>推奨との一致:</strong> <span class="${matchClass}">${matchStatus}</span></p>
+                        ${detail.actual_user_choice && detail.actual_user_choice !== detail.recommendation_result ? 
+                            '<p style="color: #f56565;"><strong>⚠️ 注意:</strong> ユーザーがLLM推奨と異なる選択をしています</p>' : ''}
+                    </div>
+                </div>
+                
+                <div class="check-actions">
+                    <button class="modal-btn btn-select-chatgpt" onclick="updateHumanCheck(${detail.id}, 'ChatGPT')">
+                        ① ChatGPT翻訳
+                    </button>
+                    <button class="modal-btn btn-select-enhanced" onclick="updateHumanCheck(${detail.id}, 'Enhanced')">
+                        ② より良いChatGPT翻訳
+                    </button>
+                    <button class="modal-btn btn-select-gemini" onclick="updateHumanCheck(${detail.id}, 'Gemini')">
+                        ③ Gemini翻訳
+                    </button>
+                    <button class="modal-btn btn-select-none" onclick="updateHumanCheck(${detail.id}, 'None')">
+                        ④ どれでもない
+                    </button>
+                    <button class="modal-btn btn-close-modal" onclick="closeDetailModal()">
+                        閉じる
+                    </button>
+                </div>
+            `;
+            
+            modal.style.display = 'block';
+        }
+        
+        // モーダルを閉じる
+        function closeDetailModal() {
+            document.getElementById('detail-modal').style.display = 'none';
+        }
+        
+        // モーダルからのチェック更新（廃止済み - 新しい①〜④選択方式では直接updateHumanCheck()を使用）
+        async function updateCheckFromModal(id, result) {
+            console.warn('updateCheckFromModal()は廃止されました。モーダル内では直接updateHumanCheck()を使用してください。');
+            // 新しいシステムでは使用されません
+        }
+        
+        // 人間による推奨判定更新
+        async function updateHumanCheck(id, selection) {
+            try {
+                const response = await fetch('/admin/api/stage0_human_check', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        activity_id: id,
+                        human_selection: selection
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    closeDetailModal();
+                    loadCheckData(); // データ再読み込み
+                    alert(`人間による判定を「${selection}」に更新しました`);
+                } else {
+                    alert(`更新に失敗しました: ${result.error || '不明なエラー'}`);
+                }
+            } catch (error) {
+                console.error('人間チェック更新エラー:', error);
+                alert('エラーが発生しました: ' + error.message);
+            }
+        }
+        
+        // モーダル外クリックで閉じる
+        window.onclick = function(event) {
+            const modal = document.getElementById('detail-modal');
+            if (event.target === modal) {
+                closeDetailModal();
+            }
+        }
+    </script>
+</body>
+</html>

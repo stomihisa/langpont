@@ -1,0 +1,14 @@
+{% if usage_status %}
+<div class="usage-stats-improved">
+    <div class="usage-bar">
+        <div class="usage-fill" style="width: {{ (usage_status.current_usage / usage_status.daily_limit * 100) if not usage_status.is_unlimited else 100 }}%"></div>
+    </div>
+    <div class="usage-text">
+        {% if usage_status.is_unlimited %}
+            💎 {{ labels["usage_unlimited"] }}
+        {% else %}
+            📊 {{ usage_status.current_usage }}/{{ usage_status.daily_limit }} {{ labels["usage_count_times"] }} ({{ usage_status.remaining }}{{ labels["usage_remaining_suffix"] }})
+        {% endif %}
+    </div>
+</div>
+{% endif %}

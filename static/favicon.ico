@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#007AFF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#5856D6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background with rounded corners like the logo -->
+  <rect x="0" y="0" width="16" height="16" rx="3" ry="3" fill="url(#bgGradient)"/>
+  
+  <!-- Bridge arch design (minimal for small size) -->
+  <path d="M4 10 Q8 7 12 10" stroke="white" stroke-width="0.8" fill="none" opacity="0.5"/>
+  
+  <!-- LP letters styled like the logo -->
+  <text x="8" y="11" font-family="Arial, sans-serif" font-size="6" font-weight="bold" fill="white" text-anchor="middle">LP</text>
+</svg>

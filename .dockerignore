@@ -1,0 +1,71 @@
+# Archive and backup files
+archive/
+*backup*
+*_backup_*
+*.backup
+
+# Development files
+.git/
+.gitignore
+.env.example
+README.md
+docs/
+tests/
+*.md
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+.venv/
+venv/
+myenv/
+.pytest_cache/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Node modules (if any)
+node_modules/
+npm-debug.log*
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# Virtual environments
+.virtualenv
+.conda
+.pyenv
+
+# Test and check scripts
+check_processes.sh
+test_suite/
+
+# Claude documentation
+CLAUDE.md
+CLAUDE_HISTORY_*.md

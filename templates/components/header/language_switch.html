@@ -1,0 +1,9 @@
+<div class="lang-switch-improved">
+    <span class="lang-label">🌐 {{ labels["lang_switch"] }}:</span>
+    <div class="lang-options">
+        <a href="/set_language/en" class="lang-opt {% if session.get('lang') == 'en' %}active{% endif %}">EN</a>
+        <a href="/set_language/jp" class="lang-opt {% if session.get('lang') == 'jp' or not session.get('lang') %}active{% endif %}">JP</a>
+        <a href="/set_language/fr" class="lang-opt {% if session.get('lang') == 'fr' %}active{% endif %}">FR</a>
+        <a href="/set_language/es" class="lang-opt {% if session.get('lang') == 'es' %}active{% endif %}">ES</a>
+    </div>
+</div>

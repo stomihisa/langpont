@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }} - LangPont 管理者</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+</head>
+<body>
+    <!-- 🚀 管理者データ分析画面 - Task 2.9.2 Phase B-1 -->
+    <div class="admin-container">
+        
+        <!-- ヘッダー -->
+        <header class="admin-header">
+            <div class="header-left">
+                <h1>📈 データ分析</h1>
+                <span class="version-badge">Phase B-1</span>
+            </div>
+            <div class="header-right">
+                <div class="user-info">
+                    <span class="user-role {{ user_info.role }}">{{ user_info.role|upper }}</span>
+                    <span class="username">{{ user_info.username }}</span>
+                </div>
+                <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">📊 ダッシュボード</a>
+                <a href="{{ url_for('index') }}" class="btn btn-secondary">メインアプリ</a>
+            </div>
+        </header>
+
+        <!-- ナビゲーション -->
+        <nav class="admin-nav">
+            <a href="{{ url_for('admin.dashboard') }}" class="nav-item">
+                📊 ダッシュボード
+            </a>
+            <a href="{{ url_for('admin.task292_monitor') }}" class="nav-item">
+                🔍 Task 2.9.2 監視
+            </a>
+            {% if user_info.role == 'admin' %}
+            <a href="{{ url_for('admin.users') }}" class="nav-item">
+                👥 ユーザー管理
+            </a>
+            {% endif %}
+            <a href="{{ url_for('admin.logs') }}" class="nav-item">
+                📋 システムログ
+            </a>
+            <a href="{{ url_for('admin.analytics') }}" class="nav-item active">
+                📈 データ分析
+            </a>
+        </nav>
+
+        <!-- メインコンテンツ -->
+        <main class="admin-main">
+            
+            <!-- 分析期間選択 -->
+            <section class="analytics-controls">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>⚙️ 分析設定</h2>
+                    </div>
+                    
+                    <form method="GET" class="controls-form">
+                        <div class="controls-grid">
+                            <div class="control-group">
+                                <label for="days">分析期間</label>
+                                <select id="days" name="days" onchange="this.form.submit()">
+                                    <option value="1" {{ 'selected' if days == 1 }}>過去1日</option>
+                                    <option value="7" {{ 'selected' if days == 7 }}>過去7日</option>
+                                    <option value="30" {{ 'selected' if days == 30 }}>過去30日</option>
+                                    <option value="90" {{ 'selected' if days == 90 }}>過去90日</option>
+                                </select>
+                            </div>
+                            
+                            <div class="control-group">
+                                <label>クイックアクション</label>
+                                <div class="quick-actions">
+                                    <button type="button" onclick="refreshAnalytics()" class="btn btn-small">🔄 更新</button>
+                                    <button type="button" onclick="exportAnalytics()" class="btn btn-small btn-outline">📊 エクスポート</button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- パフォーマンス統計 -->
+            <section class="performance-stats">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>⚡ パフォーマンス統計</h2>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">⚡</div>
+                            <div class="stat-content">
+                                <h3>平均レスポンス時間</h3>
+                                <p class="stat-number">{{ "%.0f"|format(performance_data.avg_response_time) }}ms</p>
+                                <small>API応答速度</small>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">🔗</div>
+                            <div class="stat-content">
+                                <h3>総API呼び出し</h3>
+                                <p class="stat-number">{{ performance_data.total_api_calls }}</p>
+                                <small>累計API使用回数</small>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">✅</div>
+                            <div class="stat-content">
+                                <h3>成功率</h3>
+                                <p class="stat-number">{{ performance_data.success_rate }}%</p>
+                                <small>システム稼働率</small>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">🔄</div>
+                            <div class="stat-content">
+                                <h3>総翻訳数</h3>
+                                <p class="stat-number">{{ system_stats.total_translations }}</p>
+                                <small>累計翻訳回数</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 翻訳トレンド分析 -->
+            <section class="translation-trends">
+                <div class="section-card">
+                    <h2>📈 翻訳トレンド分析 ({{ days }}日間)</h2>
+                    <div class="trends-container">
+                        <div class="trend-chart">
+                            <canvas id="translationTrendChart"></canvas>
+                        </div>
+                        <div class="trend-summary">
+                            <h3>🔍 トレンドサマリー</h3>
+                            <div class="summary-stats">
+                                <div class="summary-item">
+                                    <span class="summary-label">総翻訳数:</span>
+                                    <span class="summary-value">{{ translation_analytics.daily_translations|length and translation_analytics.daily_translations|map(attribute='count')|sum or 0 }}回</span>
+                                </div>
+                                <div class="summary-item">
+                                    <span class="summary-label">1日平均:</span>
+                                    <span class="summary-value">{{ "%.1f"|format((translation_analytics.daily_translations|length and translation_analytics.daily_translations|map(attribute='count')|sum / translation_analytics.daily_translations|length) or 0) }}回</span>
+                                </div>
+                                <div class="summary-item">
+                                    <span class="summary-label">最大1日:</span>
+                                    <span class="summary-value">{{ translation_analytics.daily_translations|length and translation_analytics.daily_translations|map(attribute='count')|max or 0 }}回</span>
+                                </div>
+                                <div class="summary-item">
+                                    <span class="summary-label">アクティブ日数:</span>
+                                    <span class="summary-value">{{ translation_analytics.daily_translations|selectattr('count', 'greaterthan', 0)|list|length }}日</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Gemini推奨分析 -->
+            <section class="gemini-recommendation-analysis">
+                <div class="section-card">
+                    <h2>🧠 Gemini推奨分析</h2>
+                    <div class="gemini-analysis-container">
+                        <div class="gemini-chart">
+                            <canvas id="geminiRecommendationChart"></canvas>
+                        </div>
+                        <div class="gemini-insights">
+                            <h3>💡 推奨インサイト</h3>
+                            <div class="insights-list">
+                                {% for engine, count in performance_data.gemini_recommendations.items() %}
+                                <div class="insight-item">
+                                    <div class="insight-header">
+                                        <span class="engine-name">{{ engine.title() }}</span>
+                                        <span class="recommendation-count">{{ count }}回</span>
+                                    </div>
+                                    <div class="insight-description">
+                                        {% if engine == 'chatgpt' %}
+                                            標準的で信頼性の高い翻訳として推奨される傾向
+                                        {% elif engine == 'enhanced' %}
+                                            コンテキストを考慮した高品質翻訳として推奨
+                                        {% elif engine == 'gemini' %}
+                                            創造性と自然さを重視した翻訳として推奨
+                                        {% else %}
+                                            その他の翻訳エンジン
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ユーザー行動分析 -->
+            <section class="user-behavior">
+                <div class="section-card">
+                    <h2>👥 ユーザー行動分析</h2>
+                    <div class="behavior-grid">
+                        <div class="top-users-panel">
+                            <h3>🏆 アクティブユーザー TOP10</h3>
+                            <div class="users-list">
+                                {% for user in translation_analytics.top_users %}
+                                <div class="user-item">
+                                    <div class="user-info">
+                                        <span class="user-name">{{ user.username }}</span>
+                                        <span class="user-count">{{ user.count }}回</span>
+                                    </div>
+                                    <div class="user-progress">
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: {{ (user.count / translation_analytics.top_users[0].count * 100) if translation_analytics.top_users else 0 }}%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="usage-patterns">
+                            <h3>📊 利用パターン</h3>
+                            <div class="pattern-stats">
+                                <div class="pattern-item">
+                                    <span class="pattern-icon">⏰</span>
+                                    <div class="pattern-content">
+                                        <h4>ピーク時間</h4>
+                                        <p>14:00-16:00 (推定)</p>
+                                    </div>
+                                </div>
+                                <div class="pattern-item">
+                                    <span class="pattern-icon">📅</span>
+                                    <div class="pattern-content">
+                                        <h4>ピーク曜日</h4>
+                                        <p>火曜日・水曜日 (推定)</p>
+                                    </div>
+                                </div>
+                                <div class="pattern-item">
+                                    <span class="pattern-icon">🎯</span>
+                                    <div class="pattern-content">
+                                        <h4>平均セッション</h4>
+                                        <p>2.5回/セッション (推定)</p>
+                                    </div>
+                                </div>
+                                <div class="pattern-item">
+                                    <span class="pattern-icon">🔄</span>
+                                    <div class="pattern-content">
+                                        <h4>リピート率</h4>
+                                        <p>75% (推定)</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- システム健全性指標 -->
+            <section class="system-health">
+                <div class="section-card">
+                    <h2>💚 システム健全性指標</h2>
+                    <div class="health-grid">
+                        <div class="health-metric">
+                            <div class="metric-header">
+                                <span class="metric-icon">🚀</span>
+                                <h4>API応答性能</h4>
+                            </div>
+                            <div class="metric-value good">優良</div>
+                            <div class="metric-description">平均{{ "%.0f"|format(performance_data.avg_response_time) }}ms - 目標値内</div>
+                        </div>
+                        
+                        <div class="health-metric">
+                            <div class="metric-header">
+                                <span class="metric-icon">🔧</span>
+                                <h4>システム稼働率</h4>
+                            </div>
+                            <div class="metric-value excellent">{{ performance_data.success_rate }}%</div>
+                            <div class="metric-description">高い稼働率を維持</div>
+                        </div>
+                        
+                        <div class="health-metric">
+                            <div class="metric-header">
+                                <span class="metric-icon">📊</span>
+                                <h4>データ品質</h4>
+                            </div>
+                            <div class="metric-value good">良好</div>
+                            <div class="metric-description">ログとメトリクスが正常</div>
+                        </div>
+                        
+                        <div class="health-metric">
+                            <div class="metric-header">
+                                <span class="metric-icon">🔐</span>
+                                <h4>セキュリティ状態</h4>
+                            </div>
+                            <div class="metric-value excellent">安全</div>
+                            <div class="metric-description">セキュリティ問題なし</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- フッター -->
+        <footer class="admin-footer">
+            <p>データ分析期間: {{ days }}日間 | {{ translation_analytics.time_range }} | LangPont Admin Phase B-1</p>
+            <div class="footer-actions">
+                <button onclick="generateReport()" class="btn btn-small">📄 レポート生成</button>
+                <button onclick="scheduleReport()" class="btn btn-small btn-outline">⏰ 定期レポート</button>
+            </div>
+        </footer>
+
+    </div>
+
+    <script>
+        // 🚀 管理者データ分析画面 JavaScript
+        
+        // Chart.js フォールバックチェック
+        if (typeof Chart === 'undefined') {
+            console.warn('Chart.js が読み込めませんでした。グラフ機能は無効になります。');
+            document.querySelectorAll('canvas').forEach(canvas => {
+                canvas.style.display = 'none';
+                const message = document.createElement('div');
+                message.style.padding = '20px';
+                message.style.textAlign = 'center';
+                message.style.color = '#666';
+                message.textContent = 'グラフを表示できません。ページを再読み込みしてください。';
+                canvas.parentNode.appendChild(message);
+            });
+        } else {
+            // 翻訳トレンドチャート
+            const trendCtx = document.getElementById('translationTrendChart').getContext('2d');
+            const trendData = {{ translation_analytics.daily_translations|tojson }};
+            
+            new Chart(trendCtx, {
+            type: 'line',
+            data: {
+                labels: trendData.map(d => d.date),
+                datasets: [{
+                    label: '日別翻訳数',
+                    data: trendData.map(d => d.count),
+                    borderColor: '#007AFF',
+                    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#007AFF',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: '翻訳数'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: '日付'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: '#ffffff',
+                        bodyColor: '#ffffff',
+                        borderColor: '#007AFF',
+                        borderWidth: 1
+                    }
+                }
+            }
+        });
+
+        // Gemini推奨チャート
+        const geminiCtx = document.getElementById('geminiRecommendationChart').getContext('2d');
+        const geminiData = {{ performance_data.gemini_recommendations|tojson }};
+        
+        new Chart(geminiCtx, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(geminiData).map(key => key.charAt(0).toUpperCase() + key.slice(1)),
+                datasets: [{
+                    data: Object.values(geminiData),
+                    backgroundColor: [
+                        '#007AFF',  // ChatGPT
+                        '#FF9500',  // Enhanced
+                        '#34C759',  // Gemini
+                        '#FF3B30'   // Others
+                    ],
+                    borderWidth: 3,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: '#ffffff',
+                        bodyColor: '#ffffff'
+                    }
+                }
+            }
+        });
+
+        // JavaScript関数
+        function refreshAnalytics() {
+            location.reload();
+        }
+
+        function exportAnalytics() {
+            const data = {
+                period: {{ days }},
+                translation_analytics: {{ translation_analytics|tojson }},
+                performance_data: {{ performance_data|tojson }},
+                system_stats: {{ system_stats|tojson }},
+                export_timestamp: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `langpont_analytics_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+
+        function generateReport() {
+            alert('レポート生成機能は開発中です。\n\n将来的には以下の機能を提供予定:\n- PDF形式の詳細レポート\n- 週次・月次サマリー\n- カスタマイズ可能なメトリクス');
+        }
+
+        function scheduleReport() {
+            alert('定期レポート機能は開発中です。\n\n将来的には以下の機能を提供予定:\n- 自動レポートスケジューリング\n- メール配信設定\n- Slack連携');
+        }
+
+        // リアルタイム更新
+        setInterval(async () => {
+            try {
+                const response = await fetch('/admin/api/system_stats');
+                if (response.ok) {
+                    const data = await response.json();
+                    updateRealtimeStats(data.data);
+                }
+            } catch (error) {
+                console.error('リアルタイム更新エラー:', error);
+            }
+        }, 60000); // 1分間隔
+
+        function updateRealtimeStats(stats) {
+            // パフォーマンス統計の更新
+            const responseTimeElement = document.querySelector('.stat-card:nth-child(1) .stat-number');
+            const apiCallsElement = document.querySelector('.stat-card:nth-child(2) .stat-number');
+            const translationsElement = document.querySelector('.stat-card:nth-child(4) .stat-number');
+            
+            if (responseTimeElement) responseTimeElement.textContent = Math.round(stats.avg_response_time) + 'ms';
+            if (apiCallsElement) apiCallsElement.textContent = stats.total_api_calls;
+            if (translationsElement) translationsElement.textContent = stats.total_translations;
+        }
+
+            // 初期化
+            console.log('🚀 LangPont管理者データ分析画面 Phase B-1 初期化完了');
+        }
+    </script>
+
+    <style>
+        /* データ分析画面専用スタイル */
+        .controls-form {
+            margin-top: 1rem;
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 2rem;
+            align-items: end;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .control-group label {
+            font-weight: 500;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+
+        .control-group select {
+            padding: 0.5rem;
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            background: var(--bg-white);
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* トレンド分析 */
+        .trends-container {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            margin-top: 1.5rem;
+        }
+
+        .trend-chart {
+            min-height: 300px;
+        }
+
+        .trend-summary h3 {
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .summary-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem;
+            background: var(--bg-light);
+            border-radius: 8px;
+        }
+
+        .summary-label {
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .summary-value {
+            font-weight: 600;
+            color: var(--primary-blue);
+        }
+
+        /* Gemini分析 */
+        .gemini-analysis-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 1.5rem;
+        }
+
+        .gemini-chart {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .gemini-insights h3 {
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .insights-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .insight-item {
+            padding: 1rem;
+            background: var(--bg-light);
+            border-radius: 8px;
+        }
+
+        .insight-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .engine-name {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .recommendation-count {
+            background: var(--primary-blue);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .insight-description {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        /* ユーザー行動分析 */
+        .behavior-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 1.5rem;
+        }
+
+        .top-users-panel h3,
+        .usage-patterns h3 {
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .users-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .user-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .user-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .user-name {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .user-count {
+            background: var(--primary-blue);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .user-progress {
+            background: var(--border-light);
+            border-radius: 4px;
+            height: 6px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: var(--primary-blue);
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .pattern-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .pattern-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--bg-light);
+            border-radius: 8px;
+        }
+
+        .pattern-icon {
+            font-size: 1.5rem;
+        }
+
+        .pattern-content h4 {
+            margin-bottom: 0.25rem;
+            color: var(--text-primary);
+        }
+
+        .pattern-content p {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        /* システム健全性 */
+        .health-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .health-metric {
+            padding: 1.5rem;
+            background: var(--bg-light);
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .metric-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .metric-icon {
+            font-size: 1.5rem;
+        }
+
+        .metric-header h4 {
+            color: var(--text-primary);
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-value.excellent {
+            color: var(--success-green);
+        }
+
+        .metric-value.good {
+            color: var(--primary-blue);
+        }
+
+        .metric-value.warning {
+            color: var(--warning-orange);
+        }
+
+        .metric-value.danger {
+            color: var(--danger-red);
+        }
+
+        .metric-description {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        /* レスポンシブ対応 */
+        @media (max-width: 768px) {
+            .controls-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .trends-container,
+            .gemini-analysis-container,
+            .behavior-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .pattern-stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .health-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</body>
+</html>

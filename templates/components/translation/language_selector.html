@@ -1,0 +1,29 @@
+<!-- 🆕 翻訳ペア選択部分（国旗付き + 言語入れ替え機能） -->
+<div class="translation-section-improved">
+    <div class="language-selector-improved">
+        <div class="select-container-improved">
+            <select class="select-improved" id="source_language">
+                <option value="ja">🇯🇵 {{ labels["label_ja"] }}</option>
+                <option value="en">🇺🇸 {{ labels["label_en"] }}</option>
+                <option value="fr">🇫🇷 {{ labels["label_fr"] }}</option>
+                <option value="es">🇪🇸 {{ labels["label_es"] }}</option>
+            </select>
+        </div>
+        <div class="arrow-container-improved">
+            <div class="arrow-improved swap-arrow" onclick="swapLanguages()" title="{{ labels['swap_languages'] }}">
+                <span class="arrow-icon">→</span>
+            </div>
+        </div>
+        <div class="select-container-improved">
+            <select class="select-improved" id="target_language">
+                <option value="fr">🇫🇷 {{ labels["label_fr"] }}</option>
+                <option value="ja">🇯🇵 {{ labels["label_ja"] }}</option>
+                <option value="en">🇺🇸 {{ labels["label_en"] }}</option>
+                <option value="es">🇪🇸 {{ labels["label_es"] }}</option>
+            </select>
+        </div>
+    </div>
+    
+    <!-- 隠しフィールド（既存システムとの互換性） -->
+    <input type="hidden" id="language_pair" name="language_pair" value="ja-fr">
+</div>

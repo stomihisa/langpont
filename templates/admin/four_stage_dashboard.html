@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>🎯 4段階統合分析ダッシュボード - LangPont</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        .dashboard-container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+        
+        /* ヘッダー */
+        .dashboard-header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 20px 24px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        
+        .dashboard-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #2d3748;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .nav-link {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 8px 16px;
+            border: 1px solid #667eea;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+        
+        .nav-link:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        /* フィルターセクション */
+        .filter-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .filter-group label {
+            font-size: 12px;
+            color: #718096;
+            font-weight: 600;
+        }
+        
+        .filter-group select {
+            padding: 8px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 14px;
+            min-width: 120px;
+        }
+        
+        .filter-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+            margin-left: auto;
+        }
+        
+        .filter-btn:hover {
+            background: #5a67d8;
+        }
+        
+        /* 統計カード */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            margin: 8px 0;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #718096;
+        }
+        
+        /* メイン分析テーブル */
+        .analysis-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .analysis-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+        
+        .analysis-table th {
+            background: #f7fafc;
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 12px;
+            color: #4a5568;
+            border-bottom: 2px solid #e2e8f0;
+            white-space: nowrap;
+        }
+        
+        .analysis-table td {
+            padding: 12px 8px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 12px;
+            vertical-align: top;
+        }
+        
+        .analysis-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        /* ステージ表示 */
+        .stage-indicator {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-align: center;
+            min-width: 60px;
+        }
+        
+        .stage0-completed {
+            background: #ffeaa7;
+            color: #856404;
+        }
+        
+        .stage0-pending {
+            background: #f8f9fa;
+            color: #6c757d;
+        }
+        
+        .stage1-completed {
+            background: #c3e6cb;
+            color: #155724;
+        }
+        
+        .stage2-completed {
+            background: #bee5eb;
+            color: #0c5460;
+        }
+        
+        .copy-data {
+            background: #d1ecf1 !important;
+            color: #0c5460 !important;
+            border-left: 3px solid #17a2b8;
+            font-weight: 600;
+        }
+        
+        .stage3-match {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .stage3-divergent {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .stage3-unknown {
+            background: #f8f9fa;
+            color: #6c757d;
+        }
+        
+        /* 推奨結果表示 */
+        .recommendation {
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+        }
+        
+        .recommendation.chatgpt {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+        
+        .recommendation.enhanced {
+            background: #f3e5f5;
+            color: #6a1b9a;
+        }
+        
+        .recommendation.gemini {
+            background: #fff3e0;
+            color: #e65100;
+        }
+        
+        /* ローディング */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* レスポンシブ */
+        @media (max-width: 768px) {
+            .dashboard-container {
+                padding: 8px;
+            }
+            
+            .filter-section {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .filter-btn {
+                margin-left: 0;
+                margin-top: 12px;
+            }
+            
+            .analysis-table {
+                font-size: 11px;
+            }
+            
+            .analysis-table th,
+            .analysis-table td {
+                padding: 6px 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- ヘッダー -->
+        <div class="dashboard-header">
+            <div class="header-content">
+                <h1 class="dashboard-title">
+                    🎯 4段階統合分析ダッシュボード
+                </h1>
+                <div class="nav-links">
+                    <a href="/admin/dashboard" class="nav-link">🏠 管理ホーム</a>
+                    <a href="/admin/comprehensive_dashboard" class="nav-link">📋 統合活動ログ</a>
+                    <a href="/admin/llm_recommendation_check" class="nav-link">🔍 第0段階チェック</a>
+                    <a href="/" class="nav-link">🔙 メインアプリ</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- フィルター -->
+        <div class="filter-section">
+            <div class="filter-group">
+                <label>期間</label>
+                <select id="period-filter">
+                    <option value="all">全期間</option>
+                    <option value="today">今日</option>
+                    <option value="week">今週</option>
+                    <option value="month">今月</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>分析エンジン</label>
+                <select id="engine-filter">
+                    <option value="">全て</option>
+                    <option value="chatgpt">ChatGPT</option>
+                    <option value="gemini">Gemini</option>
+                    <option value="claude">Claude</option>
+                </select>
+            </div>
+            <button class="filter-btn" onclick="loadFourStageData()">
+                🔍 フィルター適用
+            </button>
+        </div>
+        
+        <!-- 統計カード -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">📊 総分析数</div>
+                <div class="stat-value" id="total-analyses">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">✅ 推奨一致率</div>
+                <div class="stat-value" id="match-rate">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">📋 コピー行動記録</div>
+                <div class="stat-value" id="copy-records">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">🔍 人間チェック済</div>
+                <div class="stat-value" id="human-checks">-</div>
+            </div>
+        </div>
+        
+        <!-- 4段階分析結果 -->
+        <div class="analysis-section">
+            <h2 class="section-title">📊 4段階統合分析結果</h2>
+            <div id="analysis-loading" class="loading">
+                <div class="spinner"></div>
+                <p>データを読み込み中...</p>
+            </div>
+            <div id="analysis-content" style="display: none;">
+                <table class="analysis-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>日時</th>
+                            <th>原文</th>
+                            <th>第0段階<br>人間CK</th>
+                            <th>第0.5段階<br>User SEL LLM</th>
+                            <th>第1段階<br>LLMの推奨</th>
+                            <th>第1.5段階<br>判定したLLM</th>
+                            <th>第2段階<br>User選択(Copy)</th>
+                            <th>第3段階<br>LLM推奨 vs User選択</th>
+                            <th>分析エンジン</th>
+                        </tr>
+                    </thead>
+                    <tbody id="analysis-tbody">
+                        <!-- データは動的に挿入 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadFourStageData();
+        });
+        
+        // 4段階分析データ読み込み
+        async function loadFourStageData() {
+            const period = document.getElementById('period-filter').value;
+            const engine = document.getElementById('engine-filter').value;
+            
+            // ローディング表示
+            document.getElementById('analysis-loading').style.display = 'block';
+            document.getElementById('analysis-content').style.display = 'none';
+            
+            try {
+                const params = new URLSearchParams();
+                if (period) params.append('period', period);
+                if (engine) params.append('engine', engine);
+                
+                const response = await fetch(`/admin/api/four_stage_analysis?${params}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                if (result.success) {
+                    displayFourStageData(result.data);
+                } else {
+                    throw new Error(result.error || 'Unknown error');
+                }
+                
+            } catch (error) {
+                console.error('データ読み込みエラー:', error);
+                document.getElementById('analysis-loading').innerHTML = 
+                    '<p style="color: #e53e3e;">データの読み込みに失敗しました: ' + error.message + '</p>';
+            }
+        }
+        
+        // データ表示
+        function displayFourStageData(data) {
+            // 統計更新
+            document.getElementById('total-analyses').textContent = data.total_count || 0;
+            document.getElementById('match-rate').textContent = 
+                data.match_rate ? `${data.match_rate.toFixed(1)}%` : '-';
+            document.getElementById('copy-records').textContent = data.copy_count || 0;
+            document.getElementById('human-checks').textContent = data.human_check_count || 0;
+            
+            // テーブル更新
+            const tbody = document.getElementById('analysis-tbody');
+            tbody.innerHTML = '';
+            
+            if (!data.items || data.items.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #718096;">データがありません</td></tr>';
+                document.getElementById('analysis-loading').style.display = 'none';
+                document.getElementById('analysis-content').style.display = 'block';
+                return;
+            }
+            
+            data.items.forEach(item => {
+                const row = document.createElement('tr');
+                
+                // ID
+                const idCell = document.createElement('td');
+                idCell.textContent = item.id;
+                row.appendChild(idCell);
+                
+                // 日時
+                const dateCell = document.createElement('td');
+                const date = new Date(item.created_at);
+                dateCell.textContent = date.toLocaleString('ja-JP', {
+                    month: 'numeric',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                row.appendChild(dateCell);
+                
+                // 原文
+                const textCell = document.createElement('td');
+                textCell.style.maxWidth = '200px';
+                textCell.style.overflow = 'hidden';
+                textCell.style.textOverflow = 'ellipsis';
+                textCell.style.whiteSpace = 'nowrap';
+                textCell.textContent = item.japanese_text || '-';
+                textCell.title = item.japanese_text || '';
+                row.appendChild(textCell);
+                
+                // 第0段階 - 人間CK
+                const stage0Cell = document.createElement('td');
+                if (item.stage0 && item.stage0.status && item.stage0.status !== '未チェック') {
+                    // 人間チェック結果に番号を付ける
+                    let displayText = item.stage0.status;
+                    if (item.stage0.status === 'ChatGPT') displayText = '①ChatGPT翻訳';
+                    else if (item.stage0.status === 'Enhanced') displayText = '②より良いChatGPT翻訳';
+                    else if (item.stage0.status === 'Gemini') displayText = '③Gemini翻訳';
+                    else if (item.stage0.status === 'None') displayText = '④どれでもない';
+                    
+                    stage0Cell.innerHTML = `<span class="stage-indicator stage0-completed">${displayText}</span>`;
+                } else {
+                    stage0Cell.innerHTML = '<span class="stage-indicator stage0-pending">未チェック</span>';
+                }
+                row.appendChild(stage0Cell);
+                
+                // 第0.5段階 - User SEL LLM (ユーザーが選んだ分析エンジン)
+                const stage05Cell = document.createElement('td');
+                if (item.stage05 && item.stage05.user_selected_llm) {
+                    stage05Cell.innerHTML = `<span class="stage-indicator stage1-completed">${item.stage05.user_selected_llm}</span>`;
+                } else {
+                    stage05Cell.innerHTML = '<span class="stage-indicator stage0-pending">-</span>';
+                }
+                row.appendChild(stage05Cell);
+                
+                // 第1段階 - LLMの推奨
+                const stage1Cell = document.createElement('td');
+                if (item.stage1 && item.stage1.recommendation) {
+                    const recClass = item.stage1.recommendation.toLowerCase();
+                    stage1Cell.innerHTML = `<span class="recommendation ${recClass}">${item.stage1.recommendation}</span>`;
+                } else {
+                    stage1Cell.innerHTML = '<span class="stage-indicator stage0-pending">-</span>';
+                }
+                row.appendChild(stage1Cell);
+                
+                // 第1.5段階 - 判定したLLM (推奨を判定したエンジン)
+                const stage15Cell = document.createElement('td');
+                if (item.stage15 && item.stage15.judging_llm) {
+                    stage15Cell.innerHTML = `<span class="stage-indicator stage1-completed">${item.stage15.judging_llm}</span>`;
+                } else {
+                    stage15Cell.innerHTML = '<span class="stage-indicator stage0-pending">-</span>';
+                }
+                row.appendChild(stage15Cell);
+                
+                // 第2段階 - User選択(Copy)
+                const stage2Cell = document.createElement('td');
+                if (item.stage2 && item.stage2.user_selection) {
+                    const isActualCopy = item.stage2.data_source === 'actual_copy_tracking';
+                    const className = isActualCopy ? 'stage2-completed copy-data' : 'stage2-completed';
+                    stage2Cell.innerHTML = `<span class="stage-indicator ${className}">${item.stage2.user_selection}</span>`;
+                } else {
+                    stage2Cell.innerHTML = '<span class="stage-indicator stage0-pending">未選択</span>';
+                }
+                row.appendChild(stage2Cell);
+                
+                // 第3段階 - LLM推奨 vs User選択
+                const stage3Cell = document.createElement('td');
+                if (item.stage3) {
+                    const matchClass = item.stage3.match ? 'stage3-match' : 'stage3-divergent';
+                    const matchText = item.stage3.match ? '✅ 一致' : '❌ 不一致';
+                    stage3Cell.innerHTML = `<span class="stage-indicator ${matchClass}">${matchText}</span>`;
+                } else {
+                    stage3Cell.innerHTML = '<span class="stage-indicator stage3-unknown">-</span>';
+                }
+                row.appendChild(stage3Cell);
+                
+                // 分析エンジン
+                const engineCell = document.createElement('td');
+                engineCell.textContent = item.analysis_engine || '-';
+                row.appendChild(engineCell);
+                
+                tbody.appendChild(row);
+            });
+            
+            // 表示切り替え
+            document.getElementById('analysis-loading').style.display = 'none';
+            document.getElementById('analysis-content').style.display = 'block';
+        }
+    </script>
+</body>
+</html>

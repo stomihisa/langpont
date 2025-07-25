@@ -1,0 +1,31 @@
+<!--
+ファイル名: components/interactive/chat_history.html
+役割: チャット履歴表示エリア
+依存関係: 
+  - static/js/interactive/chat_manager.js (updateChatHistory, clearChatHistory)
+  - labels.chat_* (多言語対応)
+  - chat_history (サーバーデータ)
+公開インターフェース:
+  - #chat-history: チャット履歴コンテナ
+  - #chat-items: チャットアイテム表示エリア
+  - #chat-history-data: サーバーデータスクリプト
+最終更新: H2-2(B2-3) Stage 1 Phase 1
+戦略位置: 3段階戦略 Stage 1の基盤構築フェーズ
+作成者: Claude Code (完全実装戦略準拠)
+品質基準: Stage 1基準（85%+成功率目標）
+-->
+
+<!-- チャット履歴セクション -->
+<div class="chat-history" id="chat-history">
+    <div class="interactive-header">
+        <span>💬</span>
+        <span class="interactive-title">{{ labels["chat_history_title"] }}</span>
+        <button type="button" class="btn btn-secondary" onclick="clearChatHistory()" style="margin-left: auto; padding: 6px 12px; font-size: 12px;">
+            {{ labels["chat_clear_button"] }}
+        </button>
+    </div>
+    <div id="chat-items"></div>
+</div>
+
+<!-- 🆕 チャット履歴データをJavaScriptに渡すための隠し要素 -->
+<script type="application/json" id="chat-history-data">{{ chat_history | tojson | safe }}</script>

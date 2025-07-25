@@ -1,0 +1,17 @@
+<!-- コントロール -->
+<div class="controls">
+    <button type="button" class="btn btn-primary" onclick="runFastTranslation()" id="translate-btn">
+        <span>✨</span>
+        {{ labels["translate_button"] }}
+    </button>
+    <button type="button" class="btn btn-secondary" onclick="resetForm()">
+        <span>🔄</span>
+        {{ labels["reset_button"] }}
+    </button>
+</div>
+
+<!-- ローディング -->
+<div class="loading" id="loading">
+    <div class="spinner"></div>
+    <span>{{ labels["loading_message"] }}</span>
+</div>

@@ -1,0 +1,95 @@
+=== Analytics Database Content ===
+Generated: #午後
+
+=== All Analytics Events ===
+43|cta_click|1749870031176|http://127.0.0.1:8080//alpha/jp|127.0.0.1|Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36|{"button_position": {"section": "hero", "top": 429, "visible": true}, "scroll_depth": 0, "time_on_page": 45132, "page_section": "hero"}
+42|cta_click|1749870004012|http://127.0.0.1:8080//alpha/jp|127.0.0.1|Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36|{"button_position": {"section": "hero", "top": 429, "visible": true}, "scroll_depth": 0, "time_on_page": 17968, "page_section": "hero"}
+41|scroll_depth|1749870001127|http://127.0.0.1:8080//alpha/jp|127.0.0.1|Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36|{"scroll_percentage": 100, "milestone": 25, "time_to_scroll": 15083}
+40|page_view|1749869986045|http://127.0.0.1:8080//alpha/jp|127.0.0.1|Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36|{"page_title": "LangPont", "page_path": "//alpha/jp", "connection_type": "4g", "timezone": "Asia/Tokyo", "language_preference": "ja", "color_depth": 30, "pixel_ratio": 2}
+39|time_on_page|1749869985974|http://127.0.0.1:8080//alpha/jp|127.0.0.1|Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36|{"time_spent": 244525, "max_scroll_depth": 9, "final_section": "hero"}
+38|cta_click|1749869917000|http://localhost:8081/alpha/jp|127.0.0.1|curl/8.7.1|{"test": "js_fix_verification"}
+37|cta_click|1749869771200|http://127.0.0.1:8080//alpha/jp|127.0.0.1|Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36|{"button_position": {"section": "hero", "top": 429, "visible": true}, "scroll_depth": 0, "time_on_page": 29751, "page_section": "hero"}
+36|cta_click|1749869762711|http://127.0.0.1:8080//alpha/jp|127.0.0.1|Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36|{"button_position": {"section": "hero", "top": 429, "visible": true}, "scroll_depth": 0, "time_on_page": 21262, "page_section": "hero"}
+35|cta_click|1749869752478|http://127.0.0.1:8080//alpha/jp|127.0.0.1|Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36|{"button_position": {"section": "hero", "top": 429, "visible": true}, "scroll_depth": 0, "time_on_page": 11030, "page_section": "hero"}
+34|page_view|1749869741449|http://127.0.0.1:8080//alpha/jp|127.0.0.1|Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36|{"page_title": "LangPont", "page_path": "//alpha/jp", "connection_type": "4g", "timezone": "Asia/Tokyo", "language_preference": "ja", "color_depth": 30, "pixel_ratio": 2}
+33|time_on_page|1749869741388|http://127.0.0.1:8080//alpha/jp|127.0.0.1|Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36|{"time_spent": 297607, "max_scroll_depth": 94, "final_section": "hero"}
+32|cta_click|1749869526570|http://127.0.0.1:8080//alpha/jp|127.0.0.1|Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36|{"button_position": {"section": "hero", "top": 429, "visible": true}, "scroll_depth": 0, "time_on_page": 82789, "page_section": "hero"}
+31|cta_click|1749869513489|http://127.0.0.1:8080//alpha/jp|127.0.0.1|Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36|{"button_position": {"section": "hero", "top": 307, "visible": true}, "scroll_depth": 1, "time_on_page": 69708, "page_section": "hero"}
+30|scroll_depth|1749869488714|http://127.0.0.1:8080//alpha/jp|127.0.0.1|Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36|{"scroll_percentage": 94, "milestone": 25, "time_to_scroll": 44933}
+29|page_view|1749869443781|http://127.0.0.1:8080//alpha/jp|127.0.0.1|Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36|{"page_title": "LangPont", "page_path": "//alpha/jp", "connection_type": "4g", "timezone": "Asia/Tokyo", "language_preference": "ja", "color_depth": 30, "pixel_ratio": 2}
+28|time_on_page|1749869443711|http://127.0.0.1:8080//alpha/jp|127.0.0.1|Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36|{"time_spent": 419711, "max_scroll_depth": 100, "final_section": "hero"}
+27|cta_click|1749869349000||127.0.0.1|curl/8.7.1|{}
+26|cta_click|1749869349000||127.0.0.1|curl/8.7.1|{}
+25|cta_click|1749869349000||127.0.0.1|curl/8.7.1|{}
+24|cta_click|1749869349000||127.0.0.1|curl/8.7.1|{}
+23|cta_click|1749869349000||127.0.0.1|curl/8.7.1|{}
+22|cta_click|1749869349000||127.0.0.1|curl/8.7.1|{}
+21|cta_click|1749869349000||127.0.0.1|curl/8.7.1|{}
+20|cta_click|1749869349000||127.0.0.1|curl/8.7.1|{}
+19|cta_click|1749869349000||127.0.0.1|curl/8.7.1|{}
+18|cta_click|1749869349000||127.0.0.1|curl/8.7.1|{}
+17|page_view|1749869338000|http://localhost:8081/alpha/jp|127.0.0.1|curl/8.7.1|{"test": "rate_limit_fix"}
+16|scroll_depth|1749869041105|http://127.0.0.1:8080//alpha/jp|127.0.0.1|Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36|{"scroll_percentage": 37, "milestone": 25, "time_to_scroll": 17105}
+15|scroll_depth|1749869041072|http://127.0.0.1:8080//alpha/jp|127.0.0.1|Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36|{"scroll_percentage": 36, "milestone": 25, "time_to_scroll": 17072}
+14|scroll_depth|1749869041039|http://127.0.0.1:8080//alpha/jp|127.0.0.1|Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36|{"scroll_percentage": 35, "milestone": 25, "time_to_scroll": 17039}
+13|scroll_depth|1749869041022|http://127.0.0.1:8080//alpha/jp|127.0.0.1|Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36|{"scroll_percentage": 34, "milestone": 25, "time_to_scroll": 17022}
+12|scroll_depth|1749869040989|http://127.0.0.1:8080//alpha/jp|127.0.0.1|Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36|{"scroll_percentage": 33, "milestone": 25, "time_to_scroll": 16989}
+11|scroll_depth|1749869040972|http://127.0.0.1:8080//alpha/jp|127.0.0.1|Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36|{"scroll_percentage": 32, "milestone": 25, "time_to_scroll": 16972}
+10|scroll_depth|1749869040938|http://127.0.0.1:8080//alpha/jp|127.0.0.1|Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36|{"scroll_percentage": 31, "milestone": 25, "time_to_scroll": 16938}
+9|scroll_depth|1749869040922|http://127.0.0.1:8080//alpha/jp|127.0.0.1|Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36|{"scroll_percentage": 30, "milestone": 25, "time_to_scroll": 16922}
+8|scroll_depth|1749869040872|http://127.0.0.1:8080//alpha/jp|127.0.0.1|Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36|{"scroll_percentage": 29, "milestone": 25, "time_to_scroll": 16872}
+7|scroll_depth|1749869040555|http://127.0.0.1:8080//alpha/jp|127.0.0.1|Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36|{"scroll_percentage": 28, "milestone": 25, "time_to_scroll": 16555}
+6|scroll_depth|1749869040422|http://127.0.0.1:8080//alpha/jp|127.0.0.1|Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36|{"scroll_percentage": 27, "milestone": 25, "time_to_scroll": 16422}
+5|scroll_depth|1749869040355|http://127.0.0.1:8080//alpha/jp|127.0.0.1|Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36|{"scroll_percentage": 26, "milestone": 25, "time_to_scroll": 16355}
+4|scroll_depth|1749869040288|http://127.0.0.1:8080//alpha/jp|127.0.0.1|Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36|{"scroll_percentage": 25, "milestone": 25, "time_to_scroll": 16288}
+3|cta_click|1749869035327|http://127.0.0.1:8080//alpha/jp|127.0.0.1|Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36|{"button_position": {"section": "hero", "top": 428, "visible": true}, "scroll_depth": 0, "time_on_page": 11327, "page_section": "hero"}
+2|page_view|1749869024001|http://127.0.0.1:8080//alpha/jp|127.0.0.1|Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36|{"page_title": "LangPont", "page_path": "//alpha/jp", "connection_type": "4g", "timezone": "Asia/Tokyo", "language_preference": "ja", "color_depth": 30, "pixel_ratio": 2}
+1|page_view|1749868709000|test_page|127.0.0.1|curl/8.7.1|{}
+
+=== Event Type Summary ===
+cta_click|19
+page_view|6
+scroll_depth|15
+time_on_page|3
+
+=== Table Schema ===
+CREATE TABLE analytics_events (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    event_id TEXT UNIQUE NOT NULL,
+                    event_type VARCHAR(50) NOT NULL,
+                    timestamp INTEGER NOT NULL,
+                    page_url TEXT,
+                    action VARCHAR(100),
+                    language VARCHAR(10),
+                    session_id VARCHAR(50),
+                    user_id INTEGER,
+                    ip_address VARCHAR(45),
+                    user_agent TEXT,
+                    screen_width INTEGER DEFAULT 0,
+                    screen_height INTEGER DEFAULT 0,
+                    viewport_width INTEGER DEFAULT 0,
+                    viewport_height INTEGER DEFAULT 0,
+                    is_mobile BOOLEAN DEFAULT 0,
+                    referrer TEXT,
+                    utm_source VARCHAR(100),
+                    utm_medium VARCHAR(100),
+                    utm_campaign VARCHAR(100),
+                    custom_data TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    processed BOOLEAN DEFAULT 0,
+                    
+                    -- 🆕 インデックス用フィールド
+                    date_only DATE GENERATED ALWAYS AS (DATE(timestamp/1000, 'unixepoch')) STORED,
+                    hour_only INTEGER GENERATED ALWAYS AS (CAST(strftime('%H', timestamp/1000, 'unixepoch') AS INTEGER)) STORED
+                );
+CREATE INDEX idx_analytics_timestamp ON analytics_events (timestamp);
+CREATE INDEX idx_analytics_event_type ON analytics_events (event_type);
+CREATE INDEX idx_analytics_session_id ON analytics_events (session_id);
+CREATE INDEX idx_analytics_user_id ON analytics_events (user_id);
+CREATE INDEX idx_analytics_ip_address ON analytics_events (ip_address);
+CREATE INDEX idx_analytics_date_only ON analytics_events (date_only);
+CREATE INDEX idx_analytics_hour_only ON analytics_events (hour_only);
+CREATE INDEX idx_analytics_processed ON analytics_events (processed);
+CREATE INDEX idx_analytics_user_date ON analytics_events (user_id, date_only);
+CREATE INDEX idx_analytics_session_time ON analytics_events (session_id, timestamp);
+CREATE INDEX idx_analytics_type_date ON analytics_events (event_type, date_only);

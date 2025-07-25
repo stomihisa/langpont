@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}LangPont{% endblock %}</title>
+
+  <!-- 🆕 Favicon設定 -->
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32.svg') }}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='favicon-180.svg') }}">
+  <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='favicon-192.svg') }}">
+  <link rel="icon" type="image/png" sizes="512x512" href="{{ url_for('static', filename='favicon-512.svg') }}">
+  <meta name="theme-color" content="#007AFF">
+
+  <!-- 🎨 LangPont統一カラーシステム -->
+  <style>
+    :root {
+      /* 🍎 Apple Blue メインカラー */
+      --color-primary: #007AFF;
+      --color-primary-dark: #5856D6;
+      --color-primary-gradient: linear-gradient(135deg, #007AFF 0%, #5856D6 100%);
+      
+      /* 🌟 アクセントカラー */
+      --color-accent: #34C759;
+      --color-accent-dark: #30B352;
+      
+      /* 🎯 背景色 */
+      --color-background: #F2F2F7;
+      --color-background-secondary: #FFFFFF;
+      --color-background-tertiary: #FAFAFA;
+      
+      /* 📝 テキストカラー */
+      --color-text-primary: #1D1D1F;
+      --color-text-secondary: #6B6B6B;
+      --color-text-tertiary: #8E8E93;
+      
+      /* 🔲 ボーダー・分割線 */
+      --color-border: #E5E5E7;
+      --color-border-light: #F2F2F7;
+      
+      /* ⚠️ ステータスカラー */
+      --color-error: #FF453A;
+      --color-warning: #FF9F0A;
+      --color-success: #34C759;
+      
+      /* 🎨 グラデーション */
+      --gradient-primary: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+      --gradient-accent: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-dark) 100%);
+      
+      /* 📱 Apple風シャドウ */
+      --shadow-small: 0 2px 8px rgba(0, 122, 255, 0.1);
+      --shadow-medium: 0 4px 16px rgba(0, 122, 255, 0.15);
+      --shadow-large: 0 8px 32px rgba(0, 122, 255, 0.2);
+    }
+  </style>
+
+  <!-- 共通CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+  {% block content %}
+  <!-- 各ページの中身がここに入ります -->
+  {% endblock %}
+
+  {% block scripts %}
+  <!-- JSなど -->
+  {% endblock %}
+
+</body>
+</html>

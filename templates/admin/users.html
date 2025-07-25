@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }} - LangPont 管理者</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head>
+<body>
+    <!-- 🚀 管理者ユーザー管理画面 - Task 2.9.2 Phase B-1 -->
+    <div class="admin-container">
+        
+        <!-- ヘッダー -->
+        <header class="admin-header">
+            <div class="header-left">
+                <h1>👥 ユーザー管理</h1>
+                <span class="version-badge">Phase B-1</span>
+            </div>
+            <div class="header-right">
+                <div class="user-info">
+                    <span class="user-role {{ user_info.role }}">{{ user_info.role|upper }}</span>
+                    <span class="username">{{ user_info.username }}</span>
+                </div>
+                <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">📊 ダッシュボード</a>
+                <a href="{{ url_for('index') }}" class="btn btn-secondary">メインアプリ</a>
+            </div>
+        </header>
+
+        <!-- ナビゲーション -->
+        <nav class="admin-nav">
+            <a href="{{ url_for('admin.dashboard') }}" class="nav-item">
+                📊 ダッシュボード
+            </a>
+            <a href="{{ url_for('admin.task292_monitor') }}" class="nav-item">
+                🔍 Task 2.9.2 監視
+            </a>
+            <a href="{{ url_for('admin.users') }}" class="nav-item active">
+                👥 ユーザー管理
+            </a>
+            <a href="{{ url_for('admin.logs') }}" class="nav-item">
+                📋 システムログ
+            </a>
+            <a href="{{ url_for('admin.analytics') }}" class="nav-item">
+                📈 データ分析
+            </a>
+        </nav>
+
+        <!-- メインコンテンツ -->
+        <main class="admin-main">
+            
+            <!-- ユーザー統計サマリー -->
+            <section class="user-stats">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>📊 ユーザー統計</h2>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">📝</div>
+                            <div class="stat-content">
+                                <h3>登録ユーザー数</h3>
+                                <p class="stat-number">{{ users_data|length + existing_users|length }}</p>
+                                <small>総ユーザー数</small>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">🔐</div>
+                            <div class="stat-content">
+                                <h3>管理者アカウント</h3>
+                                <p class="stat-number">{{ existing_users|selectattr('role', 'equalto', 'admin')|list|length }}</p>
+                                <small>admin権限ユーザー</small>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">⚙️</div>
+                            <div class="stat-content">
+                                <h3>開発者アカウント</h3>
+                                <p class="stat-number">{{ existing_users|selectattr('role', 'equalto', 'developer')|list|length }}</p>
+                                <small>developer権限ユーザー</small>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">👤</div>
+                            <div class="stat-content">
+                                <h3>ゲストアカウント</h3>
+                                <p class="stat-number">{{ existing_users|selectattr('role', 'equalto', 'guest')|list|length }}</p>
+                                <small>guest権限ユーザー</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 既存ユーザー（config.py由来） -->
+            <section class="existing-users">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>🏛️ 既存ユーザー (config.py)</h2>
+                        <span class="user-count-badge">{{ existing_users|length }}名</span>
+                    </div>
+                    <div class="users-table-container">
+                        <table class="users-table">
+                            <thead>
+                                <tr>
+                                    <th>ユーザー名</th>
+                                    <th>権限レベル</th>
+                                    <th>日次制限</th>
+                                    <th>説明</th>
+                                    <th>ステータス</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in existing_users %}
+                                <tr class="user-row {{ user.role }}">
+                                    <td class="username-cell">
+                                        <span class="username">{{ user.username }}</span>
+                                        <span class="source-badge">{{ user.source }}</span>
+                                    </td>
+                                    <td class="role-cell">
+                                        <span class="role-badge {{ user.role }}">{{ user.role|upper }}</span>
+                                    </td>
+                                    <td class="limit-cell">
+                                        {% if user.daily_limit == -1 %}
+                                            <span class="unlimited">∞ 無制限</span>
+                                        {% else %}
+                                            <span class="limited">{{ user.daily_limit }}回/日</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="description-cell">{{ user.description }}</td>
+                                    <td class="status-cell">
+                                        <span class="status-active">🟢 アクティブ</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 新規登録ユーザー（user_auth.py由来） -->
+            {% if users_data %}
+            <section class="registered-users">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>🆕 新規登録ユーザー (データベース)</h2>
+                        <span class="user-count-badge">{{ users_data|length }}名</span>
+                    </div>
+                    <div class="users-table-container">
+                        <table class="users-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>ユーザー名</th>
+                                    <th>メール</th>
+                                    <th>アカウント種別</th>
+                                    <th>Early Access</th>
+                                    <th>日次使用回数</th>
+                                    <th>登録日</th>
+                                    <th>アクション</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users_data %}
+                                <tr class="user-row {{ user.account_type }}">
+                                    <td class="id-cell">{{ user.id }}</td>
+                                    <td class="username-cell">
+                                        <span class="username">{{ user.username }}</span>
+                                        <span class="source-badge">database</span>
+                                    </td>
+                                    <td class="email-cell">{{ user.email }}</td>
+                                    <td class="account-type-cell">
+                                        <span class="role-badge {{ user.account_type }}">{{ user.account_type|upper }}</span>
+                                    </td>
+                                    <td class="early-access-cell">
+                                        {% if user.early_access %}
+                                            <span class="early-access">✅ 有効</span>
+                                        {% else %}
+                                            <span class="no-early-access">❌ 無効</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="usage-cell">
+                                        <span class="usage-count">{{ user.daily_usage_count or 0 }}</span>
+                                    </td>
+                                    <td class="created-cell">
+                                        {{ user.created_at.split('T')[0] if user.created_at else '不明' }}
+                                    </td>
+                                    <td class="actions-cell">
+                                        <button class="btn btn-small btn-outline" onclick="viewUserDetails({{ user.id }})">
+                                            詳細
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            {% else %}
+            <section class="no-registered-users">
+                <div class="section-card">
+                    <div class="text-center">
+                        <h2>🆕 新規登録ユーザー</h2>
+                        <p style="color: var(--text-secondary); margin-top: 1rem;">
+                            まだ新規登録ユーザーはいません。<br>
+                            ユーザーがアカウント登録を行うと、ここに表示されます。
+                        </p>
+                    </div>
+                </div>
+            </section>
+            {% endif %}
+
+            <!-- アクセス権限マトリックス -->
+            <section class="permissions-matrix">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>🔐 権限マトリックス</h2>
+                    </div>
+                    <div class="permissions-table-container">
+                        <table class="permissions-table">
+                            <thead>
+                                <tr>
+                                    <th>権限</th>
+                                    <th>admin</th>
+                                    <th>developer</th>
+                                    <th>premium</th>
+                                    <th>basic</th>
+                                    <th>guest</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>ダッシュボードアクセス</td>
+                                    <td class="perm-granted">✅</td>
+                                    <td class="perm-granted">✅</td>
+                                    <td class="perm-denied">❌</td>
+                                    <td class="perm-denied">❌</td>
+                                    <td class="perm-denied">❌</td>
+                                </tr>
+                                <tr>
+                                    <td>ユーザー管理</td>
+                                    <td class="perm-granted">✅</td>
+                                    <td class="perm-denied">❌</td>
+                                    <td class="perm-denied">❌</td>
+                                    <td class="perm-denied">❌</td>
+                                    <td class="perm-denied">❌</td>
+                                </tr>
+                                <tr>
+                                    <td>システムログ</td>
+                                    <td class="perm-granted">✅</td>
+                                    <td class="perm-granted">✅</td>
+                                    <td class="perm-denied">❌</td>
+                                    <td class="perm-denied">❌</td>
+                                    <td class="perm-denied">❌</td>
+                                </tr>
+                                <tr>
+                                    <td>データ分析</td>
+                                    <td class="perm-granted">✅</td>
+                                    <td class="perm-granted">✅</td>
+                                    <td class="perm-denied">❌</td>
+                                    <td class="perm-denied">❌</td>
+                                    <td class="perm-denied">❌</td>
+                                </tr>
+                                <tr>
+                                    <td>翻訳機能</td>
+                                    <td class="perm-granted">✅</td>
+                                    <td class="perm-granted">✅</td>
+                                    <td class="perm-granted">✅</td>
+                                    <td class="perm-granted">✅</td>
+                                    <td class="perm-granted">✅</td>
+                                </tr>
+                                <tr>
+                                    <td>使用制限</td>
+                                    <td class="perm-unlimited">∞</td>
+                                    <td class="perm-high">1000/日</td>
+                                    <td class="perm-medium">100/日</td>
+                                    <td class="perm-low">50/日</td>
+                                    <td class="perm-very-low">10/日</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- フッター -->
+        <footer class="admin-footer">
+            <p>ユーザー管理 | LangPont Admin Dashboard Phase B-1</p>
+            <div class="footer-actions">
+                <button onclick="refreshUserData()" class="btn btn-small">🔄 更新</button>
+                <button onclick="exportUserData()" class="btn btn-small">📊 エクスポート</button>
+            </div>
+        </footer>
+
+    </div>
+
+    <script>
+        // 🚀 管理者ユーザー管理画面 JavaScript
+        
+        function viewUserDetails(userId) {
+            alert(`ユーザーID: ${userId} の詳細表示機能は開発中です。`);
+            // 将来的にはモーダルやサイドパネルでユーザー詳細を表示
+        }
+        
+        function refreshUserData() {
+            console.log('ユーザーデータ更新...');
+            location.reload();
+        }
+        
+        function exportUserData() {
+            console.log('ユーザーデータエクスポート...');
+            alert('エクスポート機能は開発中です。');
+            // 将来的にはCSVやJSONでのエクスポート機能
+        }
+
+        // テーブルソート機能（将来実装用）
+        function sortTable(columnIndex) {
+            console.log(`列 ${columnIndex} でソート`);
+            // 将来的にはテーブルソート機能を実装
+        }
+
+        // 初期化
+        console.log('🚀 LangPont管理者ユーザー管理画面 Phase B-1 初期化完了');
+    </script>
+
+    <style>
+        /* ユーザー管理画面専用スタイル */
+        .user-count-badge {
+            background: var(--primary-blue);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .users-table-container {
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid var(--border-light);
+        }
+
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        .users-table th,
+        .users-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .users-table th {
+            background: var(--bg-light);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .user-row:hover {
+            background: var(--bg-light);
+        }
+
+        .username {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .source-badge {
+            background: var(--bg-light);
+            color: var(--text-secondary);
+            padding: 0.125rem 0.5rem;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            margin-left: 0.5rem;
+        }
+
+        .role-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .role-badge.admin {
+            background: var(--danger-red);
+            color: white;
+        }
+
+        .role-badge.developer {
+            background: var(--success-green);
+            color: white;
+        }
+
+        .role-badge.premium {
+            background: var(--warning-orange);
+            color: white;
+        }
+
+        .role-badge.basic {
+            background: var(--info-cyan);
+            color: white;
+        }
+
+        .role-badge.guest {
+            background: var(--text-secondary);
+            color: white;
+        }
+
+        .unlimited {
+            color: var(--success-green);
+            font-weight: 600;
+        }
+
+        .limited {
+            color: var(--text-secondary);
+        }
+
+        .status-active {
+            color: var(--success-green);
+            font-weight: 500;
+        }
+
+        .early-access {
+            color: var(--success-green);
+            font-weight: 500;
+        }
+
+        .no-early-access {
+            color: var(--text-secondary);
+        }
+
+        .usage-count {
+            font-weight: 600;
+            color: var(--primary-blue);
+        }
+
+        /* 権限マトリックス */
+        .permissions-table-container {
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid var(--border-light);
+        }
+
+        .permissions-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        .permissions-table th,
+        .permissions-table td {
+            padding: 0.75rem;
+            text-align: center;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .permissions-table th {
+            background: var(--bg-light);
+            font-weight: 600;
+        }
+
+        .permissions-table td:first-child {
+            text-align: left;
+            font-weight: 500;
+        }
+
+        .perm-granted {
+            color: var(--success-green);
+        }
+
+        .perm-denied {
+            color: var(--text-secondary);
+        }
+
+        .perm-unlimited {
+            color: var(--success-green);
+            font-weight: 600;
+        }
+
+        .perm-high {
+            color: var(--primary-blue);
+            font-weight: 600;
+        }
+
+        .perm-medium {
+            color: var(--warning-orange);
+            font-weight: 600;
+        }
+
+        .perm-low {
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .perm-very-low {
+            color: var(--danger-red);
+            font-weight: 600;
+        }
+
+        /* レスポンシブ対応 */
+        @media (max-width: 768px) {
+            .users-table-container {
+                font-size: 0.75rem;
+            }
+            
+            .users-table th,
+            .users-table td {
+                padding: 0.5rem;
+            }
+            
+            .source-badge {
+                display: none;
+            }
+        }
+    </style>
+</body>
+</html>
