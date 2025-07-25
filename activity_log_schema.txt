@@ -1,0 +1,94 @@
+CREATE TABLE analysis_activity_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                
+                -- 活動分類
+                activity_type TEXT NOT NULL,              -- 'normal_use' | 'manual_test' | 'automated_test'
+                session_id TEXT,                          -- セッションID
+                user_id TEXT,                             -- ユーザーID（admin/developer/guest等）
+                
+                -- テスト関連（自動テストの場合）
+                test_session_id TEXT,                     -- バッチテストセッションID
+                test_number INTEGER,                      -- テスト番号
+                sample_id INTEGER,                        -- サンプルID
+                sample_name TEXT,                         -- サンプル名
+                
+                -- 入力データ
+                japanese_text TEXT,                       -- 日本語原文
+                target_language TEXT DEFAULT 'en',       -- 対象言語（en/fr/es）
+                language_pair TEXT DEFAULT 'ja-en',      -- 言語ペア
+                partner_message TEXT,                     -- パートナーメッセージ
+                context_info TEXT,                        -- コンテキスト情報
+                
+                -- 翻訳結果
+                chatgpt_translation TEXT,                 -- ChatGPT翻訳
+                enhanced_translation TEXT,                -- Enhanced翻訳（改善ChatGPT）
+                gemini_translation TEXT,                  -- Gemini翻訳
+                
+                -- 分析実行データ
+                button_pressed TEXT,                      -- 押下ボタン（ChatGPT/Gemini/Claude）
+                actual_analysis_llm TEXT,                 -- 実際分析LLM
+                llm_match BOOLEAN,                        -- ボタンとLLMの一致フラグ
+                
+                -- 分析結果
+                recommendation_result TEXT,               -- 推奨結果（Enhanced/ChatGPT/Gemini）
+                confidence REAL,                          -- 信頼度（0.0-1.0）
+                processing_method TEXT,                   -- 推奨抽出方法
+                extraction_method TEXT,                   -- 抽出詳細方法
+                
+                -- 分析内容
+                full_analysis_text TEXT,                  -- ニュアンス分析結果全文
+                analysis_preview TEXT,                    -- 分析プレビュー（最初200文字）
+                
+                -- 実行ログ
+                terminal_logs TEXT,                       -- 関連ターミナルログ
+                debug_logs TEXT,                          -- デバッグログ
+                error_occurred BOOLEAN DEFAULT 0,        -- エラー発生フラグ
+                error_message TEXT,                       -- エラーメッセージ
+                
+                -- パフォーマンス
+                processing_duration REAL,                -- 処理時間（秒）
+                translation_duration REAL,               -- 翻訳処理時間
+                analysis_duration REAL,                  -- 分析処理時間
+                
+                -- メタデータ
+                ip_address TEXT,                          -- IPアドレス
+                user_agent TEXT,                          -- ユーザーエージェント
+                request_headers TEXT,                     -- リクエストヘッダー（JSON）
+                
+                -- タイムスタンプ
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                year INTEGER,                             -- 年（インデックス用）
+                month INTEGER,                            -- 月（インデックス用）
+                day INTEGER,                              -- 日（インデックス用）
+                hour INTEGER,                             -- 時（インデックス用）
+                
+                -- 追加メモ
+                notes TEXT,                               -- 手動メモ
+                tags TEXT                                 -- タグ（JSON配列）
+            , human_check_result TEXT, human_check_timestamp TIMESTAMP, human_checker_id TEXT, human_check_notes TEXT, stage1_extraction_method TEXT, stage1_confidence_score REAL, stage1_processing_time REAL, stage1_metadata TEXT, stage15_supplementary_analysis TEXT, stage15_context_evaluation TEXT, stage15_linguistic_notes TEXT, actual_user_choice TEXT, copy_behavior_tracked BOOLEAN, copied_translation TEXT, copy_method TEXT, copy_timestamp TIMESTAMP, selection_reasoning TEXT, user_confidence_level REAL, recommendation_vs_choice_match BOOLEAN, divergence_analysis TEXT, divergence_category TEXT, learning_value_score REAL, feedback_loop_data TEXT, four_stage_completion_status TEXT, data_quality_score REAL, analysis_revision_count INTEGER, stage0_human_check TEXT, stage0_human_check_date TIMESTAMP, stage0_human_check_user TEXT);
+CREATE TABLE sqlite_sequence(name,seq);
+CREATE INDEX idx_activity_type ON analysis_activity_log(activity_type);
+CREATE INDEX idx_user_id ON analysis_activity_log(user_id);
+CREATE INDEX idx_created_at ON analysis_activity_log(created_at);
+CREATE INDEX idx_year_month ON analysis_activity_log(year, month);
+CREATE INDEX idx_button_pressed ON analysis_activity_log(button_pressed);
+CREATE INDEX idx_actual_llm ON analysis_activity_log(actual_analysis_llm);
+CREATE INDEX idx_error_occurred ON analysis_activity_log(error_occurred);
+CREATE TABLE test_samples (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    sample_name TEXT NOT NULL,
+                    japanese_text TEXT NOT NULL,
+                    category TEXT DEFAULT 'general',          -- 'technical', 'business', 'casual'
+                    description TEXT,
+                    expected_result TEXT,                      -- 期待される結果
+                    difficulty_level INTEGER DEFAULT 1,       -- 難易度 1-5
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    created_by TEXT,
+                    is_active BOOLEAN DEFAULT 1
+                );
+CREATE INDEX idx_human_check_result ON analysis_activity_log(human_check_result);
+CREATE INDEX idx_actual_user_choice ON analysis_activity_log(actual_user_choice);
+CREATE INDEX idx_copy_behavior_tracked ON analysis_activity_log(copy_behavior_tracked);
+CREATE INDEX idx_recommendation_match ON analysis_activity_log(recommendation_vs_choice_match);
+CREATE INDEX idx_four_stage_completion ON analysis_activity_log(four_stage_completion_status);
+CREATE INDEX idx_stage0_human_check ON analysis_activity_log(stage0_human_check);

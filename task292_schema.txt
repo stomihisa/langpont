@@ -1,0 +1,66 @@
+CREATE TABLE task292_extraction_logs (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        timestamp TEXT NOT NULL,
+                        session_id TEXT,
+                        user_id TEXT,
+                        input_text TEXT,
+                        analysis_language TEXT,
+                        extraction_method TEXT,
+                        recommendation TEXT,
+                        confidence REAL,
+                        processing_time_ms INTEGER,
+                        success BOOLEAN,
+                        error_details TEXT,
+                        llm_response TEXT,
+                        metadata TEXT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
+CREATE TABLE sqlite_sequence(name,seq);
+CREATE TABLE api_monitoring (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        timestamp TEXT NOT NULL,
+                        api_provider TEXT NOT NULL,
+                        endpoint TEXT,
+                        method TEXT,
+                        status_code INTEGER,
+                        response_time_ms INTEGER,
+                        success BOOLEAN,
+                        error_type TEXT,
+                        error_message TEXT,
+                        request_size INTEGER,
+                        response_size INTEGER,
+                        metadata TEXT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
+CREATE TABLE personalization_data (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id TEXT NOT NULL,
+                        timestamp TEXT NOT NULL,
+                        event_type TEXT,
+                        gemini_recommendation TEXT,
+                        user_choice TEXT,
+                        rejection_reason TEXT,
+                        language_pair TEXT,
+                        translation_context TEXT,
+                        style_attributes TEXT,
+                        confidence_score REAL,
+                        metadata TEXT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
+CREATE TABLE alert_history (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        timestamp TEXT NOT NULL,
+                        alert_type TEXT NOT NULL,
+                        severity TEXT NOT NULL,
+                        message TEXT,
+                        metric_value REAL,
+                        threshold_value REAL,
+                        resolved BOOLEAN DEFAULT 0,
+                        resolved_at TEXT,
+                        metadata TEXT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
+CREATE INDEX idx_task292_timestamp ON task292_extraction_logs(timestamp);
+CREATE INDEX idx_task292_user ON task292_extraction_logs(user_id);
+CREATE INDEX idx_api_timestamp ON api_monitoring(timestamp);
+CREATE INDEX idx_personalization_user ON personalization_data(user_id);

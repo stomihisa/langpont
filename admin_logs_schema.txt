@@ -1,0 +1,32 @@
+CREATE TABLE admin_logs (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        timestamp TEXT NOT NULL,
+                        category TEXT NOT NULL,
+                        level TEXT NOT NULL,
+                        username TEXT,
+                        session_id TEXT,
+                        action TEXT,
+                        details TEXT,
+                        metadata TEXT,
+                        ip_address TEXT,
+                        user_agent TEXT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
+CREATE TABLE sqlite_sequence(name,seq);
+CREATE TABLE system_stats (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        date TEXT NOT NULL,
+                        metric_name TEXT NOT NULL,
+                        metric_value TEXT NOT NULL,
+                        metadata TEXT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
+CREATE TABLE performance_logs (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        timestamp TEXT NOT NULL,
+                        operation TEXT NOT NULL,
+                        duration_ms INTEGER,
+                        success BOOLEAN,
+                        details TEXT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );

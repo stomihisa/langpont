@@ -1,0 +1,68 @@
+CREATE TABLE satisfaction_scores (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    session_id VARCHAR(100) NOT NULL,
+                    user_id VARCHAR(100),
+                    translation_id INTEGER,
+                    satisfaction_score FLOAT NOT NULL,
+                    
+                    -- 詳細スコア
+                    copy_behavior_score FLOAT,
+                    text_interaction_score FLOAT,
+                    session_pattern_score FLOAT,
+                    engagement_score FLOAT,
+                    
+                    -- メトリクス
+                    behavior_metrics TEXT,
+                    
+                    -- メタデータ
+                    calculation_version VARCHAR(20) DEFAULT '1.0.0',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    
+                    -- インデックス用
+                    date_only DATE GENERATED ALWAYS AS (DATE(created_at)) STORED
+                );
+CREATE TABLE sqlite_sequence(name,seq);
+CREATE INDEX idx_satisfaction_session ON satisfaction_scores (session_id);
+CREATE INDEX idx_satisfaction_user ON satisfaction_scores (user_id);
+CREATE INDEX idx_satisfaction_score ON satisfaction_scores (satisfaction_score);
+CREATE INDEX idx_satisfaction_date ON satisfaction_scores (date_only);
+CREATE TABLE analytics_events (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    event_id TEXT UNIQUE NOT NULL,
+                    event_type VARCHAR(50) NOT NULL,
+                    timestamp INTEGER NOT NULL,
+                    page_url TEXT,
+                    action VARCHAR(100),
+                    language VARCHAR(10),
+                    session_id VARCHAR(50),
+                    user_id INTEGER,
+                    ip_address VARCHAR(45),
+                    user_agent TEXT,
+                    screen_width INTEGER DEFAULT 0,
+                    screen_height INTEGER DEFAULT 0,
+                    viewport_width INTEGER DEFAULT 0,
+                    viewport_height INTEGER DEFAULT 0,
+                    is_mobile BOOLEAN DEFAULT 0,
+                    referrer TEXT,
+                    utm_source VARCHAR(100),
+                    utm_medium VARCHAR(100),
+                    utm_campaign VARCHAR(100),
+                    custom_data TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    processed BOOLEAN DEFAULT 0,
+                    
+                    -- 🆕 インデックス用フィールド
+                    date_only DATE GENERATED ALWAYS AS (DATE(timestamp/1000, 'unixepoch')) STORED,
+                    hour_only INTEGER GENERATED ALWAYS AS (CAST(strftime('%H', timestamp/1000, 'unixepoch') AS INTEGER)) STORED
+                );
+CREATE INDEX idx_analytics_timestamp ON analytics_events (timestamp);
+CREATE INDEX idx_analytics_event_type ON analytics_events (event_type);
+CREATE INDEX idx_analytics_session_id ON analytics_events (session_id);
+CREATE INDEX idx_analytics_user_id ON analytics_events (user_id);
+CREATE INDEX idx_analytics_ip_address ON analytics_events (ip_address);
+CREATE INDEX idx_analytics_date_only ON analytics_events (date_only);
+CREATE INDEX idx_analytics_hour_only ON analytics_events (hour_only);
+CREATE INDEX idx_analytics_processed ON analytics_events (processed);
+CREATE INDEX idx_analytics_user_date ON analytics_events (user_id, date_only);
+CREATE INDEX idx_analytics_session_time ON analytics_events (session_id, timestamp);
+CREATE INDEX idx_analytics_type_date ON analytics_events (event_type, date_only);

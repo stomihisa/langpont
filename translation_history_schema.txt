@@ -1,0 +1,108 @@
+CREATE TABLE translation_history (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id INTEGER,
+                        session_id VARCHAR(100) NOT NULL,
+                        request_uuid VARCHAR(36) UNIQUE NOT NULL,
+                        
+                        -- 入力データ
+                        source_text TEXT NOT NULL,
+                        source_language VARCHAR(10) NOT NULL,
+                        target_language VARCHAR(10) NOT NULL,
+                        partner_message TEXT DEFAULT '',
+                        context_info TEXT DEFAULT '',
+                        
+                        -- 翻訳結果
+                        chatgpt_translation TEXT,
+                        gemini_translation TEXT,
+                        enhanced_translation TEXT,
+                        reverse_translation TEXT,
+                        
+                        -- Gemini分析結果
+                        gemini_analysis TEXT,
+                        gemini_3way_comparison TEXT,
+                        
+                        -- メタデータ
+                        ip_address VARCHAR(45),
+                        user_agent TEXT,
+                        processing_time REAL DEFAULT 0.0,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        
+                        -- 品質データ
+                        user_rating INTEGER CHECK (user_rating >= 1 AND user_rating <= 5),
+                        user_feedback TEXT DEFAULT '',
+                        bookmarked BOOLEAN DEFAULT 0,
+                        
+                        -- 分析データ
+                        character_count INTEGER DEFAULT 0,
+                        word_count INTEGER DEFAULT 0,
+                        complexity_score REAL,
+                        
+                        -- フラグ
+                        is_archived BOOLEAN DEFAULT 0,
+                        is_exported BOOLEAN DEFAULT 0,
+                        
+                        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
+                    );
+CREATE TABLE sqlite_sequence(name,seq);
+CREATE TABLE translation_quality_metrics (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        history_id INTEGER NOT NULL,
+                        engine_type VARCHAR(20) NOT NULL,
+                        accuracy_score REAL,
+                        fluency_score REAL,
+                        adequacy_score REAL,
+                        auto_quality_score REAL,
+                        evaluation_method VARCHAR(50),
+                        evaluated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (history_id) REFERENCES translation_history (id) ON DELETE CASCADE
+                    );
+CREATE TABLE api_call_logs (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        history_id INTEGER NOT NULL,
+                        engine VARCHAR(20) NOT NULL,
+                        api_endpoint VARCHAR(200),
+                        request_size INTEGER,
+                        response_size INTEGER,
+                        response_time REAL,
+                        http_status_code INTEGER,
+                        error_code VARCHAR(50),
+                        error_message TEXT,
+                        tokens_used INTEGER,
+                        cost REAL,
+                        called_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (history_id) REFERENCES translation_history (id) ON DELETE CASCADE
+                    );
+CREATE TABLE usage_patterns (
+                        user_id INTEGER,
+                        date DATE NOT NULL,
+                        hour INTEGER NOT NULL,
+                        language_pair VARCHAR(10) NOT NULL,
+                        translation_count INTEGER DEFAULT 1,
+                        avg_text_length REAL,
+                        total_processing_time REAL,
+                        PRIMARY KEY (user_id, date, hour, language_pair),
+                        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+                    ) WITHOUT ROWID
+                ;
+CREATE TABLE engine_comparisons (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        history_id INTEGER NOT NULL,
+                        comparison_type VARCHAR(50),
+                        engine_a VARCHAR(20),
+                        engine_b VARCHAR(20),
+                        winner VARCHAR(20),
+                        confidence REAL,
+                        comparison_criteria TEXT,
+                        compared_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (history_id) REFERENCES translation_history (id) ON DELETE CASCADE
+                    );
+CREATE INDEX idx_translation_history_user_id ON translation_history (user_id);
+CREATE INDEX idx_translation_history_created_at ON translation_history (created_at);
+CREATE INDEX idx_translation_history_language_pair ON translation_history (source_language, target_language);
+CREATE INDEX idx_translation_history_session_id ON translation_history (session_id);
+CREATE INDEX idx_translation_history_bookmarked ON translation_history (bookmarked);
+CREATE INDEX idx_translation_history_user_date ON translation_history (user_id, created_at);
+CREATE INDEX idx_quality_metrics_history_id ON translation_quality_metrics (history_id);
+CREATE INDEX idx_api_logs_history_id ON api_call_logs (history_id);
+CREATE INDEX idx_usage_patterns_user_date ON usage_patterns (user_id, date);
+CREATE INDEX idx_engine_comparisons_history_id ON engine_comparisons (history_id);

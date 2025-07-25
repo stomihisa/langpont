@@ -1,0 +1,118 @@
+CREATE TABLE users (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        username VARCHAR(50) UNIQUE NOT NULL,
+                        email VARCHAR(100) UNIQUE NOT NULL,
+                        password_hash TEXT NOT NULL,
+                        salt TEXT NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        last_login TIMESTAMP NULL,
+                        is_active BOOLEAN DEFAULT 1,
+                        account_type VARCHAR(20) DEFAULT 'basic',
+                        early_access BOOLEAN DEFAULT 0,
+                        preferred_lang VARCHAR(5) DEFAULT 'jp',
+                        daily_usage_count INTEGER DEFAULT 0,
+                        last_usage_date DATE NULL,
+                        email_verified BOOLEAN DEFAULT 0,
+                        verification_token TEXT NULL,
+                        reset_token TEXT NULL,
+                        reset_token_expires TIMESTAMP NULL,
+                        two_factor_enabled BOOLEAN DEFAULT 0,
+                        two_factor_secret TEXT NULL,
+                        login_attempts INTEGER DEFAULT 0,
+                        locked_until TIMESTAMP NULL,
+                        user_settings TEXT DEFAULT '{}',
+                        profile_data TEXT DEFAULT '{}'
+                    );
+CREATE TABLE sqlite_sequence(name,seq);
+CREATE TABLE user_sessions (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id INTEGER NOT NULL,
+                        session_token TEXT UNIQUE NOT NULL,
+                        csrf_token TEXT NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        expires_at TIMESTAMP NOT NULL,
+                        ip_address TEXT NULL,
+                        user_agent TEXT NULL,
+                        is_active BOOLEAN DEFAULT 1,
+                        last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+                    );
+CREATE TABLE login_history (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id INTEGER NULL,
+                        username VARCHAR(50) NULL,
+                        ip_address TEXT NULL,
+                        user_agent TEXT NULL,
+                        login_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        success BOOLEAN NOT NULL,
+                        failure_reason TEXT NULL,
+                        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
+                    );
+CREATE INDEX idx_users_email ON users (email);
+CREATE INDEX idx_users_username ON users (username);
+CREATE INDEX idx_sessions_token ON user_sessions (session_token);
+CREATE INDEX idx_sessions_user_id ON user_sessions (user_id);
+CREATE INDEX idx_login_history_user_id ON login_history (user_id);
+CREATE INDEX idx_login_history_ip ON login_history (ip_address);
+CREATE TABLE user_settings (
+                        user_id INTEGER PRIMARY KEY,
+                        settings_json TEXT NOT NULL DEFAULT '{}',
+                        early_access_features TEXT DEFAULT '{}',
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+                    );
+CREATE TABLE translation_history (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id INTEGER NOT NULL,
+                        source_text TEXT NOT NULL,
+                        source_language VARCHAR(5) NOT NULL,
+                        target_language VARCHAR(5) NOT NULL,
+                        chatgpt_translation TEXT,
+                        gemini_translation TEXT,
+                        better_translation TEXT,
+                        nuance_analysis TEXT,
+                        context_info TEXT,
+                        partner_message TEXT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        session_id VARCHAR(50),
+                        rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+                        bookmarked BOOLEAN DEFAULT 0,
+                        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+                    );
+CREATE TABLE user_preferences (
+                        user_id INTEGER PRIMARY KEY,
+                        language_pairs_used TEXT DEFAULT '[]',
+                        favorite_features TEXT DEFAULT '[]',
+                        custom_prompts TEXT DEFAULT '{}',
+                        quick_actions TEXT DEFAULT '[]',
+                        workspace_layout TEXT DEFAULT '{}',
+                        keyboard_shortcuts TEXT DEFAULT '{}',
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+                    );
+CREATE TABLE early_access_logs (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id INTEGER NOT NULL,
+                        feature_name VARCHAR(100) NOT NULL,
+                        action VARCHAR(50) NOT NULL,
+                        metadata TEXT DEFAULT '{}',
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+                    );
+CREATE TABLE translation_ratings (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        translation_history_id INTEGER NOT NULL,
+                        user_id INTEGER NOT NULL,
+                        engine_type VARCHAR(20) NOT NULL,
+                        rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+                        feedback_text TEXT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (translation_history_id) REFERENCES translation_history (id) ON DELETE CASCADE,
+                        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+                    );
+CREATE INDEX idx_translation_history_user_id ON translation_history (user_id);
+CREATE INDEX idx_translation_history_created_at ON translation_history (created_at);
+CREATE INDEX idx_translation_history_bookmarked ON translation_history (bookmarked);
+CREATE INDEX idx_early_access_logs_user_id ON early_access_logs (user_id);
+CREATE INDEX idx_translation_ratings_user_id ON translation_ratings (user_id);
