@@ -1,8 +1,10 @@
 # LangPont Configuration File
 # 機能の有効/無効を簡単に切り替えできます
 
+import os
+
 VERSION = "2.0.0"
-ENVIRONMENT = "development"  # development, staging, production
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")  # development, staging, production
 
 # 📱 機能フラグ（True/Falseで機能のON/OFF）
 FEATURES = {
@@ -38,19 +40,19 @@ USAGE_LIMITS = {
 # 👥 ユーザー管理システム（暫定版）
 USERS = {
     "admin": {
-        "password": "admin_langpont_2025",
+        "password": os.getenv("ADMIN_PASSWORD", "admin_langpont_2025"),
         "role": "admin",
         "daily_limit": -1,  # -1 = 無制限
         "description": "管理者アカウント"
     },
     "developer": {
-        "password": "dev_langpont_456",
+        "password": os.getenv("DEVELOPER_PASSWORD", "dev_langpont_456"),
         "role": "developer", 
         "daily_limit": 1000,
         "description": "開発者アカウント"
     },
     "guest": {
-        "password": "guest_basic_123",
+        "password": os.getenv("GUEST_PASSWORD", "guest_basic_123"),
         "role": "guest",
         "daily_limit": 10,
         "description": "ゲストアカウント"
@@ -59,6 +61,6 @@ USERS = {
 
 # 🔒 後方互換性設定
 LEGACY_SETTINGS = {
-    "legacy_password": "linguru2025",  # 既存パスワード
+    "legacy_password": os.getenv("LEGACY_PASSWORD", "linguru2025"),  # 既存パスワード
     "default_guest_username": "guest"  # 空ユーザー名時のデフォルト
 }
