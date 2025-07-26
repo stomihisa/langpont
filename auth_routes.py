@@ -12,6 +12,8 @@ import logging
 import time
 import os
 import json
+import uuid
+
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 from functools import wraps
@@ -26,6 +28,15 @@ from labels import labels
 # ログ設定
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# 🆕 SL-2.1: SessionRedisManager インポート
+try:
+    from services.session_redis_manager import get_session_redis_manager
+    session_redis_manager = get_session_redis_manager()
+    logger.info("✅ SL-2.1: SessionRedisManager imported successfully in auth_routes")
+except Exception as e:
+    session_redis_manager = None
+    logger.warning(f"⚠️ SL-2.1: SessionRedisManager import failed in auth_routes: {e}")
 
 # 🆕 翻訳履歴システムインポート
 try:
@@ -360,7 +371,8 @@ def login():
                 session['username'] = user_info['username']
                 session['user_role'] = user_info['account_type']
                 session['daily_limit'] = USERS.get(login_identifier, {}).get('daily_limit', 10) if login_identifier in USERS else 10
-                
+                session['session_id'] = str(uuid.uuid4())
+
                 # 🆕 従来ユーザーの保存済み設定を復元
                 username = user_info['username']
                 legacy_settings_file = f"legacy_user_settings_{username}.json"
@@ -378,6 +390,24 @@ def login():
                 
                 flash(get_error_message('login_success', current_lang), 'success')
                 logger.info(f"従来システムログイン成功: {user_info['username']}")
+                
+                # 🆕 SL-2.1: Redis同期（従来システム用・失敗してもログイン処理は継続）
+                if session_redis_manager:
+                    try:
+                        session_redis_manager.sync_auth_to_redis(
+                            session_id=session.get('session_id'),
+                            auth_data={
+                                'logged_in': True,
+                                'username': user_info['username'],
+                                'user_id': user_info.get('id', 'legacy'),
+                                'account_type': user_info.get('account_type', 'legacy'),
+                                'early_access': user_info.get('early_access', False),
+                                'auth_method': 'legacy_login'
+                            }
+                        )
+                        logger.info(f"✅ SL-2.1: Auth data synced to Redis for legacy user: {user_info['username']}")
+                    except Exception as e:
+                        logger.warning(f"⚠️ SL-2.1: Redis sync failed for legacy user: {e} - continuing with filesystem session")
                 
                 next_page = request.form.get('next') or url_for('index')
                 return redirect(next_page)
@@ -404,6 +434,24 @@ def login():
                 
                 # セッション永続化設定
                 session.permanent = remember_me
+                
+                # 🆕 SL-2.1: Redis同期（失敗してもログイン処理は継続）
+                if session_redis_manager:
+                    try:
+                        session_redis_manager.sync_auth_to_redis(
+                            session_id=session.get('session_id'),
+                            auth_data={
+                                'logged_in': True,
+                                'username': user_info['username'],
+                                'user_id': user_info['id'],
+                                'account_type': user_info['account_type'],
+                                'early_access': user_info['early_access'],
+                                'auth_method': 'standard_login'
+                            }
+                        )
+                        logger.info(f"✅ SL-2.1: Auth data synced to Redis for user: {user_info['username']}")
+                    except Exception as e:
+                        logger.warning(f"⚠️ SL-2.1: Redis sync failed: {e} - continuing with filesystem session")
                 
                 flash(get_error_message('login_success', current_lang), 'success')
                 logger.info(f"ユーザーログイン成功: {user_info['username']} (ID: {user_info['id']})")

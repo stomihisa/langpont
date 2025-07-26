@@ -214,6 +214,53 @@ else:
 # セキュリティ設定
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", secrets.token_hex(32))
 
+# 🆕 SL-2.1: Flask標準セッション設定（明示的に確認）
+app.config['SESSION_TYPE'] = 'filesystem'  # 絶対に変更しない
+
+# 🆕 SL-2.1: SessionRedisManager初期化（Redisが利用可能な場合のみ）
+try:
+    from services.session_redis_manager import get_session_redis_manager
+    session_redis_manager = get_session_redis_manager()
+    app.session_redis_manager = session_redis_manager
+    app_logger.info("✅ SL-2.1: SessionRedisManager initialized successfully")
+except Exception as e:
+    app_logger.warning(f"⚠️ SL-2.1: Redis manager initialization failed: {e} - continuing with filesystem sessions only")
+    session_redis_manager = None
+    app.session_redis_manager = None
+
+# 🆕 SL-2.1: 認証チェック機能（Redis復元付き）
+def check_auth_with_redis_fallback():
+    """
+    認証チェック（Redisフォールバック付き）
+    
+    1. まずFlaskセッションを確認（メイン）
+    2. 失敗時はRedisから復元を試行（補助）
+    """
+    # まずFlaskセッションを確認（これが主）
+    if session.get("logged_in"):
+        return True
+    
+    # Redisからの復元を試みる（あくまで補助）
+    if session_redis_manager and session.get('session_id'):
+        try:
+            auth_data = session_redis_manager.get_auth_from_redis(
+                session_id=session.get('session_id')
+            )
+            if auth_data and auth_data.get('logged_in'):
+                # Flaskセッションに復元
+                session.update({
+                    'logged_in': auth_data.get('logged_in'),
+                    'username': auth_data.get('username'),
+                    'user_role': auth_data.get('user_role'),
+                    'daily_limit': auth_data.get('daily_limit')
+                })
+                app_logger.info(f"✅ SL-2.1: Auth restored from Redis for user: {auth_data.get('username')}")
+                return True
+        except Exception as e:
+            app_logger.debug(f"Redis auth fallback failed: {e}")
+    
+    return False
+
 # OpenAI client
 client = OpenAI(api_key=api_key)
 
@@ -1717,6 +1764,27 @@ def login():
                     session["daily_limit"] = authenticated_user["daily_limit"]
                     session.permanent = True
 
+                    # 🆕 SL-2.1: セッションIDの生成・取得
+                    if not session.get('session_id'):
+                        session['session_id'] = secrets.token_hex(16)
+                    
+                    # 🆕 SL-2.1: Redis同期（失敗してもログイン処理は継続）
+                    if session_redis_manager:
+                        try:
+                            session_redis_manager.sync_auth_to_redis(
+                                session_id=session['session_id'],
+                                auth_data={
+                                    'logged_in': True,
+                                    'username': authenticated_user["username"],
+                                    'user_role': authenticated_user["role"],
+                                    'daily_limit': authenticated_user["daily_limit"],
+                                    'auth_method': authenticated_user["auth_method"]
+                                }
+                            )
+                            app_logger.info(f"✅ SL-2.1: Auth data synced to Redis for user: {authenticated_user['username']}")
+                        except Exception as e:
+                            app_logger.warning(f"⚠️ SL-2.1: Redis sync failed: {e} - continuing with filesystem session")
+
                     # 🆕 セッションIDの再生成（セッションハイジャック対策）
                     # 🚨 TEMPORARILY DISABLED FOR DEBUG: SecureSessionManager.regenerate_session_id()
 
@@ -1947,6 +2015,18 @@ def index():
 
 @app.route("/logout")
 def logout():
+    username = session.get("username", "unknown")
+    
+    # 🆕 SL-2.1: Redis同期（失敗してもログアウト処理は継続）
+    if session_redis_manager and session.get('session_id'):
+        try:
+            session_redis_manager.clear_auth_from_redis(
+                session_id=session.get('session_id')
+            )
+            app_logger.info(f"✅ SL-2.1: Auth data cleared from Redis for user: {username}")
+        except Exception as e:
+            app_logger.warning(f"⚠️ SL-2.1: Redis clear failed: {e}")
+    
     log_access_event('User logged out')
     log_security_event('LOGOUT', 'User session terminated', 'INFO')
     session.clear()
