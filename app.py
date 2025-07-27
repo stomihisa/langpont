@@ -228,6 +228,31 @@ except Exception as e:
     session_redis_manager = None
     app.session_redis_manager = None
 
+# 🆕 SL-2.2: Redis Session Implementation
+from config import USE_REDIS_SESSION, SESSION_TTL_SECONDS, SESSION_COOKIE_NAME
+from config import SESSION_COOKIE_SECURE, SESSION_COOKIE_HTTPONLY, SESSION_COOKIE_SAMESITE
+
+if USE_REDIS_SESSION:
+    try:
+        from services.langpont_redis_session import LangPontRedisSession
+        app.session_interface = LangPontRedisSession(
+            redis_manager=session_redis_manager,
+            cookie_name=SESSION_COOKIE_NAME,
+            ttl=SESSION_TTL_SECONDS
+        )
+        app_logger.info("✅ SL-2.2: LangPontRedisSession enabled")
+    except Exception as e:
+        app_logger.error(f"❌ SL-2.2: Failed to enable Redis session: {e}")
+        # フォールバック：標準セッションを使用
+else:
+    app_logger.info("📝 SL-2.2: Using Flask standard session (filesystem)")
+
+# 🆕 SL-2.2: Session security configuration
+app.config['SESSION_COOKIE_SECURE'] = SESSION_COOKIE_SECURE
+app.config['SESSION_COOKIE_HTTPONLY'] = SESSION_COOKIE_HTTPONLY
+app.config['SESSION_COOKIE_SAMESITE'] = SESSION_COOKIE_SAMESITE
+app.config['SESSION_COOKIE_NAME'] = SESSION_COOKIE_NAME
+
 # 🆕 SL-2.1: 認証チェック機能（Redis復元付き）
 def check_auth_with_redis_fallback():
     """

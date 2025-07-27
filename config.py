@@ -6,6 +6,16 @@ import os
 VERSION = "2.0.0"
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")  # development, staging, production
 
+# 🆕 SL-2.2: Redis Session Configuration
+USE_REDIS_SESSION = os.getenv('USE_REDIS_SESSION', 'False').lower() == 'true'
+SESSION_TTL_SECONDS = int(os.getenv('SESSION_TTL_SECONDS', '3600'))
+SESSION_COOKIE_NAME = os.getenv('SESSION_COOKIE_NAME', 'langpont_session')
+
+# Security settings
+SESSION_COOKIE_SECURE = ENVIRONMENT == "production"
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+
 # 📱 機能フラグ（True/Falseで機能のON/OFF）
 FEATURES = {
     "early_access_mode": True,      # Early Access制限機能
