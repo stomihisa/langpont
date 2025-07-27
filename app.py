@@ -1824,6 +1824,19 @@ def login():
 
                     # 🆕 セッションIDの再生成（セッションハイジャック対策）
                     # 🚨 TEMPORARILY DISABLED FOR DEBUG: SecureSessionManager.regenerate_session_id()
+                    if USE_REDIS_SESSION and hasattr(app.session_interface, 'regenerate_session_id'):
+                        try:
+                            # 現在のセッションIDを保存（ログ用）
+                            old_session_id = session.get('_session_id', 'unknown')
+                            
+                            # セッションID再生成
+                            new_session_id = app.session_interface.regenerate_session_id(session)
+                            
+                            # ログ出力
+                            app_logger.info(f"✅ SL-2.2: Session regenerated for user: {authenticated_user['username']}")
+                            app_logger.info(f"✅ SL-2.2: Old session: {old_session_id[:16]}... → New session: {new_session_id[:16]}...")
+                        except Exception as e:
+                            app_logger.error(f"❌ SL-2.2: Session regeneration failed: {e}")
 
                     # 🆕 詳細ログ記録
                     log_security_event(
