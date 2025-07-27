@@ -183,6 +183,12 @@ def setup_enhanced_logging() -> Tuple[logging.Logger, logging.Logger, logging.Lo
     app_logger.addHandler(app_handler)
     access_logger.addHandler(access_handler)
 
+    # services.langpont_redis_session ロガー
+    langpont_session_logger = logging.getLogger('services.langpont_redis_session')
+    langpont_session_logger.setLevel(log_level)
+    langpont_session_logger.addHandler(app_handler)  # app.log に出力
+    langpont_session_logger.propagate = False
+
     return security_logger, app_logger, access_logger
 
 # ログ初期化
