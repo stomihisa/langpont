@@ -253,6 +253,18 @@ app.config['SESSION_COOKIE_HTTPONLY'] = SESSION_COOKIE_HTTPONLY
 app.config['SESSION_COOKIE_SAMESITE'] = SESSION_COOKIE_SAMESITE
 app.config['SESSION_COOKIE_NAME'] = SESSION_COOKIE_NAME
 
+# 🆕 SL-2.2 Phase 2: Flask標準Cookieの無効化確認
+@app.after_request
+def check_session_cookies(response):
+    """セッションCookieの状態を確認"""
+    cookies = response.headers.getlist('Set-Cookie')
+    for cookie in cookies:
+        if cookie.startswith('session='):
+            app_logger.warning("⚠️ SL-2.2: Flask standard session cookie detected - should be disabled!")
+        elif cookie.startswith('langpont_session='):
+            app_logger.debug("✅ SL-2.2: LangPont session cookie detected")
+    return response
+
 # 🆕 SL-2.1: 認証チェック機能（Redis復元付き）
 def check_auth_with_redis_fallback():
     """

@@ -409,6 +409,15 @@ def login():
                     except Exception as e:
                         logger.warning(f"⚠️ SL-2.1: Redis sync failed for legacy user: {e} - continuing with filesystem session")
                 
+                # 🆕 SL-2.2 Phase 2: セッションID再生成（セッション固定攻撃対策）
+                try:
+                    from flask import current_app
+                    if hasattr(current_app.session_interface, 'regenerate_session_id'):
+                        current_app.session_interface.regenerate_session_id(session)
+                        logger.info(f"🔄 SL-2.2: Session ID regenerated for legacy user: {user_info['username']}")
+                except Exception as e:
+                    logger.warning(f"⚠️ SL-2.2: Session ID regeneration failed: {e}")
+                
                 next_page = request.form.get('next') or url_for('index')
                 return redirect(next_page)
         
@@ -452,6 +461,15 @@ def login():
                         logger.info(f"✅ SL-2.1: Auth data synced to Redis for user: {user_info['username']}")
                     except Exception as e:
                         logger.warning(f"⚠️ SL-2.1: Redis sync failed: {e} - continuing with filesystem session")
+                
+                # 🆕 SL-2.2 Phase 2: セッションID再生成（セッション固定攻撃対策）
+                try:
+                    from flask import current_app
+                    if hasattr(current_app.session_interface, 'regenerate_session_id'):
+                        current_app.session_interface.regenerate_session_id(session)
+                        logger.info(f"🔄 SL-2.2: Session ID regenerated for user: {user_info['username']}")
+                except Exception as e:
+                    logger.warning(f"⚠️ SL-2.2: Session ID regeneration failed: {e}")
                 
                 flash(get_error_message('login_success', current_lang), 'success')
                 logger.info(f"ユーザーログイン成功: {user_info['username']} (ID: {user_info['id']})")

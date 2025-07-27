@@ -211,15 +211,24 @@ class LangPontRedisSession(SessionInterface):
                 except Exception as e:
                     logger.warning(f"⚠️ SL-2.2: Failed to save session to Redis: {e}")
             
-            # 3. CookieにセッションIDを設定
-            response.set_cookie(
-                self.cookie_name,
-                session.session_id,
-                max_age=self.ttl,
-                httponly=app.config.get('SESSION_COOKIE_HTTPONLY', True),
-                secure=app.config.get('SESSION_COOKIE_SECURE', False),
-                samesite=app.config.get('SESSION_COOKIE_SAMESITE', 'Lax')
-            )
+            # 3. CookieにセッションIDを設定（強化された属性）
+            cookie_config = {
+                'key': self.cookie_name,
+                'value': session.session_id,
+                'max_age': self.ttl,
+                'httponly': True,  # JavaScript経由のアクセス防止
+                'samesite': 'Lax',  # CSRF攻撃防止
+                'path': '/',
+                'domain': None
+            }
+            
+            # 開発環境と本番環境の切り替え
+            if app.config.get('SESSION_COOKIE_SECURE', False):
+                cookie_config['secure'] = True  # HTTPS通信時のみ送信
+            
+            response.set_cookie(**cookie_config)
+            
+            logger.debug(f"🍪 SL-2.2: Cookie set with attributes: {list(cookie_config.keys())}")
             
         except Exception as e:
             logger.error(f"❌ SL-2.2: Error in save_session: {e}")
@@ -254,6 +263,60 @@ class LangPontRedisSession(SessionInterface):
             logger.warning(f"⚠️ SL-2.2: Failed to delete session: {e}")
         
         return False
+    
+    def regenerate_session_id(self, session: LangPontSession) -> str:
+        """
+        セッションIDを再生成（セッション固定攻撃対策）
+        
+        Args:
+            session: 現在のセッションオブジェクト
+            
+        Returns:
+            str: 新しいセッションID
+        """
+        try:
+            # 1. 新しいセッションIDを生成（UUID4使用）
+            import uuid
+            new_session_id = str(uuid.uuid4())
+            
+            # 2. 既存のセッションIDを取得
+            old_session_id = getattr(session, 'session_id', None)
+            
+            if old_session_id and self.redis_manager and self.redis_manager.is_connected:
+                try:
+                    # 3. Redisから既存データを取得
+                    old_session_key = self._get_session_key(old_session_id)
+                    session_data = self.redis_manager.redis_client.hgetall(old_session_key)
+                    
+                    if session_data:
+                        # 4. 既存データを新IDにコピー
+                        new_session_key = self._get_session_key(new_session_id)
+                        self.redis_manager.redis_client.hset(new_session_key, mapping=session_data)
+                        self.redis_manager.redis_client.expire(new_session_key, self.ttl)
+                        
+                        # 5. 古いセッションデータを削除
+                        self.redis_manager.redis_client.delete(old_session_key)
+                        
+                        logger.info(f"🔄 SL-2.2: Session ID regenerated: {old_session_id} -> {new_session_id}")
+                    
+                except Exception as e:
+                    logger.warning(f"⚠️ SL-2.2: Failed to migrate session data: {e}")
+            
+            # 6. セッションオブジェクトのIDを更新
+            session.session_id = new_session_id
+            session.modified = True
+            
+            logger.info(f"✅ SL-2.2: Session ID regeneration completed: {new_session_id}")
+            return new_session_id
+            
+        except Exception as e:
+            logger.error(f"❌ SL-2.2: Error in regenerate_session_id: {e}")
+            # フォールバック: 新しいIDのみ生成
+            import uuid
+            new_session_id = str(uuid.uuid4())
+            session.session_id = new_session_id
+            session.modified = True
+            return new_session_id
 
 
 def get_langpont_redis_session(redis_manager, cookie_name='langpont_session', ttl=3600):
