@@ -96,12 +96,16 @@ class LangPontRedisSession(SessionInterface):
     
     def open_session(self, app: Flask, request: Request) -> Optional[LangPontSession]:
         """
-        🆕 SL-2.2 Phase 3: エラー対応強化版セッション読み込み
+        🆕 SL-2.2 Phase 5: TTL自動更新対応セッション読み込み
         
         エラーハンドリング:
         - Redis接続エラー時のフォールバック
         - セッションデータ破損時の復旧
         - 不正なセッションIDの検出・対応
+        
+        TTL自動更新:
+        - セッション読み込み成功時に自動でTTL延長
+        - ユーザーアクティブ時のセッション期限切れ防止
         
         Returns:
             LangPontSession: セッションオブジェクト
@@ -188,6 +192,15 @@ class LangPontRedisSession(SessionInterface):
                             "Session data integrity issue detected",
                             "WARNING"
                         )
+                
+                # 🆕 SL-2.2 Phase 5: TTL自動更新機能
+                # セッション読み込み成功時にTTLを更新（アクセスごとに期限延長）
+                try:
+                    self.redis_manager.redis_client.expire(session_key, self.ttl)
+                    logger.debug(f"✅ SL-2.2 Phase 5: TTL updated for session {session_id[:16]}...")
+                except Exception as ttl_error:
+                    logger.warning(f"⚠️ SL-2.2 Phase 5: Failed to update TTL: {ttl_error}")
+                    # TTL更新失敗してもセッション自体は継続
                 
                 # 6. 正常なセッションオブジェクトを返す
                 session = LangPontSession(decoded_data, session_id)
