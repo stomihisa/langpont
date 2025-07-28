@@ -558,22 +558,41 @@ class LangPontRedisSession(SessionInterface):
                 key = k.decode('utf-8') if isinstance(k, bytes) else k
                 value = v.decode('utf-8') if isinstance(v, bytes) else v
                 
-                # データ型の復元
-                if value == 'true':
-                    decoded_data[key] = True
-                elif value == 'false':
-                    decoded_data[key] = False
-                elif value == '':
-                    decoded_data[key] = None
-                else:
-                    # 数値の復元を試行
+                # _dataフィールドの特別処理を追加
+                if key == "_data" and value:  # 空文字列チェックも含む
                     try:
-                        if '.' in value:
-                            decoded_data[key] = float(value)
-                        else:
-                            decoded_data[key] = int(value)
-                    except ValueError:
-                        decoded_data[key] = value
+                        decoded_data[key] = json.loads(value)
+                    except json.JSONDecodeError as e:
+                        # セッションIDの取得（可能であれば）
+                        session_id = decoded_data.get('session_id', 'unknown')
+                        
+                        # 警告ログ出力
+                        logger.warning(f"⚠️ SL-2.2 Phase 3: JSON corruption detected in session {session_id[:8]}...: {e}")
+                        
+                        # セキュリティイベント記録
+                        log_security_event('SESSION_JSON_CORRUPTION', f'Corrupted _data field in session {session_id[:8]}...', 'WARNING')
+                        
+                        # 安全なフォールバック：空の辞書を設定
+                        decoded_data[key] = {}
+                        
+                        # 注意：例外は再発生させない（セッション全体を無効化しない）
+                else:
+                    # データ型の復元
+                    if value == 'true':
+                        decoded_data[key] = True
+                    elif value == 'false':
+                        decoded_data[key] = False
+                    elif value == '':
+                        decoded_data[key] = None
+                    else:
+                        # 数値の復元を試行
+                        try:
+                            if '.' in value:
+                                decoded_data[key] = float(value)
+                            else:
+                                decoded_data[key] = int(value)
+                        except ValueError:
+                            decoded_data[key] = value
             
             logger.debug(f"🔧 SL-2.2 Phase 3: Session data decoded: {list(decoded_data.keys())}")
             return decoded_data
