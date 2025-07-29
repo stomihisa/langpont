@@ -49,6 +49,20 @@ class TranslationStateManager:
         'context_info': {'ttl': INPUT_TTL, 'type': 'input'},
     }
     
+    # 🆕 SL-3 Phase 2: 大容量データ用キー定義
+    LARGE_DATA_KEYS = {
+        # 翻訳結果系（30分保持）
+        'translated_text': {'ttl': INPUT_TTL, 'type': 'translation'},
+        'reverse_translated_text': {'ttl': INPUT_TTL, 'type': 'translation'},
+        'better_translation': {'ttl': INPUT_TTL, 'type': 'translation'},
+        'reverse_better_translation': {'ttl': INPUT_TTL, 'type': 'translation'},
+        'gemini_translation': {'ttl': INPUT_TTL, 'type': 'translation'},
+        'gemini_reverse_translation': {'ttl': INPUT_TTL, 'type': 'translation'},
+        
+        # 分析結果系（30分保持）
+        'gemini_3way_analysis': {'ttl': INPUT_TTL, 'type': 'analysis'},
+    }
+    
     def __init__(self):
         """初期化"""
         self.redis_manager = get_session_redis_manager()
@@ -281,6 +295,162 @@ class TranslationStateManager:
         except Exception as e:
             logger.error(f"❌ SL-3 Phase 1: Failed to get cache info: {e}")
             return {"error": str(e)}
+    
+    # 🆕 SL-3 Phase 2: 大容量データ管理メソッド
+    
+    def save_large_data(self, key: str, value: str, session_id: str, ttl: int = None) -> bool:
+        """
+        大容量データをRedisに保存
+        
+        Args:
+            key: データキー名
+            value: 保存する値
+            session_id: セッションID
+            ttl: TTL（指定なしの場合は1800秒）
+            
+        Returns:
+            bool: 保存成功フラグ
+        """
+        try:
+            if not self.redis_manager or not self.redis_manager.is_connected:
+                logger.warning(f"⚠️ SL-3 Phase 2: Redis not available for large data save - key: {key}")
+                return False
+                
+            if key not in self.LARGE_DATA_KEYS:
+                logger.warning(f"⚠️ SL-3 Phase 2: Unknown large data key: {key}")
+                return False
+                
+            # TTLの決定
+            if ttl is None:
+                ttl = self.LARGE_DATA_KEYS[key]['ttl']
+            
+            cache_key = self._get_cache_key(session_id, key)
+            
+            # 値のサイズログ出力（デバッグ用）
+            value_size = len(value.encode('utf-8')) if value else 0
+            
+            # Redis保存
+            self.redis_manager.redis_client.set(cache_key, value, ex=ttl)
+            
+            data_type = self.LARGE_DATA_KEYS[key]['type']
+            logger.info(f"✅ SL-3 Phase 2: Large data saved - {key}({data_type}) for session {session_id[:16]}... Size={value_size}bytes TTL={ttl}s")
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"❌ SL-3 Phase 2: Failed to save large data {key}: {e}")
+            return False
+    
+    def get_large_data(self, key: str, session_id: str, default: str = None) -> str:
+        """
+        大容量データをRedisから取得
+        
+        Args:
+            key: データキー名
+            session_id: セッションID
+            default: デフォルト値
+            
+        Returns:
+            str: 取得値またはデフォルト値
+        """
+        try:
+            if not self.redis_manager or not self.redis_manager.is_connected:
+                logger.warning(f"⚠️ SL-3 Phase 2: Redis not available for large data get - key: {key}")
+                return default or ""
+                
+            if key not in self.LARGE_DATA_KEYS:
+                logger.warning(f"⚠️ SL-3 Phase 2: Unknown large data key: {key}")
+                return default or ""
+            
+            cache_key = self._get_cache_key(session_id, key)
+            
+            # Redis取得
+            cached_value = self.redis_manager.redis_client.get(cache_key)
+            
+            if cached_value is None:
+                logger.debug(f"📭 SL-3 Phase 2: No cached large data for {key} in session {session_id[:16]}...")
+                return default or ""
+            
+            # 値のデコード
+            try:
+                decoded_value = cached_value.decode('utf-8')
+            except UnicodeDecodeError as e:
+                logger.error(f"❌ SL-3 Phase 2: Unicode decode error for {key}: {e}")
+                return default or ""
+            
+            data_type = self.LARGE_DATA_KEYS[key]['type']
+            value_size = len(decoded_value.encode('utf-8'))
+            logger.debug(f"📦 SL-3 Phase 2: Large data retrieved - {key}({data_type}) for session {session_id[:16]}... Size={value_size}bytes")
+            
+            return decoded_value
+            
+        except Exception as e:
+            logger.error(f"❌ SL-3 Phase 2: Failed to get large data {key}: {e}")
+            return default or ""
+    
+    def delete_large_data(self, key: str, session_id: str) -> bool:
+        """
+        大容量データをRedisから削除
+        
+        Args:
+            key: データキー名
+            session_id: セッションID
+            
+        Returns:
+            bool: 削除成功フラグ
+        """
+        try:
+            if not self.redis_manager or not self.redis_manager.is_connected:
+                logger.warning(f"⚠️ SL-3 Phase 2: Redis not available for large data delete - key: {key}")
+                return False
+                
+            if key not in self.LARGE_DATA_KEYS:
+                logger.warning(f"⚠️ SL-3 Phase 2: Unknown large data key: {key}")
+                return False
+            
+            cache_key = self._get_cache_key(session_id, key)
+            
+            # Redis削除
+            result = self.redis_manager.redis_client.delete(cache_key)
+            
+            if result:
+                data_type = self.LARGE_DATA_KEYS[key]['type']
+                logger.info(f"🗑️ SL-3 Phase 2: Large data deleted - {key}({data_type}) for session {session_id[:16]}...")
+                return True
+            else:
+                logger.debug(f"📭 SL-3 Phase 2: Large data not found for deletion - {key} in session {session_id[:16]}...")
+                return False
+            
+        except Exception as e:
+            logger.error(f"❌ SL-3 Phase 2: Failed to delete large data {key}: {e}")
+            return False
+    
+    def save_multiple_large_data(self, session_id: str, data_dict: Dict[str, str]) -> Dict[str, bool]:
+        """
+        複数の大容量データを一括保存
+        
+        Args:
+            session_id: セッションID
+            data_dict: データの辞書 {key: value}
+            
+        Returns:
+            Dict[str, bool]: 各キーの保存成功フラグ
+        """
+        results = {}
+        
+        for key, value in data_dict.items():
+            if key in self.LARGE_DATA_KEYS:
+                results[key] = self.save_large_data(key, value, session_id)
+            else:
+                logger.warning(f"⚠️ SL-3 Phase 2: Unknown large data key for bulk save: {key}")
+                results[key] = False
+                
+        successful_count = sum(1 for success in results.values() if success)
+        total_count = len(results)
+        
+        logger.info(f"📊 SL-3 Phase 2: Bulk large data save - {successful_count}/{total_count} successful for session {session_id[:16]}...")
+        
+        return results
 
 
 def get_translation_state_manager() -> TranslationStateManager:

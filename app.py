@@ -2550,39 +2550,23 @@ def translate_chatgpt_only():
         # 翻訳開始時に古いセッションデータをクリーンアップ
         cleanup_old_session_data()
 
+        # 🆕 SL-3 Phase 1: 翻訳状態をセッションに保存（キャッシュは後で実行）
+        session["source_lang"] = source_lang
+        session["target_lang"] = target_lang
+        session["language_pair"] = language_pair
+        session["input_text"] = input_text
+        session["partner_message"] = partner_message
+        session["context_info"] = context_info
+        
         # セッション保存（安全な保存関数を使用）
         safe_session_store("translated_text", translated)
         safe_session_store("reverse_translated_text", reverse)
         safe_session_store("gemini_translation", gemini_translation)
-        safe_session_store("gemini_reverse_translation", gemini_reverse_translation)  # 🆕 Phase A修正
+        safe_session_store("gemini_reverse_translation", gemini_reverse_translation)
         safe_session_store("better_translation", better_translation)
         safe_session_store("reverse_better_translation", reverse_better)
         
-        # 🆕 SL-3 Phase 1: 翻訳結果保存後にキャッシュ保存を実行（セッションIDが生成された後）
-        session_id = getattr(session, 'session_id', None)
-        if translation_state_manager and session_id:
-            try:
-                # 翻訳状態データの準備
-                translation_states = {
-                    "language_pair": language_pair,
-                    "source_lang": source_lang,
-                    "target_lang": target_lang,
-                    "input_text": input_text,
-                    "partner_message": partner_message,
-                    "context_info": context_info
-                }
-                
-                cache_results = translation_state_manager.set_multiple_states(
-                    session_id, 
-                    translation_states
-                )
-                
-                if all(cache_results.values()):
-                    app_logger.info(f"✅ SL-3 Phase 1: Translation states cached successfully after save for session {session_id[:16]}...")
-                else:
-                    app_logger.warning(f"⚠️ SL-3 Phase 1: Partial cache failure after save: {cache_results}")
-            except Exception as e:
-                app_logger.error(f"❌ SL-3 Phase 1: Cache operation failed after save: {e}")
+        app_logger.info("📝 SL-3 Phase 2: Translation data saved to session (Redis cache will be attempted after response)")
 
         # 🆕 軽量化：翻訳コンテキストは最小限のメタデータのみ保存（重複データ排除）
         TranslationContext.save_context(
@@ -2741,9 +2725,28 @@ def save_gemini_analysis_to_db(session_id: str, analysis_result: str, recommenda
 @require_rate_limit
 def get_nuance():
     try:
-        translated_text = session.get("translated_text", "")
-        better_translation = session.get("better_translation", "")
-        gemini_translation = session.get("gemini_translation", "")
+        # 🆕 SL-3 Phase 2: Redisから大容量データを取得（フォールバック付き）
+        session_id = getattr(session, 'session_id', None)
+        
+        if translation_state_manager and session_id:
+            # Redisから取得を試行
+            translated_text = translation_state_manager.get_large_data(
+                "translated_text", session_id, 
+                default=session.get("translated_text", "")
+            )
+            better_translation = translation_state_manager.get_large_data(
+                "better_translation", session_id, 
+                default=session.get("better_translation", "")
+            )
+            gemini_translation = translation_state_manager.get_large_data(
+                "gemini_translation", session_id, 
+                default=session.get("gemini_translation", "")
+            )
+        else:
+            # フォールバック: セッションから取得
+            translated_text = session.get("translated_text", "")
+            better_translation = session.get("better_translation", "")
+            gemini_translation = session.get("gemini_translation", "")
 
         if not (len(translated_text.strip()) > 0 and
                 len(better_translation.strip()) > 0 and
@@ -2788,14 +2791,36 @@ def get_nuance():
             result = analysis_result.get('analysis_text', '')
             chatgpt_prompt = analysis_result.get('prompt_used', '')
 
-        # Truncate analysis to reduce cookie size from 4100+ bytes to under 4000 bytes
-        max_analysis_length = 3000  # Conservative limit to stay under 4KB cookie limit
-        if len(result) > max_analysis_length:
-            truncated_result = result[:max_analysis_length] + "...\n\n[分析結果が長いため省略されました]"
-            app_logger.info(f"Analysis truncated from {len(result)} to {len(truncated_result)} characters")
-            session["gemini_3way_analysis"] = truncated_result
-        else:
-            session["gemini_3way_analysis"] = result
+        # 🆕 SL-3 Phase 2: 分析結果をRedisに保存（セッションクリーンアップ付き）
+        session_id = getattr(session, 'session_id', None)
+        analysis_saved = False
+        
+        if translation_state_manager and session_id:
+            try:
+                # Redisに分析結果を保存（Phase 2では切り詰め不要）
+                analysis_saved = translation_state_manager.save_large_data(
+                    "gemini_3way_analysis", result, session_id
+                )
+                
+                if analysis_saved:
+                    app_logger.info(f"✅ SL-3 Phase 2: Analysis result cached successfully - {len(result)} chars for session {session_id[:16]}...")
+                    # セッションクリーンアップ
+                    session.pop("gemini_3way_analysis", None)
+                else:
+                    app_logger.warning("⚠️ SL-3 Phase 2: Failed to cache analysis result - using session fallback")
+                    
+            except Exception as e:
+                app_logger.error(f"❌ SL-3 Phase 2: Failed to cache analysis result: {e}")
+        
+        # フォールバック: Redis保存に失敗した場合はセッションに保存（従来処理）
+        if not analysis_saved:
+            max_analysis_length = 3000  # Conservative limit to stay under 4KB cookie limit
+            if len(result) > max_analysis_length:
+                truncated_result = result[:max_analysis_length] + "...\n\n[分析結果が長いため省略されました]"
+                app_logger.info(f"Analysis truncated from {len(result)} to {len(truncated_result)} characters")
+                session["gemini_3way_analysis"] = truncated_result
+            else:
+                session["gemini_3way_analysis"] = result
 
         # 🆕 Task 2.9.2 Phase B-3.5.2: 新しい推奨抽出システム
         try:
@@ -3634,11 +3659,31 @@ def get_analysis_with_recommendation():
         # 分析エンジンを取得
         selected_engine = session.get('analysis_engine', 'gemini')
 
-        # 翻訳データを取得
-        translated_text = session.get("translated_text", "")
-        better_translation = session.get("better_translation", "")
-        gemini_translation = session.get("gemini_translation", "")
-        input_text = session.get("input_text", "")
+        # 🆕 SL-3 Phase 2: 翻訳データをRedisから取得（フォールバック付き）
+        session_id = getattr(session, 'session_id', None)
+        
+        if translation_state_manager and session_id:
+            # Redisから大容量データを取得
+            translated_text = translation_state_manager.get_large_data(
+                "translated_text", session_id, 
+                default=session.get("translated_text", "")
+            )
+            better_translation = translation_state_manager.get_large_data(
+                "better_translation", session_id, 
+                default=session.get("better_translation", "")
+            )
+            gemini_translation = translation_state_manager.get_large_data(
+                "gemini_translation", session_id, 
+                default=session.get("gemini_translation", "")
+            )
+            # input_textは翻訳状態データなので既存のget_translation_state関数を使用
+            input_text = get_translation_state("input_text", "")
+        else:
+            # フォールバック: セッションから取得
+            translated_text = session.get("translated_text", "")
+            better_translation = session.get("better_translation", "")
+            gemini_translation = session.get("gemini_translation", "")
+            input_text = session.get("input_text", "")
 
         if not all([translated_text, better_translation, gemini_translation, input_text]):
             return jsonify({
