@@ -571,8 +571,9 @@ class LangPontRedisSession(SessionInterface):
                 key = k.decode('utf-8') if isinstance(k, bytes) else k
                 value = v.decode('utf-8') if isinstance(v, bytes) else v
                 
-                # _dataフィールドの特別処理を追加
-                if key == "_data" and value:  # 空文字列チェックも含む
+                # JSONフィールドの特別処理を追加
+                json_fields = ["_data", "translation_context"]
+                if key in json_fields and value:  # 空文字列チェックも含む
                     try:
                         decoded_data[key] = json.loads(value)
                     except json.JSONDecodeError as e:
@@ -580,10 +581,10 @@ class LangPontRedisSession(SessionInterface):
                         session_id = decoded_data.get('session_id', 'unknown')
                         
                         # 警告ログ出力
-                        logger.warning(f"⚠️ SL-2.2 Phase 3: JSON corruption detected in session {session_id[:8]}...: {e}")
+                        logger.warning(f"⚠️ SL-2.2 Phase 3: JSON corruption detected in session {session_id[:8]}... field {key}: {e}")
                         
                         # セキュリティイベント記録
-                        log_security_event('SESSION_JSON_CORRUPTION', f'Corrupted _data field in session {session_id[:8]}...', 'WARNING')
+                        log_security_event('SESSION_JSON_CORRUPTION', f'Corrupted {key} field in session {session_id[:8]}...', 'WARNING')
                         
                         # 安全なフォールバック：空の辞書を設定
                         decoded_data[key] = {}

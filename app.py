@@ -234,6 +234,17 @@ except Exception as e:
     session_redis_manager = None
     app.session_redis_manager = None
 
+# 🆕 SL-3 Phase 1: TranslationStateManager初期化
+try:
+    from services.translation_state_manager import get_translation_state_manager
+    translation_state_manager = get_translation_state_manager()
+    app.translation_state_manager = translation_state_manager
+    app_logger.info("✅ SL-3 Phase 1: TranslationStateManager initialized successfully")
+except Exception as e:
+    app_logger.warning(f"⚠️ SL-3 Phase 1: TranslationStateManager initialization failed: {e} - using session fallback")
+    translation_state_manager = None
+    app.translation_state_manager = None
+
 # 🆕 SL-2.2: Redis Session Implementation
 from config import USE_REDIS_SESSION, SESSION_TTL_SECONDS, SESSION_COOKIE_NAME
 from config import SESSION_COOKIE_SECURE, SESSION_COOKIE_HTTPONLY, SESSION_COOKIE_SAMESITE
@@ -284,10 +295,10 @@ def check_auth_with_redis_fallback():
         return True
     
     # Redisからの復元を試みる（あくまで補助）
-    if session_redis_manager and session.get('session_id'):
+    if session_redis_manager and getattr(session, 'session_id', None):
         try:
             auth_data = session_redis_manager.get_auth_from_redis(
-                session_id=session.get('session_id')
+                session_id=session.session_id
             )
             if auth_data and auth_data.get('logged_in'):
                 # Flaskセッションに復元
@@ -1123,6 +1134,39 @@ def cleanup_old_session_data():
     for key in keys_to_clean:
         session.pop(key, None)
 
+def get_translation_state(field_name: str, default_value: Any = None) -> Any:
+    """
+    🆕 SL-3 Phase 1: 翻訳状態を取得（Redisキャッシュ → セッションフォールバック）
+    
+    Args:
+        field_name: フィールド名
+        default_value: デフォルト値
+        
+    Returns:
+        Any: 取得した値
+    """
+    try:
+        # 🔍 Debug: セッションオブジェクトの情報をログ出力
+        session_id = getattr(session, 'session_id', None)
+        # app_logger.debug(f"🔍 SL-3 Debug: session type={type(session)}, session_id={session_id}, field={field_name}")
+        
+        # TranslationStateManagerからの取得を試行
+        if translation_state_manager and session_id:
+            cached_value = translation_state_manager.get_translation_state(
+                session_id, 
+                field_name, 
+                None
+            )
+            if cached_value is not None:
+                return cached_value
+        
+        # フォールバック: セッションから取得
+        return session.get(field_name, default_value)
+        
+    except Exception as e:
+        app_logger.error(f"❌ SL-3 Phase 1: Failed to get translation state {field_name}: {e}")
+        return session.get(field_name, default_value)
+
 def f_translate_to_lightweight(input_text: str, source_lang: str, target_lang: str, partner_message: str = "", context_info: str = "", current_lang: str = "jp") -> str:
     """セキュリティ強化版メイン翻訳関数"""
 
@@ -1439,8 +1483,8 @@ def f_gemini_3way_analysis(translated_text: str, better_translation: str, gemini
         else:
             return "⚠️ 分析に必要な翻訳データが不足しています", ""
 
-    # 🆕 現在の言語設定を直接取得（セッションの古いデータを無視）
-    current_language_pair = request.form.get('language_pair') or session.get("language_pair", "ja-en")
+    # 🆕 現在の言語設定を直接取得（SL-3 Phase 1: キャッシュ対応）
+    current_language_pair = request.form.get('language_pair') or get_translation_state("language_pair", "ja-en")
 
     try:
         source_lang, target_lang = current_language_pair.split("-")
@@ -2074,10 +2118,10 @@ def logout():
     username = session.get("username", "unknown")
     
     # 🆕 SL-2.1: Redis同期（失敗してもログアウト処理は継続）
-    if session_redis_manager and session.get('session_id'):
+    if session_redis_manager and getattr(session, 'session_id', None):
         try:
             session_redis_manager.clear_auth_from_redis(
-                session_id=session.get('session_id')
+                session_id=session.session_id
             )
             app_logger.info(f"✅ SL-2.1: Auth data cleared from Redis for user: {username}")
         except Exception as e:
@@ -2241,13 +2285,15 @@ def translate_chatgpt_only():
         for key in critical_keys:
             session.pop(key, None)
 
-        # セッション保存
+        # 🆕 SL-3 Phase 1: 翻訳状態をセッションに保存（キャッシュは翻訳後に実行）
         session["source_lang"] = source_lang
         session["target_lang"] = target_lang
         session["language_pair"] = language_pair
         session["input_text"] = input_text
         session["partner_message"] = partner_message
         session["context_info"] = context_info
+        
+        app_logger.info("📝 SL-3 Phase 1: Translation states saved to session (cache will be attempted after translation)")
 
         log_access_event(f'Translation started: {language_pair}, length={len(input_text)}')
 
@@ -2511,6 +2557,32 @@ def translate_chatgpt_only():
         safe_session_store("gemini_reverse_translation", gemini_reverse_translation)  # 🆕 Phase A修正
         safe_session_store("better_translation", better_translation)
         safe_session_store("reverse_better_translation", reverse_better)
+        
+        # 🆕 SL-3 Phase 1: 翻訳結果保存後にキャッシュ保存を実行（セッションIDが生成された後）
+        session_id = getattr(session, 'session_id', None)
+        if translation_state_manager and session_id:
+            try:
+                # 翻訳状態データの準備
+                translation_states = {
+                    "language_pair": language_pair,
+                    "source_lang": source_lang,
+                    "target_lang": target_lang,
+                    "input_text": input_text,
+                    "partner_message": partner_message,
+                    "context_info": context_info
+                }
+                
+                cache_results = translation_state_manager.set_multiple_states(
+                    session_id, 
+                    translation_states
+                )
+                
+                if all(cache_results.values()):
+                    app_logger.info(f"✅ SL-3 Phase 1: Translation states cached successfully after save for session {session_id[:16]}...")
+                else:
+                    app_logger.warning(f"⚠️ SL-3 Phase 1: Partial cache failure after save: {cache_results}")
+            except Exception as e:
+                app_logger.error(f"❌ SL-3 Phase 1: Cache operation failed after save: {e}")
 
         # 🆕 軽量化：翻訳コンテキストは最小限のメタデータのみ保存（重複データ排除）
         TranslationContext.save_context(
@@ -2703,10 +2775,10 @@ def get_nuance():
                 engine=selected_engine,
                 context={
                     "input_text": input_text,
-                    "source_lang": session.get("language_pair", "ja-en").split("-")[0],
-                    "target_lang": session.get("language_pair", "ja-en").split("-")[1],
-                    "partner_message": session.get("partner_message", ""),
-                    "context_info": session.get("context_info", "")
+                    "source_lang": get_translation_state("language_pair", "ja-en").split("-")[0],
+                    "target_lang": get_translation_state("language_pair", "ja-en").split("-")[1],
+                    "partner_message": get_translation_state("partner_message", ""),
+                    "context_info": get_translation_state("context_info", "")
                 }
             )
 
@@ -2793,11 +2865,11 @@ def get_nuance():
                     'activity_type': 'normal_use',
                     'session_id': session_id,
                     'user_id': session.get('username', 'anonymous'),
-                    'japanese_text': session.get("input_text", ""),
-                    'target_language': session.get("language_pair", "ja-en").split("-")[1],
-                    'language_pair': session.get("language_pair", "ja-en"),
-                    'partner_message': session.get("partner_message", ""),
-                    'context_info': session.get("context_info", ""),
+                    'japanese_text': get_translation_state("input_text", ""),
+                    'target_language': get_translation_state("language_pair", "ja-en").split("-")[1],
+                    'language_pair': get_translation_state("language_pair", "ja-en"),
+                    'partner_message': get_translation_state("partner_message", ""),
+                    'context_info': get_translation_state("context_info", ""),
                     'chatgpt_translation': translated_text,
                     'enhanced_translation': better_translation,
                     'gemini_translation': gemini_translation,
@@ -2915,7 +2987,7 @@ def track_translation_copy():
             from admin_dashboard import advanced_analytics
 
             user_id = session.get("username", "anonymous")
-            language_pair = session.get("language_pair", "unknown")
+            language_pair = get_translation_state("language_pair", "unknown")
 
             # Gemini推奨との比較分析
             gemini_recommendation = session.get("gemini_recommendation", None)
@@ -3585,10 +3657,10 @@ def get_analysis_with_recommendation():
             engine=selected_engine,
             context={
                 "input_text": input_text,
-                "source_lang": session.get("language_pair", "ja-en").split("-")[0],
-                "target_lang": session.get("language_pair", "ja-en").split("-")[1],
-                "partner_message": session.get("partner_message", ""),
-                "context_info": session.get("context_info", "")
+                "source_lang": get_translation_state("language_pair", "ja-en").split("-")[0],
+                "target_lang": get_translation_state("language_pair", "ja-en").split("-")[1],
+                "partner_message": get_translation_state("partner_message", ""),
+                "context_info": get_translation_state("context_info", "")
             }
         )
 
