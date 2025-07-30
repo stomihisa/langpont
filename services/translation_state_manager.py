@@ -441,6 +441,8 @@ class TranslationStateManager:
         for key, value in data_dict.items():
             if key in self.LARGE_DATA_KEYS:
                 results[key] = self.save_large_data(key, value, session_id)
+                if results[key]:
+                    logger.info(f"✅ Saved to Redis: {key} = {str(value)[:50]}...")
             else:
                 logger.warning(f"⚠️ SL-3 Phase 2: Unknown large data key for bulk save: {key}")
                 results[key] = False

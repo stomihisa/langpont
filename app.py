@@ -2566,7 +2566,23 @@ def translate_chatgpt_only():
         safe_session_store("better_translation", better_translation)
         safe_session_store("reverse_better_translation", reverse_better)
         
-        app_logger.info("📝 SL-3 Phase 2: Translation data saved to session (Redis cache will be attempted after response)")
+        # 🆕 SL-3 Phase 2: Redis保存（大容量データ）
+        # session.session_idプロパティから取得、またはフォールバック
+        session_id = getattr(session, 'session_id', None) or session.get("session_id") or session.get("csrf_token", "")[:16] or f"trans_{int(time.time())}"
+        app_logger.info(f"🔍 Debug: session_id={session_id}, session_keys={list(session.keys())[:5]}, has_session_id_attr={hasattr(session, 'session_id')}")
+        if translation_state_manager and session_id:
+            redis_data = {
+                "translated_text": translated,
+                "reverse_translated_text": reverse,
+                "gemini_translation": gemini_translation,
+                "gemini_reverse_translation": gemini_reverse_translation,
+                "better_translation": better_translation,
+                "reverse_better_translation": reverse_better
+            }
+            app_logger.info("🚀 Attempting Redis save...")
+            translation_state_manager.save_multiple_large_data(session_id, redis_data)
+        else:
+            app_logger.warning(f"⚠️ Redis save skipped: session_id={session_id}, manager={translation_state_manager is not None}")
 
         # 🆕 軽量化：翻訳コンテキストは最小限のメタデータのみ保存（重複データ排除）
         TranslationContext.save_context(
