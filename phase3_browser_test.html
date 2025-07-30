@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Task #7-3 SL-3 Phase 3: StateManager翻訳セクション動作テスト</title>
+</head>
+<body>
+    <h1>StateManager翻訳セクション動作テスト</h1>
+    <div id="test-results"></div>
+    
+    <!-- StateManager.js読み込み -->
+    <script src="./static/js/core/state_manager.js"></script>
+    
+    <script>
+    // Task #7-3 SL-3 Phase 3: StateManager翻訳セクション動作テスト
+    // 2025-07-30 実行: StateManagerの翻訳同期機能テスト
+
+    function log(message) {
+        console.log(message);
+        document.getElementById('test-results').innerHTML += '<div>' + message + '</div>';
+    }
+
+    log("=== Task #7-3 SL-3 Phase 3: StateManager翻訳セクション動作テスト ===");
+
+    // 1. StateManagerインスタンス確認
+    if (typeof window.StateManager === 'undefined') {
+        log("❌ StateManager not found in window");
+    } else {
+        log("✅ StateManager found");
+        
+        // 2. translation sectionの構造確認
+        const translation = window.StateManager.states.translation;
+        if (!translation) {
+            log("❌ states.translation not found");
+        } else {
+            log("✅ states.translation structure found");
+            
+            // 3. fieldMapping確認
+            log("📋 fieldMapping:");
+            Object.entries(translation.fieldMapping).forEach(([ui, redis]) => {
+                log(`  ${ui} → ${redis}`);
+            });
+            
+            // 4. getRedisKey()テスト
+            log("<br>🔧 getRedisKey() Test:");
+            const testFields = ['inputText', 'translatedText', 'contextInfo'];
+            testFields.forEach(field => {
+                const redisKey = window.StateManager.getRedisKey(field);
+                log(`  ${field} → ${redisKey}`);
+            });
+            
+            // 5. getUIKey()テスト
+            log("<br>🔧 getUIKey() Test:");
+            const testRedisKeys = ['input_text', 'translated_text', 'context_info'];
+            testRedisKeys.forEach(redisKey => {
+                const uiKey = window.StateManager.getUIKey(redisKey);
+                log(`  ${redisKey} → ${uiKey}`);
+            });
+            
+            // 6. syncStatus初期状態確認
+            log("<br>📊 syncStatus initial state: " + JSON.stringify(translation.syncStatus));
+            
+            // 7. cache初期状態確認
+            log("📊 cache initial state: " + JSON.stringify(translation.cache));
+            
+            // 8. lastSync初期状態確認
+            log("📊 lastSync initial state: " + translation.lastSync);
+        }
+    }
+
+    log("<br>=== StateManager翻訳セクション動作テスト完了 ===");
+    </script>
+</body>
+</html>

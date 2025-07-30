@@ -70,6 +70,27 @@ class StateManager {
         },
         lastSaved: null,
         validationErrors: {}
+      },
+      
+      // 🆕 SL-3 Phase 3: 翻訳状態キャッシュ管理
+      translation: {
+        cache: {},
+        syncStatus: {},
+        lastSync: null,
+        // フィールドマッピング（UI → Redis）
+        fieldMapping: {
+          'inputText': 'input_text',
+          'translatedText': 'translated_text',
+          'reverseTranslatedText': 'reverse_translated_text',
+          'betterTranslation': 'better_translation',
+          'reverseBetterTranslation': 'reverse_better_translation',
+          'geminiTranslation': 'gemini_translation',
+          'geminiReverseTranslation': 'gemini_reverse_translation',
+          'gemini3wayAnalysis': 'gemini_3way_analysis',
+          'contextInfo': 'context_info',
+          'languagePair': 'language_pair',
+          'partnerMessage': 'partner_message'
+        }
       }
     };
     
@@ -776,6 +797,174 @@ class StateManager {
     return undefined;
   }
   
+  // ================================================================
+  // 🆕 SL-3 Phase 3: 翻訳状態双方向同期メソッド
+  // ================================================================
+  
+  /**
+   * UI側フィールド名をRedisキー名に変換
+   * @param {string} uiField - UI側フィールド名
+   * @returns {string} - Redisキー名
+   */
+  getRedisKey(uiField) {
+    return this.states.translation.fieldMapping[uiField] || uiField;
+  }
+  
+  /**
+   * Redisキー名をUI側フィールド名に変換
+   * @param {string} redisKey - Redisキー名
+   * @returns {string} - UI側フィールド名
+   */
+  getUIKey(redisKey) {
+    for (const [uiField, mappedRedisKey] of Object.entries(this.states.translation.fieldMapping)) {
+      if (mappedRedisKey === redisKey) {
+        return uiField;
+      }
+    }
+    return redisKey;
+  }
+  
+  /**
+   * Redisから翻訳状態を取得してキャッシュに同期
+   * @param {string} sessionId - セッションID（オプション）
+   * @returns {Promise<boolean>} - 同期成功フラグ
+   */
+  async syncFromRedis(sessionId = null) {
+    try {
+      const response = await fetch('/api/get_translation_state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sessionId })
+      });
+      
+      if (!response.ok) {
+        console.warn('🔧 SL-3 Phase 3: Redis sync failed - server error');
+        return false;
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Redis形式からUI形式に変換してキャッシュ更新
+        for (const [redisKey, value] of Object.entries(data.states || {})) {
+          const uiField = this.getUIKey(redisKey);
+          
+          if (value === null) {
+            // TTL期限切れ
+            this.states.translation.syncStatus[uiField] = 'expired';
+            console.log(`[SyncFromRedis] TTL expired: ${uiField} ← ${redisKey}`);
+          } else {
+            this.states.translation.cache[uiField] = value;
+            this.states.translation.syncStatus[uiField] = 'synced';
+            console.log(`[SyncFromRedis] Loaded: ${uiField} ← ${redisKey} | Value: ${String(value).substring(0, 50)}...`);
+          }
+        }
+        
+        this.states.translation.lastSync = new Date().toISOString();
+        return true;
+      }
+      
+      return false;
+      
+    } catch (error) {
+      console.error('🚨 SL-3 Phase 3: syncFromRedis failed:', error);
+      return false;
+    }
+  }
+  
+  /**
+   * UI状態をRedisに同期保存
+   * @param {string} field - UI側フィールド名
+   * @param {string} value - 保存する値
+   * @param {string} sessionId - セッションID（オプション）
+   * @returns {Promise<boolean>} - 保存成功フラグ
+   */
+  async syncToRedis(field, value, sessionId = null) {
+    try {
+      // 差分検出: 同じ値では保存しない
+      if (this.states.translation.cache[field] === value) {
+        console.log(`[SyncToRedis] Skipped (same value): ${field} → ${this.getRedisKey(field)}`);
+        return true;
+      }
+      
+      const redisKey = this.getRedisKey(field);
+      
+      const response = await fetch('/api/set_translation_state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: sessionId,
+          field: redisKey,
+          value: value
+        })
+      });
+      
+      if (!response.ok) {
+        console.error(`[SyncToRedis] Server error: ${field} → ${redisKey} | Status: FAILED`);
+        return false;
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // 成功時: キャッシュ更新
+        this.states.translation.cache[field] = value;
+        this.states.translation.syncStatus[field] = 'synced';
+        console.log(`[SyncToRedis] Saving: ${field} → ${redisKey} | Status: SUCCESS`);
+        return true;
+      } else {
+        console.error(`[SyncToRedis] Failed: ${field} → ${redisKey} | Status: FAILED | Error: ${data.error || 'unknown'}`);
+        return false;
+      }
+      
+    } catch (error) {
+      console.error(`[SyncToRedis] Exception: ${field} → ${this.getRedisKey(field)}`, error);
+      return false;
+    }
+  }
+  
+  /**
+   * 翻訳完了後の同期実行
+   * @param {Object} translationData - 翻訳データ
+   * @param {string} sessionId - セッションID
+   */
+  async syncTranslationAfterCompletion(translationData, sessionId = null) {
+    try {
+      const syncPromises = [];
+      
+      for (const [field, value] of Object.entries(translationData)) {
+        if (value && typeof value === 'string') {
+          syncPromises.push(this.syncToRedis(field, value, sessionId));
+        }
+      }
+      
+      await Promise.all(syncPromises);
+      console.log('🔄 SL-3 Phase 3: Translation sync completed');
+      
+    } catch (error) {
+      console.error('🚨 SL-3 Phase 3: Translation sync failed:', error);
+    }
+  }
+  
+  /**
+   * 翻訳キャッシュの取得
+   * @param {string} field - UI側フィールド名
+   * @returns {string|null} - キャッシュされた値またはnull
+   */
+  getTranslationCache(field) {
+    return this.states.translation.cache[field] || null;
+  }
+  
+  /**
+   * 翻訳キャッシュの設定
+   * @param {string} field - UI側フィールド名
+   * @param {string} value - 設定する値
+   */
+  setTranslationCache(field, value) {
+    this.states.translation.cache[field] = value;
+    this.states.translation.syncStatus[field] = 'local';
+  }
+
   /**
    * 将来の拡張用メソッド（Phase 9b以降）
    */
@@ -903,5 +1092,26 @@ window.loadFormFromSession = function(key) {
 
 window.clearFormSession = function(key) {
   return window.stateManager.clearFormSession(key);
+};
+
+// 🆕 SL-3 Phase 3: 翻訳状態同期のwrap関数
+window.syncFromRedis = function(sessionId) {
+  return window.stateManager.syncFromRedis(sessionId);
+};
+
+window.syncToRedis = function(field, value, sessionId) {
+  return window.stateManager.syncToRedis(field, value, sessionId);
+};
+
+window.getTranslationCache = function(field) {
+  return window.stateManager.getTranslationCache(field);
+};
+
+window.setTranslationCache = function(field, value) {
+  return window.stateManager.setTranslationCache(field, value);
+};
+
+window.syncTranslationAfterCompletion = function(translationData, sessionId) {
+  return window.stateManager.syncTranslationAfterCompletion(translationData, sessionId);
 };
 

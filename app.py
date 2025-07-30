@@ -3833,6 +3833,108 @@ def four_stage_dashboard():
 
 # アプリケーション起動とセキュリティ最終設定
 
+# ================================================================
+# 🆕 SL-3 Phase 3: 翻訳状態双方向同期APIエンドポイント
+# ================================================================
+
+@app.route("/api/get_translation_state", methods=["POST"])
+@require_rate_limit
+def get_translation_state():
+    """
+    Redisから翻訳状態を取得するAPIエンドポイント
+    """
+    try:
+        data = request.get_json() or {}
+        session_id = data.get('session_id') or getattr(session, 'session_id', None) or session.get("session_id") or session.get("csrf_token", "")[:16] or f"trans_{int(time.time())}"
+        
+        if not translation_state_manager:
+            return jsonify({
+                "success": False,
+                "error": "Translation state manager not available"
+            })
+        
+        # 全翻訳状態フィールドを取得
+        fields_to_get = list(translation_state_manager.CACHE_KEYS.keys()) + list(translation_state_manager.LARGE_DATA_KEYS.keys())
+        
+        states = {}
+        for field in fields_to_get:
+            if field in translation_state_manager.CACHE_KEYS:
+                value = translation_state_manager.get_translation_state(session_id, field)
+            else:
+                value = translation_state_manager.get_large_data(field, session_id)
+            
+            states[field] = value
+        
+        app_logger.info(f"🔄 SL-3 Phase 3: Translation states retrieved for session {session_id[:16]}...")
+        
+        return jsonify({
+            "success": True,
+            "session_id": session_id,
+            "states": states
+        })
+        
+    except Exception as e:
+        app_logger.error(f"❌ SL-3 Phase 3: get_translation_state error: {e}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+@app.route("/api/set_translation_state", methods=["POST"])
+@require_rate_limit
+def set_translation_state():
+    """
+    翻訳状態をRedisに保存するAPIエンドポイント
+    """
+    try:
+        data = request.get_json() or {}
+        session_id = data.get('session_id') or getattr(session, 'session_id', None) or session.get("session_id") or session.get("csrf_token", "")[:16] or f"trans_{int(time.time())}"
+        field = data.get('field')
+        value = data.get('value')
+        
+        if not translation_state_manager:
+            return jsonify({
+                "success": False,
+                "error": "Translation state manager not available"
+            })
+        
+        if not field or value is None:
+            return jsonify({
+                "success": False,
+                "error": "Field and value are required"
+            })
+        
+        # フィールドタイプに応じて適切なメソッドを呼び出し
+        if field in translation_state_manager.CACHE_KEYS:
+            success = translation_state_manager.set_translation_state(session_id, field, value)
+        elif field in translation_state_manager.LARGE_DATA_KEYS:
+            success = translation_state_manager.save_large_data(field, value, session_id)
+        else:
+            return jsonify({
+                "success": False,
+                "error": f"Unknown field: {field}"
+            })
+        
+        if success:
+            app_logger.info(f"✅ SL-3 Phase 3: Translation state saved - {field} for session {session_id[:16]}...")
+            return jsonify({
+                "success": True,
+                "session_id": session_id,
+                "field": field
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "error": "Failed to save to Redis"
+            })
+        
+    except Exception as e:
+        app_logger.error(f"❌ SL-3 Phase 3: set_translation_state error: {e}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
 if __name__ == "__main__":
     # 🎯 Phase B1: 友人推奨のシンプル設定（8080ポート競合問題解決）
     app.run(
