@@ -2202,6 +2202,7 @@ def reset_language():
         return redirect(url_for("index"))
 
 @app.route("/translate_chatgpt", methods=["POST"])
+@csrf_protect  # 🆕 Task #8 SL-4: API保護強化
 @require_rate_limit
 def translate_chatgpt_only():
     try:
@@ -2738,6 +2739,7 @@ def save_gemini_analysis_to_db(session_id: str, analysis_result: str, recommenda
 # =============================================================================
 
 @app.route("/get_nuance", methods=["POST"])
+@csrf_protect  # 🆕 Task #8 SL-4: API保護強化
 @require_rate_limit
 def get_nuance():
     try:
@@ -3072,6 +3074,7 @@ def track_translation_copy():
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/interactive_question", methods=["POST"])
+@csrf_protect  # 🆕 Task #8 SL-4: API保護強化
 @require_rate_limit
 def interactive_question():
     """インタラクティブな質問を処理するエンドポイント（多言語対応）"""
@@ -3209,6 +3212,7 @@ def clear_chat_history():
         })
 
 @app.route("/clear_session", methods=["POST"])
+@csrf_protect  # 🆕 Task #8 SL-4: API保護強化
 @require_rate_limit
 def clear_session():
     """🆕 セッションを完全クリアするエンドポイント（セッションキャッシュ問題対策）"""
@@ -3838,6 +3842,7 @@ def four_stage_dashboard():
 # ================================================================
 
 @app.route("/api/get_translation_state", methods=["POST"])
+@csrf_protect  # 🆕 Task #8 SL-4: API保護強化
 @require_rate_limit
 def get_translation_state():
     """
@@ -3881,6 +3886,7 @@ def get_translation_state():
         }), 500
 
 @app.route("/api/set_translation_state", methods=["POST"])
+@csrf_protect  # 🆕 Task #8 SL-4: API保護強化
 @require_rate_limit
 def set_translation_state():
     """
