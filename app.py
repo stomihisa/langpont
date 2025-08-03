@@ -61,6 +61,10 @@ from translation.analysis_engine import AnalysisEngineManager
 # 🆕 Task B2-10-Phase1c: 翻訳エキスパートAI安全部分分離
 from translation.expert_ai import LangPontTranslationExpertAI
 
+# 🆕 Task #9 AP-1 Phase 1: 翻訳API分離
+from routes.translation import init_translation_routes
+from services.translation_service import TranslationService
+
 # 🎯 TaskH2-2(B2-3) Stage 2 Phase 7: エンジン状態管理モジュール統合
 from routes.engine_management import create_engine_management_blueprint
 
@@ -330,6 +334,8 @@ else:
     except Exception as e:
         app_logger.error(f"Failed to initialize Claude client: {e}")
         claude_client = None
+
+# Task #9 AP-1 Phase 1: TranslationService initialization moved after check_daily_usage definition
 
 # 🚀 Task 2.9.2 Phase B-1: 管理者システム統合
 print("🚀 Phase B-1: 管理者システム統合開始")
@@ -835,6 +841,30 @@ def get_usage_status(client_id: str) -> Dict[str, Union[bool, int, str]]:
         "user_role": user_role,
         "is_unlimited": False
     }
+
+# 🆕 Task #9 AP-1 Phase 1: TranslationService初期化（check_daily_usage定義後）
+translation_service = TranslationService(
+    openai_client=client,
+    logger=app_logger,
+    labels=labels,
+    usage_checker=check_daily_usage,  # 関数参照を渡す
+    translation_state_manager=translation_state_manager
+)
+app_logger.info("✅ Task #9 AP-1: TranslationService initialized successfully")
+
+# 🆕 Task #9 AP-1 Phase 1: 翻訳Blueprint登録
+try:
+    history_functions = {
+        'create_entry': create_translation_history_entry,
+        'save_result': save_translation_result
+    }
+    translation_bp = init_translation_routes(
+        translation_service, check_daily_usage, history_functions, app_logger, labels
+    )
+    app.register_blueprint(translation_bp)
+    app_logger.info("✅ Task #9 AP-1: Translation Blueprint registered successfully")
+except ImportError as e:
+    app_logger.error(f"❌ Task #9 AP-1: Translation Blueprint registration failed: {e}")
 
 # エラーハンドリング（強化版）
 
@@ -2201,10 +2231,13 @@ def reset_language():
         session["lang"] = "jp"
         return redirect(url_for("index"))
 
-@app.route("/translate_chatgpt", methods=["POST"])
-@csrf_protect  # 🆕 Task #8 SL-4: API保護強化
-@require_rate_limit
-def translate_chatgpt_only():
+# 🆕 Task #9 AP-1 Phase 1: 以下の関数はroutes/translation.pyに移行済み
+# @app.route("/translate_chatgpt", methods=["POST"])
+# @csrf_protect  # 🆕 Task #8 SL-4: API保護強化
+# @require_rate_limit
+# def translate_chatgpt_only():
+    # 🚨 Task #9 AP-1 Phase 1: この関数は routes/translation.py に移行済み
+    # 🚨 新しいエンドポイント: /translate_chatgpt (Blueprint経由)
     try:
         # 🔧 Phase 4b-3修正: 言語とlabels import を最初に実行
         current_lang = session.get('lang', 'jp')
