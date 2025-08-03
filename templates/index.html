@@ -4,7 +4,7 @@
 
 {% block head %}
 <!-- 🔧 STEP 2: CSRFトークンの修正 -->
-<meta name="csrf-token" content="{{ session.get('csrf_token', '') }}">
+<meta name="csrf-token" content="{{ csrf_token }}">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
 <!-- 🌍 多言語対応: JavaScriptで利用可能なラベル初期化 -->
@@ -921,9 +921,15 @@ window.currentLabels = {
       // 🆕 Phase B-2: setQuickProcessingState() 呼び出しを削除
       // Loading表示はshowLoading()で既に実行済み
       
+      // 🆕 Task #8 SL-4: CSRFトークンヘッダー追加（403エラー回避）
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+      
       const response = await fetch("/translate_chatgpt", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "X-CSRFToken": csrfToken
+        },
         body: JSON.stringify({
           japanese_text: inputText,
           partner_message: partnerMessage,

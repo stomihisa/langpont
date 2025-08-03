@@ -21,7 +21,7 @@ def csrf_protect(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if request.method == "POST":
-            token = request.form.get('csrf_token') or request.headers.get('X-CSRF-Token')
+            token = request.form.get('csrf_token') or request.headers.get('X-CSRFToken')
             if not validate_csrf_token(token):
                 # セキュリティログの記録（グローバル参照回避のため直接記録）
                 import logging

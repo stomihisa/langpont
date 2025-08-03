@@ -831,9 +831,13 @@ class StateManager {
    */
   async syncFromRedis(sessionId = null) {
     try {
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
       const response = await fetch('/api/get_translation_state', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken
+        },
         body: JSON.stringify({ session_id: sessionId })
       });
       
@@ -889,9 +893,13 @@ class StateManager {
       
       const redisKey = this.getRedisKey(field);
       
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
       const response = await fetch('/api/set_translation_state', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken
+        },
         body: JSON.stringify({
           session_id: sessionId,
           field: redisKey,

@@ -31,15 +31,14 @@ def _get_csrf_redis_manager():
     return _csrf_redis_manager
 
 def _get_session_id_for_csrf() -> Optional[str]:
-    """CSRF用セッションID取得（app.pyのロジックと同一）"""
-    # session_idの取得（app.pyと同じフォールバック順序）
-    session_id = getattr(session, 'session_id', None) or session.get("session_id") or session.get("csrf_token", "")[:16]
+    """CSRF用セッションID取得（統一版）"""
+    from flask import session
     
-    # 最終フォールバック：タイムスタンプベース
+    # session_idのみを使用（フォールバックなし）
+    session_id = session.get("session_id")
     if not session_id:
-        import time
-        session_id = f"csrf_{int(time.time())}"
-        
+        # セッションIDがない場合はNoneを返す（CSRFトークン保存をスキップ）
+        return None
     return session_id
 
 
@@ -49,33 +48,53 @@ def generate_csrf_token() -> str:
     
     Task #8 SL-4: Redis保存を追加、フォールバック機構付き
     """
+    # 🧪 Task #8-3: デバッグログ追加
+    print(f"🧪 CSRF DEBUG: generate_csrf_token() called")
+    
     # 既存のセッショントークンがある場合はそれを返す（変更なし）
     if 'csrf_token' in session:
         existing_token = session['csrf_token']
+        print(f"🧪 CSRF DEBUG: Found existing token: {existing_token[:20]}...")
         
         # 🆕 Redis同期: 既存トークンをRedisにも保存
         csrf_manager = _get_csrf_redis_manager()
+        print(f"🧪 CSRF DEBUG: csrf_manager available: {csrf_manager is not None}")
         if csrf_manager:
             session_id = _get_session_id_for_csrf()
+            print(f"🧪 CSRF DEBUG: session_id from _get_session_id_for_csrf(): {session_id}")
             if session_id:
-                csrf_manager.save_csrf_token(session_id, existing_token)
+                save_result = csrf_manager.save_csrf_token(session_id, existing_token)
+                print(f"🧪 CSRF DEBUG: save_csrf_token() result: {save_result}")
+                if save_result:
+                    log_security_event('CSRF_TOKEN_REDIS_SAVED', f'CSRF token saved to Redis for session {session_id[:16]}...', 'INFO')
+                else:
+                    log_security_event('CSRF_TOKEN_REDIS_FALLBACK', f'CSRF token Redis save failed, using session fallback for {session_id[:16]}...', 'WARNING')
+            else:
+                print("🧪 CSRF DEBUG: session_id is None, skipping Redis save")
         
         return existing_token
     
     # 新規トークン生成
+    print(f"🧪 CSRF DEBUG: Generating new CSRF token")
     new_token = secrets.token_urlsafe(32)
     session['csrf_token'] = new_token
+    print(f"🧪 CSRF DEBUG: New token generated: {new_token[:20]}...")
     
     # 🆕 Redis保存: 新規トークンを保存（失敗してもセッション保存は継続）
     csrf_manager = _get_csrf_redis_manager()
+    print(f"🧪 CSRF DEBUG: csrf_manager available: {csrf_manager is not None}")
     if csrf_manager:
         session_id = _get_session_id_for_csrf()
+        print(f"🧪 CSRF DEBUG: session_id from _get_session_id_for_csrf(): {session_id}")
         if session_id:
             redis_saved = csrf_manager.save_csrf_token(session_id, new_token)
+            print(f"🧪 CSRF DEBUG: save_csrf_token() result: {redis_saved}")
             if redis_saved:
-                log_security_event('CSRF_TOKEN_REDIS_SAVED', f'CSRF token saved to Redis for session {session_id[:16]}...', 'DEBUG')
+                log_security_event('CSRF_TOKEN_REDIS_SAVED', f'CSRF token saved to Redis for session {session_id[:16]}...', 'INFO')
             else:
                 log_security_event('CSRF_TOKEN_REDIS_FALLBACK', f'CSRF token Redis save failed, using session fallback for {session_id[:16]}...', 'WARNING')
+        else:
+            print("🧪 CSRF DEBUG: session_id is None, skipping Redis save")
     
     return new_token
 

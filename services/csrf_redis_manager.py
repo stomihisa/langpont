@@ -70,25 +70,35 @@ class CSRFRedisManager:
         Returns:
             bool: 保存成功フラグ
         """
+        # 🧪 Task #8-3: デバッグログ追加
+        print(f"🧪 CSRF REDIS DEBUG: save_csrf_token() called")
+        print(f"🧪 CSRF REDIS DEBUG: session_id: {session_id}")
+        print(f"🧪 CSRF REDIS DEBUG: token: {token[:20]}...")
+        
         try:
             if not self.redis_manager or not self.redis_manager.is_connected:
                 logger.warning("⚠️ SL-4: Redis not available for CSRF token save")
+                print(f"🧪 CSRF REDIS DEBUG: Redis not available!")
                 return False
                 
             if not session_id or not token:
                 logger.warning("⚠️ SL-4: Invalid session_id or token for CSRF save")
+                print(f"🧪 CSRF REDIS DEBUG: Invalid session_id or token!")
                 return False
                 
             cache_key = self._get_key(session_id)
+            print(f"🧪 CSRF REDIS DEBUG: Redis key will be: {cache_key}")
             
             # TTL付きでRedis保存
             self.redis_manager.redis_client.set(cache_key, token, ex=self.ttl)
+            print(f"🧪 CSRF REDIS DEBUG: Redis set() executed successfully")
             
-            logger.debug(f"✅ SL-4: CSRF token saved for session {session_id[:16]}... TTL={self.ttl}s")
+            logger.info(f"✅ SL-4: CSRF token saved for session {session_id[:16]}... TTL={self.ttl}s")
             return True
             
         except Exception as e:
             logger.error(f"❌ SL-4: Failed to save CSRF token: {e}")
+            print(f"🧪 CSRF REDIS DEBUG: Exception occurred: {e}")
             return False
     
     def get_csrf_token(self, session_id: str) -> Optional[str]:
