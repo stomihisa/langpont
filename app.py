@@ -3877,7 +3877,7 @@ def four_stage_dashboard():
 @app.route("/api/get_translation_state", methods=["POST"])
 @csrf_protect  # 🆕 Task #8 SL-4: API保護強化
 @require_rate_limit
-def get_translation_state():
+def get_translation_state_api():
     """
     Redisから翻訳状態を取得するAPIエンドポイント
     """

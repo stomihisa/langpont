@@ -9,6 +9,10 @@ Task #9 AP-1 Phase 1: ChatGPT翻訳エンドポイントの分離
 """
 
 import time
+import os
+import hashlib
+from datetime import datetime
+from typing import Optional
 from flask import Blueprint, request, jsonify, session
 from security.decorators import csrf_protect, require_rate_limit
 from security.security_logger import log_security_event, log_access_event
@@ -49,17 +53,38 @@ def init_translation_routes(service, usage_check_func, history_mgr, app_logger, 
     return translation_bp
 
 
+def get_current_user_id() -> Optional[int]:
+    """現在ログイン中のユーザーIDを取得（app.pyから移植）"""
+    try:
+        from user_auth import AUTH_SYSTEM_AVAILABLE
+        
+        if AUTH_SYSTEM_AVAILABLE and session.get("authenticated"):
+            return session.get("user_id")
+        elif session.get("logged_in"):
+            # 従来のシステムでのユーザーID
+            username = session.get("username")
+            if username:
+                # ユーザー名をハッシュ化してIDとして使用
+                user_hash = hashlib.sha256(username.encode()).hexdigest()[:8]
+                return int(user_hash, 16) % 1000000  # 6桁のIDに変換
+        return None
+    except Exception:
+        return None
+
+
 def get_client_id():
     """クライアントID取得（認証状態に応じて）"""
-    from user_auth import get_user_id, AUTH_SYSTEM_AVAILABLE
-    
-    if AUTH_SYSTEM_AVAILABLE and session.get("authenticated"):
-        return session.get("user_id")
-    elif session.get("logged_in"):
-        from user_auth import get_user_id_by_username
-        username = session.get("username")
-        return get_user_id_by_username(username) if username else get_client_ip_safe()
-    else:
+    try:
+        from user_auth import AUTH_SYSTEM_AVAILABLE
+        
+        if AUTH_SYSTEM_AVAILABLE and session.get("authenticated"):
+            return session.get("user_id")
+        elif session.get("logged_in"):
+            username = session.get("username")
+            return get_current_user_id() if username else get_client_ip_safe()
+        else:
+            return get_client_ip_safe()
+    except Exception:
         return get_client_ip_safe()
 
 
@@ -68,6 +93,15 @@ def get_client_id():
 @require_rate_limit
 def translate_chatgpt():
     """ChatGPT翻訳エンドポイント"""
+    global translation_service
+    
+    if translation_service is None:
+        logger.error("TranslationService not initialized")
+        return jsonify({
+            "success": False,
+            "error": "Translation service not available"
+        }), 500
+        
     try:
         # 言語設定とラベル取得
         current_lang = session.get('lang', 'jp')
@@ -131,7 +165,18 @@ def translate_chatgpt():
                 "error": pair_error
             })
 
-        source_lang, target_lang = language_pair.split("-")
+        # 安全な言語ペアパース
+        try:
+            parts = language_pair.split("-")
+            if len(parts) != 2:
+                raise ValueError(f"Invalid language pair format: {language_pair}")
+            source_lang, target_lang = parts
+        except Exception as e:
+            logger.error(f"Language pair parsing error: {e}")
+            return jsonify({
+                "success": False,
+                "error": "言語ペアの形式が正しくありません"
+            })
 
         # セッションクリア
         critical_keys = ["translated_text", "reverse_translated_text"]
@@ -253,9 +298,20 @@ def translate_chatgpt():
         }), 400
 
     except Exception as e:
+        import traceback
         logger.error(f"Translation error: {str(e)}")
+        logger.error(traceback.format_exc())
         log_security_event('TRANSLATION_ERROR', f'Error: {str(e)}', 'ERROR')
-        return jsonify({
-            "success": False,
-            "error": "翻訳処理中にエラーが発生しました"
-        }), 500
+        
+        if os.getenv('ENVIRONMENT', 'development') == 'development':
+            return jsonify({
+                "success": False,
+                "error": str(e),
+                "error_type": type(e).__name__,
+                "traceback": traceback.format_exc()
+            }), 500
+        else:
+            return jsonify({
+                "success": False,
+                "error": "翻訳処理中にエラーが発生しました"
+            }), 500
