@@ -1925,7 +1925,8 @@ def index():
 
     label = labels.get(lang, labels["jp"])
 
-    if not session.get("logged_in"):
+    # 🔍 Phase 3c-4: セッション調査用一時的ログインチェック無効化
+    if not session.get("logged_in") and False:  # 一時的に無効
         return redirect(url_for("login"))
 
     current_mode = session.get("translation_mode", "normal")
@@ -3277,6 +3278,30 @@ def get_analysis_with_recommendation():
                 "error": "Insufficient translation data"
             }), 400
 
+        # 🔍 Phase 3c-4: セッション管理調査用詳細ログ
+        current_language_pair = session.get('language_pair', 'ja-en')
+        session_keys = list(session.keys()) if hasattr(session, 'keys') else []
+        app_logger.info(f"🔍 Phase 3c-4 DEBUG: Session language_pair='{current_language_pair}', all_keys={session_keys}")
+        
+        # 🔧 Phase 3c-4: context_full_dataからlanguage_pair情報を取得
+        context_data = get_translation_state("context_full_data", "{}")
+        if context_data and context_data != "{}":
+            import json
+            try:
+                parsed_context = json.loads(context_data)
+                metadata = parsed_context.get('metadata', {})
+                if metadata.get('source_lang') and metadata.get('target_lang'):
+                    source_lang_fixed = metadata['source_lang']
+                    target_lang_fixed = metadata['target_lang']
+                    current_language_pair = f"{source_lang_fixed}-{target_lang_fixed}"
+                    app_logger.info(f"🔧 Phase 3c-4 FIX: Retrieved language_pair from context_full_data: {current_language_pair}")
+                else:
+                    app_logger.warning(f"⚠️ Phase 3c-4: No language info in metadata: {metadata}")
+            except json.JSONDecodeError as e:
+                app_logger.error(f"❌ Phase 3c-4: Failed to parse context_full_data: {e}")
+        else:
+            app_logger.warning(f"⚠️ Phase 3c-4: No context_full_data available")
+        
         # AnalysisEngineManagerを初期化
         engine_manager = AnalysisEngineManager(claude_client, app_logger, f_gemini_3way_analysis)
 
@@ -3288,8 +3313,8 @@ def get_analysis_with_recommendation():
             engine=selected_engine,
             context={
                 "input_text": input_text,
-                "source_lang": session.get('language_pair', 'ja-en').split('-')[0],
-                "target_lang": session.get('language_pair', 'ja-en').split('-')[1],
+                "source_lang": current_language_pair.split('-')[0],
+                "target_lang": current_language_pair.split('-')[1],
                 "partner_message": get_translation_state("partner_message", ""),
                 "context_info": get_translation_state("context_info", "")
             }

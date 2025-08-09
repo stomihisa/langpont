@@ -571,8 +571,8 @@ class LangPontRedisSession(SessionInterface):
                 key = k.decode('utf-8') if isinstance(k, bytes) else k
                 value = v.decode('utf-8') if isinstance(v, bytes) else v
                 
-                # JSONフィールドの特別処理を追加（Phase 3c-3: translation_context削除）
-                json_fields = ["_data"]
+                # JSONフィールドの特別処理を追加（Phase 3c-4: translation_context一時復元テスト）
+                json_fields = ["_data", "translation_context"]
                 if key in json_fields and value:  # 空文字列チェックも含む
                     try:
                         decoded_data[key] = json.loads(value)

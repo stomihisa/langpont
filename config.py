@@ -18,7 +18,7 @@ SESSION_COOKIE_SAMESITE = 'Lax'
 
 # 📱 機能フラグ（True/Falseで機能のON/OFF）
 FEATURES = {
-    "early_access_mode": True,      # Early Access制限機能
+    "early_access_mode": False,     # Early Access制限機能（Phase 3c-4テスト用一時無効）
     "usage_limits": True,           # 1日の使用制限
     "premium_translation": False,   # Premium翻訳モード
     "experimental_ui": False,       # 実験的UI
