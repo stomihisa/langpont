@@ -419,3 +419,51 @@ IMPORTANT: Respond ONLY with the {target_label} translation.
                 "es": f"Error API Gemini: {str(e)}"
             }
             raise ValueError(error_messages.get(current_lang, error_messages["jp"]))
+    
+    def better_translation(self, text_to_improve: str, source_lang: str = "fr", 
+                          target_lang: str = "en", current_lang: str = "jp") -> str:
+        """
+        翻訳結果をより自然な表現に改善する
+        
+        Args:
+            text_to_improve (str): 改善対象のテキスト（必須）
+            source_lang (str): 翻訳元言語（デフォルト: "fr"）
+            target_lang (str): 翻訳先言語（デフォルト: "en"）
+            current_lang (str): UI表示言語（デフォルト: "jp"）
+        
+        Returns:
+            str: 改善された翻訳テキスト
+            
+        Raises:
+            ValueError: 入力値検証エラー
+            Exception: OpenAI APIエラー
+        """
+        # 入力値検証（多言語対応）
+        is_valid, error_msg = EnhancedInputValidator.validate_text_input(
+            text_to_improve, field_name="改善対象テキスト", current_lang=current_lang
+        )
+        if not is_valid:
+            raise ValueError(error_msg)
+
+        is_valid_pair, pair_error = EnhancedInputValidator.validate_language_pair(
+            f"{source_lang}-{target_lang}", current_lang
+        )
+        if not is_valid_pair:
+            raise ValueError(pair_error)
+
+        # 言語マッピング
+        lang_map = {
+            "ja": "日本語", 
+            "fr": "フランス語", 
+            "en": "英語", 
+            "es": "スペイン語", 
+            "de": "ドイツ語", 
+            "it": "イタリア語"
+        }
+        target_label = lang_map.get(target_lang, target_lang)
+
+        # プロンプト生成
+        prompt = f"この{target_label}をもっと自然な{target_label}の文章に改善してください：{text_to_improve}"
+
+        # OpenAI API呼び出し
+        return self.safe_openai_request(prompt, current_lang=current_lang)

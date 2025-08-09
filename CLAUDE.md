@@ -30,10 +30,67 @@ CLAUDE.md                    ← このファイル（メインガイド）
 
 ---
 
-# 📅 最新セッション: 2025年8月9日 - Task #9-3 AP-1 Phase 3c「TranslationContext関連コード完全削除」+ ニュアンス分析不具合の完全解決
+# 📅 最新セッション: 2025年8月9日 - Task #9-4 AP-1 Phase 4 Step1「/better_translation Blueprint化 + Service層統合」完了 ✅
 
 ## 🎯 このセッションの成果概要
-Task #9-3 AP-1 Phase 3c「TranslationContext関連コードの完全削除・名称変更」を実施後、ニュアンス分析で「全言語ペアが英語翻訳と認識される」重大な不具合が発生。フロントエンド・バックエンド通信から依存注入まで多角的に調査し、最終的にDOM要素ID不一致（`language-pair` vs `language_pair`）という1文字の違いが根本原因と判明。正確な修正実施と不要なデバッグコードの完全クリーンアップにより、システムを正常状態に復旧しました。
+**Task #9-4 AP-1 Phase 4 Step1「/better_translation Blueprint化 + Service層統合」を完了**しました。ユーザー報告「改善翻訳機能は次のPhaseで実装予定」問題の徹底調査を実施し、複合的なシステム統合不足が根本原因と判明。フロントエンド・バックエンド・Service層の3層にわたる問題を段階的に解決し、Step1の目標である「改善翻訳のBlueprint化とService層統合」を達成。実際の改善翻訳機能が正常動作することを確認しました。
+
+### **🔍 重要な調査結果**
+- **複合的システム障害**: 単純なプレースホルダー問題ではなく、3層にわたる設計不整合
+- **実装済み機能の未統合**: 機能は実装されていたが、メインフローで未使用
+- **段階的移行の必要性**: app.py約1,200行の翻訳機能分離は段階的アプローチが必須
+
+## ✅ Task #9-4 AP-1 Phase 4 Step1「/better_translation Blueprint化 + Service層統合」完了
+
+### **🎯 Step1実装完了内容**
+**実施日:** 2025年8月9日  
+**Task番号:** Task #9-4 AP-1 Phase 4 Step1  
+**目標:** /better_translation のBlueprint化 + Service層統合（コア部分）
+
+### **📝 完了した作業内容**
+
+#### **1. 複合問題の徹底調査**
+- **調査範囲**: Frontend、Backend、Service層の3層横断調査
+- **調査成果**: `PHASE4_BETTER_REVERSE_TRANSLATION_DICTIONARY.md` (381行の包括的レポート)
+- **根本原因特定**: フロントエンド・バックエンド設計不整合による複合的システム障害
+
+#### **2. メインフロー統合修正**
+**修正箇所**: `routes/translation.py:264-269`
+```python
+# 修正前
+better_translation = f"改善翻訳機能は次のPhaseで実装予定"
+
+# 修正後
+try:
+    better_translation = translation_service.better_translation(
+        translated, source_lang, target_lang, current_lang
+    )
+except Exception as e:
+    logger.error(f"Better translation error: {str(e)}")
+    better_translation = f"改善翻訳エラー: {str(e)}"
+```
+
+#### **3. 動作確認完了**
+- **テスト結果**: 「こんにちは」→「Hello, how are you doing?」改善翻訳成功
+- **プレースホルダー除去**: 「次のPhaseで実装予定」メッセージ完全除去
+- **Service層統合**: 既実装の`TranslationService.better_translation()`メソッド正常動作
+
+### **📊 Step1完了状況**
+- ✅ **Blueprint化**: `/better_translation`エンドポイント実装済み
+- ✅ **Service層統合**: `TranslationService.better_translation()`メソッド統合済み
+- ✅ **メインフロー統合**: `/translate_chatgpt`からのService層呼び出し統合完了
+- ✅ **動作確認**: 実際の改善翻訳機能動作確認完了
+- ✅ **エラーハンドリング**: Service層エラーの適切な処理実装
+
+### **🔧 技術的成果**
+1. **循環インポート問題回避**: Service層経由による依存関係の適切な管理
+2. **段階的移行戦略**: 既存コードを破壊せず、Step1範囲のみの最小修正
+3. **統合テスト**: 実際のAPI呼び出しによる動作確認実施
+
+### **📋 Step2以降への準備状況**
+- ✅ **調査完了**: 逆翻訳関数の依存関係・インポート問題を完全把握
+- ✅ **Service層設計**: Step2で必要な`reverse_translation()`メソッドの設計方針確定
+- ✅ **Blueprint構造**: Step2での`/reverse_chatgpt_translation`エンドポイント追加準備完了
 
 ## ✅ Task #9-3 AP-1 Phase 3「分析機能Blueprint分離」完全実装
 

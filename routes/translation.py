@@ -258,10 +258,15 @@ def translate_chatgpt():
         # TODO: f_reverse_translation関数をService層に移動後、実装予定
         gemini_reverse_translation = ""
         
-        # 🚧 Task #9-4 AP-1 Phase 4: Blueprint化対象機能
-        # TODO: f_better_translation関数をService層に移動後、プレースホルダーを実装に変更
-        # 現在: app.py L1382-1401にある関数をここで使用予定
-        better_translation = f"改善翻訳機能は次のPhaseで実装予定"
+        # 🚧 Task #9-4 AP-1 Phase 4 Step1: Service層統合完了
+        # Service層の実装済みメソッドを使用
+        try:
+            better_translation = translation_service.better_translation(
+                translated, source_lang, target_lang, current_lang
+            )
+        except Exception as e:
+            logger.error(f"Better translation error: {str(e)}")
+            better_translation = f"改善翻訳エラー: {str(e)}"
         reverse_better = ""
 
         # セッションに翻訳結果を保存
@@ -562,4 +567,91 @@ def translate_gemini():
             return jsonify({
                 "success": False,
                 "error": "Gemini翻訳処理中にエラーが発生しました"
+            }), 500
+
+
+@translation_bp.route('/better_translation', methods=['POST'])
+@csrf_protect
+@require_rate_limit
+def better_translation_endpoint():
+    """
+    改善翻訳APIエンドポイント
+    Task #9-4 AP-1 Phase 4 Step1: f_better_translation関数のBlueprint化
+    """
+    global translation_service
+    
+    if translation_service is None:
+        logger.error("TranslationService not initialized")
+        return jsonify({
+            "success": False,
+            "error": "Translation service not available"
+        }), 500
+        
+    try:
+        # 言語設定取得
+        current_lang = session.get('lang', 'jp')
+        
+        # リクエストデータ取得
+        data = request.get_json() or {}
+        text = data.get("text", "").strip()
+        source_lang = data.get("source_lang", "fr")
+        target_lang = data.get("target_lang", "en")
+        
+        # セッションIDを優先、フォールバックでCSRFトークンまたは生成
+        session_id = (getattr(session, 'session_id', None) or 
+                     session.get("session_id") or 
+                     session.get("csrf_token", "")[:16] or 
+                     f"better_{int(time.time())}")
+        
+        log_access_event(f'Better translation started: {source_lang}-{target_lang}, session={session_id[:16]}...')
+        
+        # 入力テキストの基本検証
+        if not text:
+            return jsonify({
+                "success": False,
+                "error": "改善対象のテキストが入力されていません"
+            }), 400
+        
+        # Service層呼び出し
+        result = translation_service.better_translation(
+            text_to_improve=text,
+            source_lang=source_lang,
+            target_lang=target_lang,
+            current_lang=current_lang
+        )
+        
+        log_access_event(f'Better translation completed successfully: {source_lang}-{target_lang}')
+        
+        return jsonify({
+            "success": True,
+            "improved_text": result,
+            "source_lang": source_lang,
+            "target_lang": target_lang,
+            "session_id": session_id[:16] + "..." if len(session_id) > 16 else session_id
+        })
+        
+    except ValueError as ve:
+        logger.error(f"Better translation validation error: {str(ve)}")
+        return jsonify({
+            "success": False,
+            "error": str(ve)
+        }), 400
+        
+    except Exception as e:
+        import traceback
+        logger.error(f"Better translation error: {str(e)}")
+        logger.error(traceback.format_exc())
+        log_security_event('BETTER_TRANSLATION_ERROR', f'Error: {str(e)}', 'ERROR')
+        
+        if os.getenv('ENVIRONMENT', 'development') == 'development':
+            return jsonify({
+                "success": False,
+                "error": str(e),
+                "error_type": type(e).__name__,
+                "traceback": traceback.format_exc()
+            }), 500
+        else:
+            return jsonify({
+                "success": False,
+                "error": "改善翻訳処理中にエラーが発生しました"
             }), 500
