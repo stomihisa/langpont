@@ -3288,8 +3288,8 @@ def get_analysis_with_recommendation():
             engine=selected_engine,
             context={
                 "input_text": input_text,
-                "source_lang": get_translation_state("language_pair", "ja-en").split("-")[0],
-                "target_lang": get_translation_state("language_pair", "ja-en").split("-")[1],
+                "source_lang": session.get('language_pair', 'ja-en').split('-')[0],
+                "target_lang": session.get('language_pair', 'ja-en').split('-')[1],
                 "partner_message": get_translation_state("partner_message", ""),
                 "context_info": get_translation_state("context_info", "")
             }
