@@ -39,13 +39,14 @@ class AnalysisService:
         self.logger = logger
         self.labels = labels
     
-    def perform_nuance_analysis(self, session_id: str, selected_engine: str = "gemini") -> Dict[str, Any]:
+    def perform_nuance_analysis(self, session_id: str, selected_engine: str = "gemini", language_pair: str = None) -> Dict[str, Any]:
         """
         ニュアンス分析を実行
         
         Args:
             session_id: セッションID
             selected_engine: 分析エンジン名
+            language_pair: 言語ペア (e.g., "ja-fr", "ja-en")
             
         Returns:
             Dict[str, Any]: 分析結果
@@ -80,8 +81,10 @@ class AnalysisService:
             # エンジン別分析実行
             if selected_engine == 'gemini':
                 # 従来のGemini分析
+                # 🔧 Phase 3c-4 FIX: language_pairパラメータを渡す
+                current_language_pair = language_pair or self._get_translation_state("language_pair", "ja-en")
                 result, chatgpt_prompt = self._gemini_3way_analysis(
-                    translated_text, better_translation, gemini_translation
+                    translated_text, better_translation, gemini_translation, current_language_pair
                 )
                 return {
                     "success": True,
@@ -92,6 +95,8 @@ class AnalysisService:
             else:
                 # マルチエンジンシステムを使用
                 input_text = session.get("input_text", "")
+                # 🔧 Phase 3c-4 FIX: language_pairパラメータを優先使用
+                current_language_pair = language_pair or self._get_translation_state("language_pair", "ja-en")
                 
                 analysis_result = self.engine_manager.analyze_translations(
                     chatgpt_trans=translated_text,
@@ -100,8 +105,8 @@ class AnalysisService:
                     engine=selected_engine,
                     context={
                         "input_text": input_text,
-                        "source_lang": self._get_translation_state("language_pair", "ja-en").split("-")[0],
-                        "target_lang": self._get_translation_state("language_pair", "ja-en").split("-")[1],
+                        "source_lang": current_language_pair.split("-")[0],
+                        "target_lang": current_language_pair.split("-")[1],
                         "partner_message": self._get_translation_state("partner_message", ""),
                         "context_info": self._get_translation_state("context_info", "")
                     }
@@ -251,7 +256,7 @@ class AnalysisService:
                 pass
             return False
 
-    def _gemini_3way_analysis(self, translated_text: str, better_translation: str, gemini_translation: str) -> tuple:
+    def _gemini_3way_analysis(self, translated_text: str, better_translation: str, gemini_translation: str, language_pair: str = "ja-en") -> tuple:
         """
         3つの翻訳結果を分析する関数（app.pyから移動）
         
@@ -259,6 +264,7 @@ class AnalysisService:
             translated_text: ChatGPT翻訳
             better_translation: Enhanced翻訳
             gemini_translation: Gemini翻訳
+            language_pair: 言語ペア (e.g., "ja-fr", "ja-en")
             
         Returns:
             tuple: (分析結果, プロンプト)
@@ -295,8 +301,8 @@ class AnalysisService:
             else:
                 return "⚠️ 分析に必要な翻訳データが不足しています", ""
 
-        # 現在の言語設定を直接取得
-        current_language_pair = request.form.get('language_pair') or self._get_translation_state("language_pair", "ja-en")
+        # 🔧 Phase 3c-4 FIX: パラメータで渡された言語ペアを使用
+        current_language_pair = language_pair
 
         try:
             source_lang, target_lang = current_language_pair.split("-")

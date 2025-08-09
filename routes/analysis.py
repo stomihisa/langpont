@@ -69,7 +69,13 @@ def get_nuance():
         
         # リクエストデータ取得
         data = request.get_json() or {}
-        selected_engine = data.get("analysis_engine", "gemini")
+        selected_engine = data.get("engine", data.get("analysis_engine", "gemini"))
+        # 🔧 Phase 3c-4 FIX: language_pairパラメータを抽出
+        language_pair = data.get("language_pair", session.get("language_pair", "ja-en"))
+        
+        # デバッグログ（本番環境では削除可能）
+        if logger and hasattr(logger, 'debug'):
+            logger.debug(f"Analysis request - Engine: {selected_engine}, Language pair: {language_pair}")
         
         # セッションIDを優先、フォールバックでCSRFトークンまたは生成
         session_id = (getattr(session, 'session_id', None) or 
@@ -91,7 +97,8 @@ def get_nuance():
         # 分析実行
         analysis_result = analysis_service.perform_nuance_analysis(
             session_id=session_id,
-            selected_engine=selected_engine
+            selected_engine=selected_engine,
+            language_pair=language_pair
         )
         
         # エラーハンドリング

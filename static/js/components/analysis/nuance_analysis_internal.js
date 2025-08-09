@@ -38,7 +38,9 @@ function fetchNuanceAnalysis(engine = 'gemini') {
       'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
     },
     body: JSON.stringify({
-      engine: engine
+      engine: engine,
+      // 🔧 Phase 3c-4 FIX: 言語ペア情報を追加
+      language_pair: document.getElementById('language_pair')?.value || 'ja-en'
     })
   })
     .then(response => {

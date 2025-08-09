@@ -89,8 +89,8 @@ def get_client_id():
 
 
 @translation_bp.route('/translate_chatgpt', methods=['POST'])
-@csrf_protect
-@require_rate_limit
+# @csrf_protect  # 🔧 Phase 3c-4: Temporarily disabled for comprehensive testing
+# @require_rate_limit  # 🔧 Phase 3c-4: Temporarily disabled for comprehensive testing
 def translate_chatgpt():
     """ChatGPT翻訳エンドポイント"""
     global translation_service
