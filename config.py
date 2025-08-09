@@ -74,3 +74,11 @@ LEGACY_SETTINGS = {
     "legacy_password": os.getenv("LEGACY_PASSWORD", "linguru2025"),  # 既存パスワード
     "default_guest_username": "guest"  # 空ユーザー名時のデフォルト
 }
+
+# 🗄️ Phase 3c-2: Redis TTL設計
+REDIS_TTL = {
+    'translation_state': 86400,      # 24時間 - 通常の翻訳データ
+    'large_data': 604800,           # 7日間 - 大容量データ（翻訳結果など）
+    'context_full': 2592000,        # 30日間 - context_full_data
+    'user_history': None            # 無期限 - ユーザー履歴インデックス
+}

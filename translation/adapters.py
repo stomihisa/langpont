@@ -24,6 +24,7 @@ class SessionContextAdapter:
     def get_translation_context(self) -> Dict[str, Any]:
         """
         翻訳コンテキストを取得（session依存を抽象化）
+        Phase 3c-3: StateManager統合完了により参照のみ保持
         
         Returns:
             翻訳に必要な全コンテキストデータ

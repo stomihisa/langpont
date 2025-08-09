@@ -19,6 +19,7 @@ import time
 from typing import Dict, Any, Optional, Union, List
 from datetime import datetime
 from services.session_redis_manager import get_session_redis_manager
+from config import REDIS_TTL  # Phase 3c-2: TTL設定外部化
 
 logger = logging.getLogger(__name__)
 
@@ -206,6 +207,36 @@ class TranslationStateManager:
         
         return results
     
+    def save_translation_state(self, session_id: str, states: Dict[str, Any]) -> Dict[str, bool]:
+        """
+        翻訳状態を一括保存（Redis TTL対応）
+        Task #9-3 AP-1 Phase 3c-2: config.pyのTTL設定適用
+        
+        Args:
+            session_id: セッションID
+            states: 状態データの辞書
+            
+        Returns:
+            Dict[str, bool]: 各フィールドの設定成功フラグ
+        """
+        results = {}
+        
+        for field_name, value in states.items():
+            if field_name in self.CACHE_KEYS:
+                # config.pyからTTL値を取得
+                ttl_value = REDIS_TTL['translation_state']
+                results[field_name] = self.set_translation_state(session_id, field_name, value, ttl=ttl_value)
+            else:
+                logger.warning(f"⚠️ Phase 3c-2: Unknown field name for caching: {field_name}")
+                results[field_name] = False
+                
+        successful_count = sum(1 for success in results.values() if success)
+        total_count = len(results)
+        
+        logger.info(f"📊 Phase 3c-2: Bulk state update - {successful_count}/{total_count} successful for session {session_id[:16]}...")
+        
+        return results
+    
     def get_multiple_states(self, session_id: str, field_names: list, default_values: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         複数の翻訳状態を一括取得
@@ -307,29 +338,29 @@ class TranslationStateManager:
     
     def save_large_data(self, key: str, value: str, session_id: str, ttl: int = None) -> bool:
         """
-        大容量データをRedisに保存
+        大容量データをRedisに保存（Phase 3c-2: TTL設定外部化対応）
         
         Args:
             key: データキー名
             value: 保存する値
             session_id: セッションID
-            ttl: TTL（指定なしの場合は1800秒）
+            ttl: TTL（指定なしの場合はconfig.pyから取得）
             
         Returns:
             bool: 保存成功フラグ
         """
         try:
             if not self.redis_manager or not self.redis_manager.is_connected:
-                logger.warning(f"⚠️ SL-3 Phase 2: Redis not available for large data save - key: {key}")
+                logger.warning(f"⚠️ Phase 3c-2: Redis not available for large data save - key: {key}")
                 return False
                 
             if key not in self.LARGE_DATA_KEYS:
-                logger.warning(f"⚠️ SL-3 Phase 2: Unknown large data key: {key}")
+                logger.warning(f"⚠️ Phase 3c-2: Unknown large data key: {key}")
                 return False
                 
-            # TTLの決定
+            # Phase 3c-2: config.pyからTTL値を取得
             if ttl is None:
-                ttl = self.LARGE_DATA_KEYS[key]['ttl']
+                ttl = REDIS_TTL['large_data']
             
             cache_key = self._get_cache_key(session_id, key)
             
@@ -340,12 +371,12 @@ class TranslationStateManager:
             self.redis_manager.redis_client.set(cache_key, value, ex=ttl)
             
             data_type = self.LARGE_DATA_KEYS[key]['type']
-            logger.info(f"✅ SL-3 Phase 2: Large data saved - {key}({data_type}) for session {session_id[:16]}... Size={value_size}bytes TTL={ttl}s")
+            logger.info(f"✅ Phase 3c-2: Large data saved - {key}({data_type}) for session {session_id[:16]}... Size={value_size}bytes TTL={ttl}s")
             
             return True
             
         except Exception as e:
-            logger.error(f"❌ SL-3 Phase 2: Failed to save large data {key}: {e}")
+            logger.error(f"❌ Phase 3c-2: Failed to save large data {key}: {e}")
             return False
     
     def get_large_data(self, key: str, session_id: str, default: str = None) -> str:
@@ -464,7 +495,7 @@ class TranslationStateManager:
     def save_context_data(self, session_id: str, context_data: Dict[str, Any]) -> bool:
         """
         翻訳コンテキスト全体をRedisに保存
-        Task #9-3 AP-1 Phase 3c-1b: TranslationContext統合
+        Task #9-3 AP-1 Phase 3c-2: TTL設定外部化対応
         
         Args:
             session_id: セッションID
@@ -475,22 +506,24 @@ class TranslationStateManager:
         """
         try:
             if not self.redis_manager or not self.redis_manager.is_connected:
-                logger.warning("❌ Phase 3c-1b: Redis not connected for context save")
+                logger.warning("❌ Phase 3c-2: Redis not connected for context save")
                 return False
             
             # コンテキストデータをJSON文字列に変換
             context_json = json.dumps(context_data, ensure_ascii=False)
             
-            # context_full_dataキーに保存
-            saved = self.save_large_data('context_full_data', context_json, session_id)
+            # Phase 3c-2: context_full_dataに専用TTLを適用
+            cache_key = self._get_cache_key(session_id, 'context_full_data')
+            ttl_value = REDIS_TTL['context_full']
             
-            if saved:
-                logger.info(f"✅ Phase 3c-1b: Context data saved - {len(context_json)} chars for session {session_id[:16]}...")
+            # Redis保存
+            self.redis_manager.redis_client.set(cache_key, context_json, ex=ttl_value)
             
-            return saved
+            logger.info(f"✅ Phase 3c-2: Context data saved - {len(context_json)} chars for session {session_id[:16]}... TTL={ttl_value}s")
+            return True
             
         except Exception as e:
-            logger.error(f"❌ Phase 3c-1b: Failed to save context data: {e}")
+            logger.error(f"❌ Phase 3c-2: Failed to save context data: {e}")
             return False
     
     def get_context_data(self, session_id: str) -> Dict[str, Any]:
@@ -605,7 +638,7 @@ class TranslationStateManager:
     def save_interactive_chat(self, session_id: str, chat_data: Dict[str, Any]) -> bool:
         """
         current_chatデータを保存
-        Task #9-3 AP-1 Phase 3c-1b: TranslationContext統合
+        Task #9-3 AP-1 Phase 3c-2: TTL設定外部化対応
         
         Args:
             session_id: セッションID
@@ -616,28 +649,28 @@ class TranslationStateManager:
         """
         try:
             if not self.redis_manager or not self.redis_manager.is_connected:
-                logger.warning("❌ Phase 3c-1b: Redis not connected for chat save")
+                logger.warning("❌ Phase 3c-2: Redis not connected for chat save")
                 return False
             
             # チャットデータをJSON文字列に変換
             chat_json = json.dumps(chat_data, ensure_ascii=False)
             
-            # interactive_current_chatキーに保存
+            # Phase 3c-2: TTL設定外部化対応
             saved = self.save_large_data('interactive_current_chat', chat_json, session_id)
             
             if saved:
-                logger.info(f"💬 Phase 3c-1b: Interactive chat saved - {len(chat_json)} chars for session {session_id[:16]}...")
+                logger.info(f"💬 Phase 3c-2: Interactive chat saved - {len(chat_json)} chars for session {session_id[:16]}...")
             
             return saved
             
         except Exception as e:
-            logger.error(f"❌ Phase 3c-1b: Failed to save interactive chat: {e}")
+            logger.error(f"❌ Phase 3c-2: Failed to save interactive chat: {e}")
             return False
     
     def get_interactive_history(self, session_id: str, limit: int = 10) -> List[Dict[str, Any]]:
         """
         インタラクティブ履歴を取得
-        Task #9-3 AP-1 Phase 3c-1b: TranslationContext統合
+        Task #9-3 AP-1 Phase 3c-2: TTL設定外部化対応
         
         Args:
             session_id: セッションID
@@ -648,7 +681,7 @@ class TranslationStateManager:
         """
         try:
             if not self.redis_manager or not self.redis_manager.is_connected:
-                logger.warning("❌ Phase 3c-1b: Redis not connected for history retrieval")
+                logger.warning("❌ Phase 3c-2: Redis not connected for history retrieval")
                 return []
             
             # interactive_chat_historyから取得
@@ -661,13 +694,55 @@ class TranslationStateManager:
             if len(history_list) > limit:
                 history_list = history_list[-limit:]
             
-            logger.info(f"📜 Phase 3c-1b: Interactive history retrieved - {len(history_list)} items for session {session_id[:16]}...")
+            logger.info(f"📜 Phase 3c-2: Interactive history retrieved - {len(history_list)} items for session {session_id[:16]}...")
             
             return history_list
             
         except Exception as e:
-            logger.error(f"❌ Phase 3c-1b: Failed to get interactive history: {e}")
+            logger.error(f"❌ Phase 3c-2: Failed to get interactive history: {e}")
             return []
+    
+    def save_user_history_index(self, user_id: str, history_data: Dict[str, Any]) -> bool:
+        """
+        ユーザー履歴インデックスを保存
+        Task #9-3 AP-1 Phase 3c-2: 無期限保存対応
+        
+        Args:
+            user_id: ユーザーID
+            history_data: 履歴インデックスデータ
+            
+        Returns:
+            bool: 保存成功フラグ
+        """
+        try:
+            if not self.redis_manager or not self.redis_manager.is_connected:
+                logger.warning("❌ Phase 3c-2: Redis not connected for user history save")
+                return False
+            
+            # ユーザー履歴用のキー生成
+            cache_key = self._get_cache_key(user_id, 'user_history_index')
+            
+            # 履歴データをJSON文字列に変換
+            history_json = json.dumps(history_data, ensure_ascii=False)
+            
+            # TTLがNone（無期限）の場合はpersist()を使用
+            ttl_value = REDIS_TTL['user_history']
+            
+            if ttl_value is None:
+                # 無期限保存：TTLなしでset後、persist()で期限解除
+                self.redis_manager.redis_client.set(cache_key, history_json)
+                self.redis_manager.redis_client.persist(cache_key)
+                logger.info(f"✅ Phase 3c-2: User history saved (persistent) - user {user_id[:8]}... Size={len(history_json)}bytes")
+            else:
+                # TTL指定保存
+                self.redis_manager.redis_client.set(cache_key, history_json, ex=ttl_value)
+                logger.info(f"✅ Phase 3c-2: User history saved - user {user_id[:8]}... Size={len(history_json)}bytes TTL={ttl_value}s")
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"❌ Phase 3c-2: Failed to save user history: {e}")
+            return False
 
 
 def get_translation_state_manager() -> TranslationStateManager:
