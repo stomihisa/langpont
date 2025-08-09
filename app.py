@@ -1256,7 +1256,18 @@ Remember: The context above is crucial for determining the appropriate tone, for
     return safe_openai_request(prompt, current_lang=current_lang)
 
 def f_reverse_translation(translated_text: str, target_lang: str, source_lang: str, current_lang: str = "jp") -> str:
-    """セキュリティ強化版逆翻訳関数"""
+    """セキュリティ強化版逆翻訳関数
+    
+    🚧 Task #9-4 AP-1 Phase 4: Blueprint化対象
+    この関数は services/translation_service.py の reverse_translation() メソッドに移動予定
+    
+    現在の使用箇所:
+    - L1335: debug_gemini_reverse_translation()
+    - L2352: runFastTranslation()  
+    - L2454: runFastTranslation()
+    - L2496: runFastTranslation()
+    - L2870: reverse_better_translation()
+    """
 
     if not translated_text:
         return "(翻訳テキストが空です)"
@@ -1380,7 +1391,17 @@ def debug_gemini_reverse_translation(gemini_translation: str, target_lang: str, 
     return debug_info
 
 def f_better_translation(text_to_improve: str, source_lang: str = "fr", target_lang: str = "en", current_lang: str = "jp") -> str:
-    """セキュリティ強化版改善翻訳関数"""
+    """セキュリティ強化版改善翻訳関数
+    
+    🚧 Task #9-4 AP-1 Phase 4: Blueprint化対象
+    この関数は services/translation_service.py の better_translation() メソッドに移動予定
+    
+    現在の使用箇所:
+    - L2486: runFastTranslation()
+    
+    Blueprint化後の新エンドポイント:
+    - /better_translation (routes/translation.py に新規作成予定)
+    """
 
     # 入力値検証（多言語対応）
     is_valid, error_msg = EnhancedInputValidator.validate_text_input(
@@ -2164,6 +2185,11 @@ def reset_language():
 # def translate_chatgpt_only():
     # 🚨 Task #9 AP-1 Phase 1: この関数は routes/translation.py に移行済み
     # 🚨 新しいエンドポイント: /translate_chatgpt (Blueprint経由)
+    
+    # 🚧 Task #9-4 AP-1 Phase 4: この巨大関数内でBlueprint化対象関数を使用
+    # - L2507: f_better_translation() の呼び出し
+    # - 複数箇所: f_reverse_translation() の呼び出し  
+    # ⚠️ 176行の巨大関数のため、Service層移動時は慎重な影響分析が必要
     try:
         # 🔧 Phase 4b-3修正: 言語とlabels import を最初に実行
         current_lang = session.get('lang', 'jp')
@@ -2826,7 +2852,13 @@ def clear_session():
 @app.route("/reverse_better_translation", methods=["POST"])
 @require_rate_limit
 def reverse_better_translation():
-    """改善された翻訳を逆翻訳するAPIエンドポイント（完全セキュリティ強化版）"""
+    """改善された翻訳を逆翻訳するAPIエンドポイント（完全セキュリティ強化版）
+    
+    🚧 Task #9-4 AP-1 Phase 4: Blueprint化対象
+    このエンドポイントは routes/translation.py に移動予定
+    - f_reverse_translation() 関数をService層経由で使用
+    - @csrf_protect, @require_rate_limit デコレータの適用
+    """
     try:
         data = request.get_json() or {}
         improved_text = data.get("french_text", "")

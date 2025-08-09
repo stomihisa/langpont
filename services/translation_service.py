@@ -18,7 +18,12 @@ from security.security_logger import log_security_event, log_access_event
 
 
 class TranslationService:
-    """翻訳サービスの統合クラス"""
+    """翻訳サービスの統合クラス
+    
+    🚧 Task #9-4 AP-1 Phase 4 拡張予定:
+    - better_translation() メソッド追加 (app.py f_better_translation移動)
+    - reverse_translation() メソッド追加 (app.py f_reverse_translation移動)
+    """
     
     def __init__(self, openai_client, logger, labels, 
                  usage_checker: Callable, translation_state_manager):

@@ -254,9 +254,13 @@ def translate_chatgpt():
             logger.warning(f"Gemini translation error in combined endpoint: {str(e)}")
             gemini_translation = f"⚠️ Gemini翻訳でエラーが発生しました: {str(e)[:100]}..."
         
+        # 🚧 Task #9-4 AP-1 Phase 4: Blueprint化対象機能
+        # TODO: f_reverse_translation関数をService層に移動後、実装予定
         gemini_reverse_translation = ""
         
-        # 改善翻訳（簡略化版 - Phase 1では基本機能のみ）
+        # 🚧 Task #9-4 AP-1 Phase 4: Blueprint化対象機能
+        # TODO: f_better_translation関数をService層に移動後、プレースホルダーを実装に変更
+        # 現在: app.py L1382-1401にある関数をここで使用予定
         better_translation = f"改善翻訳機能は次のPhaseで実装予定"
         reverse_better = ""
 
