@@ -1954,19 +1954,16 @@ def index():
         # 古いチャット履歴を強制削除
         session.pop("chat_history", None)
 
-        # 破損した翻訳コンテキストを削除
-        broken_context = session.get("translation_context", {})
-        if broken_context and not session.get("translated_text"):
-            session.pop("translation_context", None)
-            log_access_event("Broken translation context cleared on page load")
+        # Phase 3c-3: 破損した翻訳コンテキスト削除処理を除去
+        # 削除済み: TranslationContext関連の処理はStateManagerに統合完了
 
         # 確実に空の履歴を設定
         chat_history = []
 
         log_access_event("Page loaded with clean slate - all old data cleared")
     else:
-        # POST リクエスト時のみ既存データを保持
-        has_translation_data = session.get("translated_text") or session.get("translation_context", {}).get("has_data")
+        # POST リクエスト時のみ既存データを保持（Phase 3c-3: translation_context参照削除）
+        has_translation_data = session.get("translated_text")
         if has_translation_data:
             chat_history = session.get("chat_history", [])
         else:
@@ -1995,8 +1992,7 @@ def index():
                 # 分析データ
                 "nuance_question", "nuance_answer",
 
-                # 翻訳コンテキスト
-                "translation_context"
+                # Phase 3c-3: "translation_context" 削除済み
                 # 注意: "chat_history" はリセット時も保持（ユーザビリティ向上）
             ]
 
@@ -2102,7 +2098,7 @@ def set_language(lang):
 
         # セッション保護機能：重要データの一時保存
         preserved_data = {}
-        keys_to_preserve = ['logged_in', 'translation_context', 'usage_data', 'csrf_token', 'session_created']
+        keys_to_preserve = ['logged_in', 'usage_data', 'csrf_token', 'session_created']  # Phase 3c-3: 'translation_context' 削除
 
         # 重要データを一時保存
         for key in keys_to_preserve:
@@ -2748,7 +2744,7 @@ def track_translation_copy():
                 gemini_recommendation=gemini_recommendation,
                 user_choice=translation_type,
                 language_pair=language_pair,
-                translation_context="copy_action",
+                context_type="copy_action",  # Phase 3c-3: translation_context → context_type
                 style_attributes={
                     'copy_method': copy_method,
                     'text_length_category': 'short' if text_length < 100 else 'medium' if text_length < 500 else 'long'

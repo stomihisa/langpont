@@ -150,7 +150,7 @@ class AdvancedDashboardAnalytics:
                         user_choice TEXT,
                         rejection_reason TEXT,
                         language_pair TEXT,
-                        translation_context TEXT,
+                        context_type TEXT,  -- Phase 3c-3: translation_context → context_type
                         style_attributes TEXT,
                         confidence_score REAL,
                         metadata TEXT,
@@ -311,7 +311,7 @@ class AdvancedDashboardAnalytics:
                                  gemini_recommendation: Optional[str],
                                  user_choice: Optional[str],
                                  language_pair: str,
-                                 translation_context: str = "",
+                                 context_type: str = "",  # Phase 3c-3: translation_context → context_type
                                  style_attributes: Dict[str, Any] = None,
                                  confidence_score: float = 0.0,
                                  rejection_reason: str = "",
@@ -354,12 +354,12 @@ class AdvancedDashboardAnalytics:
                     INSERT INTO personalization_data
                     (user_id, timestamp, event_type, gemini_recommendation,
                      user_choice, rejection_reason, language_pair,
-                     translation_context, style_attributes, confidence_score, metadata)
+                     context_type, style_attributes, confidence_score, metadata)  # Phase 3c-3: translation_context → context_type
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     user_id, timestamp, event_type, gemini_recommendation,
                     user_choice, rejection_reason, language_pair,
-                    translation_context[:500],
+                    context_type[:500],  # Phase 3c-3: translation_context → context_type
                     json.dumps(style_attributes) if style_attributes else None,
                     confidence_score,
                     json.dumps(metadata) if metadata else None
@@ -670,7 +670,7 @@ def test_advanced_analytics():
         gemini_recommendation="chatgpt",
         user_choice="enhanced",
         language_pair="ja-en",
-        translation_context="business_email",
+        context_type="business_email",  # Phase 3c-3: translation_context → context_type
         style_attributes={'formality': 'formal', 'tone': 'professional'},
         confidence_score=0.85
     )
