@@ -117,9 +117,16 @@ class AnalysisEngineManager:
         target_lang = context.get("target_lang", "en") if context else "en"
         input_text = context.get("input_text", "") if context else ""
 
+        # 言語ラベルマッピング
+        lang_labels = {
+            "ja": "Japanese", "en": "English", 
+            "fr": "French", "es": "Spanish"
+        }
+        target_language_label = lang_labels.get(target_lang, target_lang)
+
         # ChatGPT特化プロンプト（論理的分析）
         if display_lang == "en":
-            prompt = f"""Analyze these three English translations of the Japanese text logically and systematically.
+            prompt = f"""Analyze these three {target_language_label} translations of the Japanese text logically and systematically.
 
 Original Japanese: {input_text}
 
@@ -139,9 +146,16 @@ Which translation do you recommend and why? Respond in English."""
             # 🌍 多言語対応: 現在のUI言語を取得
             current_ui_lang = session.get('lang', 'jp')
 
+            # 日本語用言語ラベルマッピング
+            jp_lang_labels = {
+                "ja": "日本語", "en": "英語",
+                "fr": "フランス語", "es": "スペイン語"
+            }
+            jp_target_lang_label = jp_lang_labels.get(target_lang, target_lang)
+
             # 多言語プロンプトテンプレート
             prompt_templates = {
-                'jp': f"""以下の3つの英語翻訳を論理的かつ体系的に分析してください。
+                'jp': f"""以下の3つの{jp_target_lang_label}翻訳を論理的かつ体系的に分析してください。
 
 元の日本語: {input_text}
 
@@ -157,7 +171,7 @@ Which translation do you recommend and why? Respond in English."""
 - 専門的な適切性
 
 どの翻訳を推奨し、その理由は何ですか？日本語で回答してください。""",
-                'en': f"""Please analyze the following three English translations logically and systematically.
+                'en': f"""Please analyze the following three {target_language_label} translations logically and systematically.
 
 Original Japanese: {input_text}
 
