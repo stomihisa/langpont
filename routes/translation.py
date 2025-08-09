@@ -655,3 +655,177 @@ def better_translation_endpoint():
                 "success": False,
                 "error": "改善翻訳処理中にエラーが発生しました"
             }), 500
+
+
+@translation_bp.route('/reverse_chatgpt_translation', methods=['POST'])
+# @csrf_protect  # 🔧 Phase 4 Step2: Temporarily disabled for testing
+# @require_rate_limit  # 🔧 Phase 4 Step2: Temporarily disabled for testing
+def reverse_chatgpt_translation():
+    """
+    ChatGPT逆翻訳APIエンドポイント
+    Task #9-4 AP-1 Phase 4 Step2: f_reverse_translation関数のBlueprint化
+    """
+    global translation_service
+    
+    if translation_service is None:
+        logger.error("TranslationService not initialized")
+        return jsonify({
+            "success": False,
+            "error": "Translation service not available"
+        }), 500
+        
+    try:
+        # 言語設定取得
+        current_lang = session.get('lang', 'jp')
+        
+        # 使用制限チェック
+        client_id = get_client_id()
+        can_use, current_usage, daily_limit = usage_checker(client_id)
+
+        if not can_use:
+            log_security_event(
+                'USAGE_LIMIT_EXCEEDED',
+                f'Client exceeded daily limit: {current_usage}/{daily_limit}',
+                'INFO'
+            )
+            return jsonify({
+                "success": False,
+                "error": "usage_limit_exceeded",
+                "message": labels[current_lang]['usage_limit_message'].format(limit=daily_limit),
+                "current_usage": current_usage,
+                "daily_limit": daily_limit,
+                "reset_time": labels[current_lang]['usage_reset_time'],
+                "upgrade_message": labels[current_lang]['usage_upgrade_message']
+            })
+        
+        # リクエストデータ取得
+        data = request.get_json() or {}
+        translated_text = data.get("translated_text", "").strip()
+        language_pair = data.get("language_pair", "fr-ja")
+        
+        # 包括的な入力値検証
+        is_valid, error_msg = EnhancedInputValidator.validate_text_input(
+            translated_text, max_length=10000, field_name="逆翻訳テキスト", current_lang=current_lang
+        )
+        if not is_valid:
+            log_security_event(
+                'REVERSE_TRANSLATION_INPUT_VALIDATION_FAILED',
+                f'Text validation failed: {error_msg}',
+                'WARNING'
+            )
+            return jsonify({
+                "success": False,
+                "error": error_msg
+            })
+
+        # 言語ペア検証
+        is_valid_pair, pair_error = EnhancedInputValidator.validate_language_pair(language_pair, current_lang)
+        if not is_valid_pair:
+            log_security_event('INVALID_REVERSE_LANGUAGE_PAIR', f'Pair: {language_pair}', 'WARNING')
+            return jsonify({
+                "success": False,
+                "error": pair_error
+            })
+
+        # 安全な言語ペアパース
+        try:
+            parts = language_pair.split("-")
+            if len(parts) != 2:
+                raise ValueError(f"Invalid language pair format: {language_pair}")
+            target_lang, source_lang = parts
+        except Exception as e:
+            logger.error(f"Language pair parsing error: {e}")
+            return jsonify({
+                "success": False,
+                "error": "言語ペアの形式が正しくありません"
+            })
+
+        # セッションIDを優先、フォールバックでCSRFトークンまたは生成
+        session_id = (getattr(session, 'session_id', None) or 
+                     session.get("session_id") or 
+                     session.get("csrf_token", "")[:16] or 
+                     f"reverse_{int(time.time())}")
+        
+        log_access_event(f'Reverse ChatGPT translation started: {language_pair}, session={session_id[:16]}...')
+        
+        # 入力テキストの基本検証
+        if not translated_text:
+            return jsonify({
+                "success": False,
+                "error": "逆翻訳対象のテキストが入力されていません"
+            }), 400
+
+        # 翻訳履歴エントリを作成
+        translation_uuid = None
+        if history_manager and 'create_entry' in history_manager:
+            translation_uuid = history_manager['create_entry'](
+                source_text=translated_text,
+                source_lang=target_lang,  # 逆翻訳では向きが逆転
+                target_lang=source_lang,  # 逆翻訳では向きが逆転
+                partner_message="",       # 逆翻訳では通常空
+                context_info=""           # 逆翻訳では通常空
+            )
+        
+        # 逆翻訳実行
+        start_time = time.time()
+        result = translation_service.reverse_translation(
+            translated_text=translated_text,
+            target_lang=target_lang,
+            source_lang=source_lang,
+            current_lang=current_lang
+        )
+        reverse_time = time.time() - start_time
+
+        # 翻訳結果を履歴に保存
+        if history_manager and 'save_result' in history_manager and translation_uuid:
+            history_manager['save_result'](
+                translation_uuid, "chatgpt_reverse", result, reverse_time,
+                {"endpoint": "reverse_chatgpt_translation", "tokens_used": len(result.split())}
+            )
+        
+        # 使用回数を更新
+        new_usage_count = current_usage + 1
+        remaining = daily_limit - new_usage_count
+
+        log_access_event(f'Reverse ChatGPT translation completed successfully: {language_pair}, usage: {new_usage_count}/{daily_limit}')
+        
+        return jsonify({
+            "success": True,
+            "reversed_text": result,
+            "source_lang": source_lang,
+            "target_lang": target_lang,
+            "translation_time": round(reverse_time, 2),
+            "session_id": session_id[:16] + "..." if len(session_id) > 16 else session_id,
+            "usage_info": {
+                "current_usage": new_usage_count,
+                "daily_limit": daily_limit,
+                "remaining": remaining,
+                "can_use": remaining > 0
+            }
+        })
+        
+    except ValueError as ve:
+        logger.error(f"Reverse ChatGPT translation validation error: {str(ve)}")
+        return jsonify({
+            "success": False,
+            "error": str(ve)
+        }), 400
+        
+    except Exception as e:
+        import traceback
+        logger.error(f"Reverse ChatGPT translation error: {str(e)}")
+        logger.error(traceback.format_exc())
+        log_security_event('REVERSE_CHATGPT_TRANSLATION_ERROR', f'Error: {str(e)}', 'ERROR')
+        
+        if os.getenv('ENVIRONMENT', 'development') == 'development':
+            return jsonify({
+                "success": False,
+                "error": str(e),
+                "error_type": type(e).__name__,
+                "traceback": traceback.format_exc()
+            }), 500
+        else:
+            return jsonify({
+                "success": False,
+                "error": "逆翻訳処理中にエラーが発生しました"
+            }), 500

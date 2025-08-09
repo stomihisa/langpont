@@ -467,3 +467,55 @@ IMPORTANT: Respond ONLY with the {target_label} translation.
 
         # OpenAI API呼び出し
         return self.safe_openai_request(prompt, current_lang=current_lang)
+    
+    def reverse_translation(self, translated_text: str, target_lang: str, 
+                           source_lang: str, current_lang: str = "jp") -> str:
+        """
+        翻訳結果の逆翻訳実行
+        Task #9-4 AP-1 Phase 4 Step2: app.py f_reverse_translation のService層実装
+        
+        Args:
+            translated_text: 逆翻訳対象テキスト
+            target_lang: 元の翻訳先言語（逆翻訳では元言語になる）
+            source_lang: 元の翻訳元言語（逆翻訳では先言語になる）
+            current_lang: UI言語
+            
+        Returns:
+            str: 逆翻訳結果
+            
+        Raises:
+            ValueError: 入力値検証エラー
+        """
+        if not translated_text:
+            return "(翻訳テキストが空です)"
+
+        # 入力値検証（多言語対応）
+        is_valid, error_msg = EnhancedInputValidator.validate_text_input(
+            translated_text, field_name="逆翻訳テキスト", current_lang=current_lang
+        )
+        if not is_valid:
+            self.logger.error(f"Reverse translation validation error: {error_msg}")
+            raise ValueError(error_msg)
+
+        is_valid_pair, pair_error = EnhancedInputValidator.validate_language_pair(
+            f"{source_lang}-{target_lang}", current_lang
+        )
+        if not is_valid_pair:
+            self.logger.error(f"Reverse translation language pair validation error: {pair_error}")
+            raise ValueError(pair_error)
+
+        lang_map = {"ja": "Japanese", "fr": "French", "en": "English", "es": "Spanish", "de": "German", "it": "Italian"}
+        source_label = lang_map.get(source_lang, source_lang.capitalize())
+
+        prompt = f"""Professional translation task: Translate the following text to {source_label}.
+
+TEXT TO TRANSLATE TO {source_label.upper()}:
+{translated_text}
+
+IMPORTANT: Respond ONLY with the {source_label} translation."""
+
+        try:
+            return self.safe_openai_request(prompt, max_tokens=300, current_lang=current_lang)
+        except Exception as e:
+            self.logger.error(f"Reverse translation API error: {str(e)}")
+            return f"逆翻訳エラー: {str(e)}"
