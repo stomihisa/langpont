@@ -790,9 +790,17 @@ def reverse_chatgpt_translation():
         log_access_event(f'Reverse ChatGPT translation completed successfully: {language_pair}, usage: {new_usage_count}/{daily_limit}')
         
         # Redis TTL保存
-        translation_service.state_manager.save_large_data('reverse_translated_text', result, session_id, ttl=1800)
+        saved_flag = False
+        try:
+            saved_flag = translation_service.state_manager.save_large_data(
+                'reverse_translated_text', result, session_id, ttl=1800
+            )
+        except Exception as e:
+            logger.error(f"DEBUG(reverse): save_large_data raised: {e}")
+            saved_flag = False
         
-        return jsonify({
+        # 返却JSONを組み立てる前に payload 変数を使う形にして、開発環境のときだけデバッグ項目を追加
+        payload = {
             "success": True,
             "reversed_text": result,
             "reverse_translated_text": result,
@@ -806,7 +814,20 @@ def reverse_chatgpt_translation():
                 "remaining": remaining,
                 "can_use": remaining > 0
             }
-        })
+        }
+        
+        import os
+        if os.getenv('ENVIRONMENT', 'development') == 'development':
+            # Redis接続可否
+            redis_connected = bool(
+                getattr(translation_service.state_manager, "redis_manager", None)
+                and getattr(translation_service.state_manager.redis_manager, "is_connected", False)
+            )
+            payload["debug_saved"] = bool(saved_flag)
+            payload["debug_redis_connected"] = redis_connected
+            payload["debug_cache_key"] = f"langpont:dev:translation_state:{session_id}:reverse_translated_text"
+        
+        return jsonify(payload)
         
     except ValueError as ve:
         logger.error(f"Reverse ChatGPT translation validation error: {str(ve)}")
