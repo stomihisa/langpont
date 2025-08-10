@@ -658,8 +658,8 @@ def better_translation_endpoint():
 
 
 @translation_bp.route('/reverse_chatgpt_translation', methods=['POST'])
-# @csrf_protect  # 🔧 Phase 4 Step2: Temporarily disabled for testing
-# @require_rate_limit  # 🔧 Phase 4 Step2: Temporarily disabled for testing
+@csrf_protect  # 🔧 Phase 4 Step2: Temporarily disabled for testing
+@require_rate_limit  # 🔧 Phase 4 Step2: Temporarily disabled for testing
 def reverse_chatgpt_translation():
     """
     ChatGPT逆翻訳APIエンドポイント
