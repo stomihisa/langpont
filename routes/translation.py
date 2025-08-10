@@ -789,6 +789,9 @@ def reverse_chatgpt_translation():
 
         log_access_event(f'Reverse ChatGPT translation completed successfully: {language_pair}, usage: {new_usage_count}/{daily_limit}')
         
+        # Redis TTL保存
+        translation_service.state_manager.save_large_data('reverse_translated_text', result, session_id, ttl=1800)
+        
         return jsonify({
             "success": True,
             "reversed_text": result,
