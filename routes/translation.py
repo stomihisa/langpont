@@ -792,6 +792,7 @@ def reverse_chatgpt_translation():
         return jsonify({
             "success": True,
             "reversed_text": result,
+            "reverse_translated_text": result,
             "source_lang": source_lang,
             "target_lang": target_lang,
             "translation_time": round(reverse_time, 2),
