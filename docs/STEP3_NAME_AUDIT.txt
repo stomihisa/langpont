@@ -1,0 +1,200 @@
+app.py:1161:        "old_translated_text", "old_reverse_translated_text",
+app.py:1258:def f_reverse_translation(translated_text: str, target_lang: str, source_lang: str, current_lang: str = "jp") -> str:
+app.py:1262:    この関数は services/translation_service.py の reverse_translation() メソッドに移動予定
+app.py:1265:    - L1335: debug_gemini_reverse_translation()
+app.py:1301:def debug_gemini_reverse_translation(gemini_translation: str, target_lang: str, source_lang: str) -> Dict[str, Any]:
+app.py:1314:        "function": "debug_gemini_reverse_translation",
+app.py:1346:            reverse_result = f_reverse_translation(gemini_translation, target_lang, source_lang)
+app.py:1356:                "reverse_translation": reverse_result[:200] + "..." if len(reverse_result) > 200 else reverse_result,
+app.py:1357:                "reverse_translation_length": len(reverse_result),
+app.py:1967:    translated_text = reverse_translated_text = ""
+app.py:1969:    gemini_translation = gemini_3way_analysis = gemini_reverse_translation = ""
+app.py:2003:                "translated_text", "reverse_translated_text",
+app.py:2005:                "gemini_translation", "gemini_reverse_translation",
+app.py:2073:        reverse_translated_text=reverse_translated_text,
+app.py:2077:        gemini_reverse_translation=gemini_reverse_translation,
+app.py:2191:    # - 複数箇所: f_reverse_translation() の呼び出し  
+app.py:2270:        critical_keys = ["translated_text", "reverse_translated_text"]
+app.py:2375:        update_translation_progress("reverse_translation", "in_progress", 0, {"step": 2, "provider": "OpenAI"})
+app.py:2378:        reverse = f_reverse_translation(translated, target_lang, source_lang, current_lang)
+app.py:2382:        update_translation_progress("reverse_translation", "completed", int(reverse_time * 1000), {
+app.py:2392:            {"endpoint": "reverse_translation", "source_translation": translated}
+app.py:2472:        gemini_reverse_translation = ""
+app.py:2476:                debug_result = debug_gemini_reverse_translation(gemini_translation, target_lang, source_lang)
+app.py:2480:                gemini_reverse_translation = f_reverse_translation(gemini_translation, target_lang, source_lang, current_lang)
+app.py:2481:                gemini_reverse_time = time.time() - start_time
+app.py:2486:                app_logger.info(f"  - 逆翻訳: {len(gemini_reverse_translation)}文字")
+app.py:2487:                app_logger.info(f"  - 処理時間: {gemini_reverse_time:.3f}秒")
+app.py:2489:                app_logger.info(f"  - 逆翻訳結果（先頭50文字）: {gemini_reverse_translation[:50]}...")
+app.py:2493:                    translation_uuid, "gemini_reverse", gemini_reverse_translation, gemini_reverse_time,
+app.py:2494:                    {"endpoint": "gemini_reverse_translation", "base_translation": gemini_translation}
+app.py:2499:        except Exception as gemini_reverse_error:
+app.py:2500:            gemini_reverse_translation = f"Gemini逆翻訳エラー: {str(gemini_reverse_error)}"
+app.py:2501:            app_logger.error(f"🔧 Phase A: Gemini逆翻訳エラー: {str(gemini_reverse_error)}")
+app.py:2503:                translation_uuid, "gemini_reverse", gemini_reverse_translation, 0.0,
+app.py:2504:                {"endpoint": "gemini_reverse_translation", "error": str(gemini_reverse_error)}
+app.py:2522:                reverse_better = f_reverse_translation(better_translation, target_lang, source_lang, current_lang)
+app.py:2549:        safe_session_store("reverse_translated_text", reverse)
+app.py:2551:        safe_session_store("gemini_reverse_translation", gemini_reverse_translation)
+app.py:2562:                "reverse_translated_text": reverse,
+app.py:2564:                "gemini_reverse_translation": gemini_reverse_translation,
+app.py:2609:            "reverse_translated_text": reverse,
+app.py:2611:            "gemini_reverse_translation": gemini_reverse_translation,  # 🆕 Phase A修正
+app.py:2859:    - f_reverse_translation() 関数をService層経由で使用
+app.py:2902:        reversed_text = f_reverse_translation(improved_text, target_lang, source_lang)
+templates/index.html:87:                    <div class="result-label" id="reverse-translated-label">{{ labels["label_" + source_lang] }}</div>
+templates/index.html:88:                    <div class="result-text" id="reverse-translated-text"></div>
+templates/index.html:134:                    <div class="result-text" id="gemini-reverse-translation"></div>
+templates/index.html:648:    const reverseLabel = document.getElementById("reverse-translated-label");
+templates/index.html:729:    const criticalElements = ["reverse-translated-text"];  // translated-text を除外
+templates/index.html:738:    logOnce('quick_clear_results', "🧹 Phase B-3: reverse-translated-textをクリアしました（translated-textは除外）");
+templates/index.html:746:    const reverseTranslatedText = document.getElementById("reverse-translated-text");
+templates/index.html:753:      reverseTranslatedText.innerText = data.reverse_translated_text || "";
+templates/index.html:763:    const geminiTarget = document.getElementById("gemini-reverse-translation");
+templates/index.html:769:      geminiTarget.innerText = data.gemini_reverse_translation || window.currentLabels.no_reverse_result || "(逆翻訳結果なし)";
+templates/index.html:1824:          case 'reverse_translation':
+routes/translation.py:184:        critical_keys = ["translated_text", "reverse_translated_text"]
+routes/translation.py:260:        # TODO: f_reverse_translation関数をService層に移動後、実装予定
+routes/translation.py:261:        gemini_reverse_translation = ""
+routes/translation.py:276:        session["reverse_translated_text"] = reverse
+routes/translation.py:278:        session["gemini_reverse_translation"] = gemini_reverse_translation
+routes/translation.py:300:                    "gemini_reverse": ""
+routes/translation.py:317:                "reverse_translated_text": reverse,
+routes/translation.py:319:                "gemini_reverse_translation": gemini_reverse_translation,
+routes/translation.py:338:            "reverse_translated_text": reverse,
+routes/translation.py:340:            "gemini_reverse_translation": gemini_reverse_translation,
+routes/translation.py:668:    Task #9-4 AP-1 Phase 4 Step2: f_reverse_translation関数のBlueprint化
+routes/translation.py:773:        result = translation_service.reverse_translation(
+routes/translation.py:798:                'reverse_translated_text', result, session_id, ttl=1800
+routes/translation.py:808:            "reverse_translated_text": result,
+services/translation_service.py:25:    - reverse_translation() メソッド追加 (app.py f_reverse_translation移動)
+services/translation_service.py:471:    def reverse_translation(self, translated_text: str, target_lang: str, 
+services/translation_service.py:475:        Task #9-4 AP-1 Phase 4 Step2: app.py f_reverse_translation のService層実装
+app.py:1161:        "old_translated_text", "old_reverse_translated_text",
+app.py:1265:    - L1335: debug_gemini_reverse_translation()
+app.py:1269:    - L2870: reverse_better_translation()
+app.py:1301:def debug_gemini_reverse_translation(gemini_translation: str, target_lang: str, source_lang: str) -> Dict[str, Any]:
+app.py:1314:        "function": "debug_gemini_reverse_translation",
+app.py:1967:    translated_text = reverse_translated_text = ""
+app.py:1969:    gemini_translation = gemini_3way_analysis = gemini_reverse_translation = ""
+app.py:2003:                "translated_text", "reverse_translated_text",
+app.py:2004:                "better_translation", "reverse_better_translation", 
+app.py:2005:                "gemini_translation", "gemini_reverse_translation",
+app.py:2073:        reverse_translated_text=reverse_translated_text,
+app.py:2077:        gemini_reverse_translation=gemini_reverse_translation,
+app.py:2270:        critical_keys = ["translated_text", "reverse_translated_text"]
+app.py:2472:        gemini_reverse_translation = ""
+app.py:2476:                debug_result = debug_gemini_reverse_translation(gemini_translation, target_lang, source_lang)
+app.py:2480:                gemini_reverse_translation = f_reverse_translation(gemini_translation, target_lang, source_lang, current_lang)
+app.py:2486:                app_logger.info(f"  - 逆翻訳: {len(gemini_reverse_translation)}文字")
+app.py:2489:                app_logger.info(f"  - 逆翻訳結果（先頭50文字）: {gemini_reverse_translation[:50]}...")
+app.py:2493:                    translation_uuid, "gemini_reverse", gemini_reverse_translation, gemini_reverse_time,
+app.py:2494:                    {"endpoint": "gemini_reverse_translation", "base_translation": gemini_translation}
+app.py:2500:            gemini_reverse_translation = f"Gemini逆翻訳エラー: {str(gemini_reverse_error)}"
+app.py:2503:                translation_uuid, "gemini_reverse", gemini_reverse_translation, 0.0,
+app.py:2504:                {"endpoint": "gemini_reverse_translation", "error": str(gemini_reverse_error)}
+app.py:2549:        safe_session_store("reverse_translated_text", reverse)
+app.py:2551:        safe_session_store("gemini_reverse_translation", gemini_reverse_translation)
+app.py:2553:        safe_session_store("reverse_better_translation", reverse_better)
+app.py:2562:                "reverse_translated_text": reverse,
+app.py:2564:                "gemini_reverse_translation": gemini_reverse_translation,
+app.py:2566:                "reverse_better_translation": reverse_better
+app.py:2609:            "reverse_translated_text": reverse,
+app.py:2611:            "gemini_reverse_translation": gemini_reverse_translation,  # 🆕 Phase A修正
+app.py:2613:            "reverse_better_translation": reverse_better,
+app.py:2852:@app.route("/reverse_better_translation", methods=["POST"])
+app.py:2854:def reverse_better_translation():
+app.py:2902:        reversed_text = f_reverse_translation(improved_text, target_lang, source_lang)
+app.py:2908:            "reversed_text": reversed_text
+templates/index.html:753:      reverseTranslatedText.innerText = data.reverse_translated_text || "";
+templates/index.html:769:      geminiTarget.innerText = data.gemini_reverse_translation || window.currentLabels.no_reverse_result || "(逆翻訳結果なし)";
+templates/index.html:834:      const reverseBetterResponse = await fetch("/reverse_better_translation", {
+templates/index.html:847:          reverseBetterElement.innerText = reverseBetterData.reversed_text || "(逆翻訳結果なし)";
+templates/index.html:1002:          if (data.reverse_better_translation) {
+templates/index.html:1003:            reverseBetterElement.innerText = data.reverse_better_translation;
+routes/translation.py:184:        critical_keys = ["translated_text", "reverse_translated_text"]
+routes/translation.py:261:        gemini_reverse_translation = ""
+routes/translation.py:276:        session["reverse_translated_text"] = reverse
+routes/translation.py:278:        session["gemini_reverse_translation"] = gemini_reverse_translation
+routes/translation.py:280:        session["reverse_better_translation"] = reverse_better
+routes/translation.py:317:                "reverse_translated_text": reverse,
+routes/translation.py:319:                "gemini_reverse_translation": gemini_reverse_translation,
+routes/translation.py:321:                "reverse_better_translation": reverse_better
+routes/translation.py:338:            "reverse_translated_text": reverse,
+routes/translation.py:340:            "gemini_reverse_translation": gemini_reverse_translation,
+routes/translation.py:342:            "reverse_better_translation": reverse_better,
+routes/translation.py:798:                'reverse_translated_text', result, session_id, ttl=1800
+routes/translation.py:807:            "reversed_text": result,
+routes/translation.py:808:            "reverse_translated_text": result,
+app.py:1258:def f_reverse_translation(translated_text: str, target_lang: str, source_lang: str, current_lang: str = "jp") -> str:
+app.py:1265:    - L1335: debug_gemini_reverse_translation()
+app.py:1266:    - L2352: runFastTranslation()  
+app.py:1267:    - L2454: runFastTranslation()
+app.py:1268:    - L2496: runFastTranslation()
+app.py:1269:    - L2870: reverse_better_translation()
+app.py:1301:def debug_gemini_reverse_translation(gemini_translation: str, target_lang: str, source_lang: str) -> Dict[str, Any]:
+app.py:1314:        "function": "debug_gemini_reverse_translation",
+app.py:1346:            reverse_result = f_reverse_translation(gemini_translation, target_lang, source_lang)
+app.py:1400:    - L2486: runFastTranslation()
+app.py:2004:                "better_translation", "reverse_better_translation", 
+app.py:2191:    # - 複数箇所: f_reverse_translation() の呼び出し  
+app.py:2378:        reverse = f_reverse_translation(translated, target_lang, source_lang, current_lang)
+app.py:2476:                debug_result = debug_gemini_reverse_translation(gemini_translation, target_lang, source_lang)
+app.py:2480:                gemini_reverse_translation = f_reverse_translation(gemini_translation, target_lang, source_lang, current_lang)
+app.py:2522:                reverse_better = f_reverse_translation(better_translation, target_lang, source_lang, current_lang)
+app.py:2553:        safe_session_store("reverse_better_translation", reverse_better)
+app.py:2566:                "reverse_better_translation": reverse_better
+app.py:2613:            "reverse_better_translation": reverse_better,
+app.py:2852:@app.route("/reverse_better_translation", methods=["POST"])
+app.py:2854:def reverse_better_translation():
+app.py:2859:    - f_reverse_translation() 関数をService層経由で使用
+app.py:2902:        reversed_text = f_reverse_translation(improved_text, target_lang, source_lang)
+templates/index.html:834:      const reverseBetterResponse = await fetch("/reverse_better_translation", {
+templates/index.html:876:  async function runFastTranslation() {
+templates/index.html:1002:          if (data.reverse_better_translation) {
+templates/index.html:1003:            reverseBetterElement.innerText = data.reverse_better_translation;
+templates/index.html:1037:        function: 'runFastTranslation',
+templates/index.html:1479:  // runFastTranslation関数の最初で翻訳リクエストを追跡
+templates/index.html:1480:  const originalRunFastTranslation = window.runFastTranslation;
+templates/index.html:1482:    window.runFastTranslation = function() {
+routes/translation.py:260:        # TODO: f_reverse_translation関数をService層に移動後、実装予定
+routes/translation.py:280:        session["reverse_better_translation"] = reverse_better
+routes/translation.py:321:                "reverse_better_translation": reverse_better
+routes/translation.py:342:            "reverse_better_translation": reverse_better,
+routes/translation.py:668:    Task #9-4 AP-1 Phase 4 Step2: f_reverse_translation関数のBlueprint化
+services/translation_service.py:25:    - reverse_translation() メソッド追加 (app.py f_reverse_translation移動)
+services/translation_service.py:475:        Task #9-4 AP-1 Phase 4 Step2: app.py f_reverse_translation のService層実装
+
+=== 分析結果 ===
+
+## IF契約表との突合結果
+
+### ✅ 確認済み4つの主要レスポンスキー
+1. reverse_translated_text - 検出: L37, L40, L52, L59, L63, L96, L102, L109, L117, L120, L123, L126, L128
+2. gemini_reverse_translation - 検出: L13, L22, L40, L42, L54, L58, L60, L64, L88, L91, L94, L97, L100, L103, L110, L118, L121, L124
+3. reverse_better_translation - 検出: L81, L98, L101, L104, L113, L119, L122, L125, L145, L146, L147, L154, L155, L161, L162, L163
+4. reversed_text - 検出: L107, L108, L112, L127
+
+### ✅ 確認済み5つの呼び出し点
+1. debug_gemini_reverse_translation - 検出: L5, L6, L23, L76, L77, L130, L135, L136, L142
+2. runFastTranslation (ChatGPT) - 検出: L19 (L2378), L141
+3. runFastTranslation (Gemini) - 検出: L24 (L2480), L143
+4. runFastTranslation (Better) - 検出: L36 (L2522), L144
+5. reverse_better_translation endpoint - 検出: L105, L106, L111, L148, L149
+
+### ✅ 確認済みDOM要素（ハイフン区切り）
+1. reverse-translated-text (ID) - 検出: L46, L49, L51
+2. gemini-reverse-translation (ID) - 検出: L47, L53
+
+### ✅ 確認済み関数
+1. f_reverse_translation - 検出: L2, L7, L16, L19, L24, L36, L43, L44, L129, L137, L140, L141, L143, L144, L150, L151
+2. runFastTranslation - 検出: L131, L132, L133, L138, L153, L156, L157, L158, L159
+
+## 修正候補リスト
+
+現在の調査では、IF契約表と完全に一致しており、重大な不一致は検出されませんでした。
+
+### 軽微な注意点
+- 行番号の参照に若干のずれがあるコメント箇所があります（例：L1266でL2352と記載されているが実際はL2378）
+- これらは実装に影響しない文書上の記録のため、Step3実装には支障ありません
+EOF < /dev/null
