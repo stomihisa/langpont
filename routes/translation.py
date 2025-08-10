@@ -816,17 +816,6 @@ def reverse_chatgpt_translation():
             }
         }
         
-        import os
-        if os.getenv('ENVIRONMENT', 'development') == 'development':
-            # Redis接続可否
-            redis_connected = bool(
-                getattr(translation_service.state_manager, "redis_manager", None)
-                and getattr(translation_service.state_manager.redis_manager, "is_connected", False)
-            )
-            payload["debug_saved"] = bool(saved_flag)
-            payload["debug_redis_connected"] = redis_connected
-            payload["debug_cache_key"] = f"langpont:dev:translation_state:{session_id}:reverse_translated_text"
-        
         return jsonify(payload)
         
     except ValueError as ve:
