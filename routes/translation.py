@@ -11,6 +11,8 @@ Task #9 AP-1 Phase 1: ChatGPT翻訳エンドポイントの分離
 import time
 import os
 import hashlib
+import secrets
+import logging
 from datetime import datetime
 from typing import Optional
 from flask import Blueprint, request, jsonify, session
@@ -843,3 +845,49 @@ def reverse_chatgpt_translation():
                 "success": False,
                 "error": "逆翻訳処理中にエラーが発生しました"
             }), 500
+
+
+@translation_bp.route('/api/dev/csrf-token', methods=['GET'])
+def dev_csrf_token():
+    """開発環境限定: CSRF トークン配布API"""
+    # 開発環境以外では404を返す
+    if os.getenv('ENVIRONMENT', 'development') != 'development':
+        from flask import abort
+        abort(404)
+    
+    try:
+        # セッションIDの初期化
+        if not session.get('session_id'):
+            session['session_id'] = f"csrf_{int(time.time())}"
+        
+        # CSRFトークンの取得または生成
+        csrf_token = session.get('csrf_token')
+        if not csrf_token:
+            csrf_token = secrets.token_urlsafe(32)
+            session['csrf_token'] = csrf_token
+        
+        # Redis保存を試行（失敗しても継続）
+        try:
+            from services.translation_service import get_csrf_redis_manager
+            csrf_redis_manager = get_csrf_redis_manager()
+            if csrf_redis_manager:
+                csrf_redis_manager.save_csrf_token(session['session_id'], csrf_token)
+        except Exception as e:
+            logging.warning(f"CSRF Redis save failed: {e}")
+        
+        # キャッシュ禁止ヘッダ付きでトークン返却
+        from flask import make_response
+        response = make_response(jsonify({
+            "success": True,
+            "csrf_token": csrf_token
+        }))
+        response.headers['Cache-Control'] = 'no-store'
+        
+        return response
+        
+    except Exception as e:
+        logging.error(f"Dev CSRF token generation error: {e}")
+        return jsonify({
+            "success": False,
+            "error": "CSRF token generation failed"
+        }), 500
