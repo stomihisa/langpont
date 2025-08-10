@@ -41,6 +41,10 @@ backup/
 test_*.py
 debug_*.py
 
+# Dev CSRF API テストファイル
+token.json
+cookies.txt
+
 # 一時ファイル
 *.tmp
 *.temp
