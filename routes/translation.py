@@ -848,11 +848,23 @@ def reverse_chatgpt_translation():
 
 
 @translation_bp.route('/api/dev/csrf-token', methods=['GET'])
+@require_rate_limit
 def dev_csrf_token():
     """開発環境限定: CSRF トークン配布API"""
-    # 開発環境以外では404を返す
+    from flask import abort, request
+    
+    # 開発環境チェック
     if os.getenv('ENVIRONMENT', 'development') != 'development':
-        from flask import abort
+        abort(404)
+    
+    # フィーチャーフラグチェック
+    if os.getenv('DEV_CSRF_ENDPOINT_ENABLED', 'true').lower() != 'true':
+        abort(404)
+    
+    # localhost制限（セキュリティ強化）
+    client_ip = request.remote_addr
+    if client_ip not in ['127.0.0.1', '::1', None]:
+        logging.warning(f"Dev CSRF API: rejected non-localhost access from {client_ip}")
         abort(404)
     
     try:
@@ -874,6 +886,10 @@ def dev_csrf_token():
                 csrf_redis_manager.save_csrf_token(session['session_id'], csrf_token)
         except Exception as e:
             logging.warning(f"CSRF Redis save failed: {e}")
+        
+        # 成功ログ（トークン値はマスク）
+        masked_token = csrf_token[:8] + "***" if csrf_token else "***"
+        logging.info(f"Dev CSRF API: token provided (masked: {masked_token})")
         
         # キャッシュ禁止ヘッダ付きでトークン返却
         from flask import make_response
