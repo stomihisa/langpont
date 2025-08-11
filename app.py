@@ -2912,6 +2912,26 @@ def reverse_better_translation():
             })
 
         reverse_text = translation_service.reverse_translation(improved_text, target_lang, source_lang)
+        
+        # 生成直後
+        print(f"[STEP3-DGB2] endpoint gen reverse_better: len={len(reverse_text)} sample={reverse_text[:60]!r}")
+
+        # 保存（session/Redis）
+        try:
+            # session
+            session["reverse_better_translation"] = reverse_text
+
+            # Redis StateManager
+            session_id = getattr(session, 'session_id', None) or session.get("session_id") or session.get("csrf_token", "")[:16] or f"trans_{int(time.time())}"
+            if translation_state_manager and session_id:
+                translation_state_manager.save_multiple_large_data(
+                    session_id,
+                    {"reverse_better_translation": reverse_text}
+                )
+
+            print(f"[STEP3-DGB2] endpoint save reverse_better: len={len(reverse_text)}")
+        except Exception as e:
+            print(f"[STEP3-DGB2] endpoint save error reverse_better: {e!r}")
 
         log_access_event(f'Reverse better translation completed: {language_pair}')
 
