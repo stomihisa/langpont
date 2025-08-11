@@ -233,8 +233,14 @@ def translate_chatgpt():
         if translated.strip() == input_text.strip():
             translated = f"[翻訳処理でエラーが発生しました] {translated}"
 
-        # 逆翻訳実行（簡略化版 - Phase 1では基本機能のみ）
-        reverse = f"逆翻訳機能は次のPhaseで実装予定"
+        # ChatGPT逆翻訳（Service層へ切り替え）
+        try:
+            reverse_text = translation_service.reverse_translation(
+                translated, target_lang, source_lang, current_lang
+            )
+            reverse = reverse_text  # UI互換キーへ格納（契約どおり）
+        except Exception as e:
+            reverse = f"逆翻訳エラー: {str(e)}"
         reverse_time = 0.0
 
         # Gemini翻訳（Phase 2で統合）
@@ -256,9 +262,18 @@ def translate_chatgpt():
             logger.warning(f"Gemini translation error in combined endpoint: {str(e)}")
             gemini_translation = f"⚠️ Gemini翻訳でエラーが発生しました: {str(e)[:100]}..."
         
-        # 🚧 Task #9-4 AP-1 Phase 4: Blueprint化対象機能
-        # TODO: f_reverse_translation関数をService層に移動後、実装予定
-        gemini_reverse_translation = ""
+        # Gemini逆翻訳（翻訳が有効なときのみ実行）
+        try:
+            if gemini_translation and not str(gemini_translation).startswith(("⚠️", "Gemini翻訳エラー")):
+                gemini_reverse_text = translation_service.reverse_translation(
+                    gemini_translation, target_lang, source_lang, current_lang
+                )
+                gemini_reverse_translation = gemini_reverse_text
+            else:
+                # 既存条件の踏襲（UI側はフォールバック表示）
+                gemini_reverse_translation = ""
+        except Exception as e:
+            gemini_reverse_translation = f"Gemini逆翻訳エラー: {str(e)}"
         
         # 🚧 Task #9-4 AP-1 Phase 4 Step1: Service層統合完了
         # Service層の実装済みメソッドを使用
