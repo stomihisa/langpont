@@ -2377,6 +2377,10 @@ def reset_language():
         start_time = time.time()
         reverse = translation_service.reverse_translation(translated, target_lang, source_lang, current_lang)
         reverse_time = time.time() - start_time
+        
+        # 🔧 Step 3 Follow-up: デバッグログ追加（後で削除予定）
+        print(f"[DEBUG Step 3] ChatGPT reverse after service call: {reverse}")
+        app_logger.info(f"[DEBUG Step 3] ChatGPT reverse after service call: {reverse}")
 
         # 🚀 Phase B-3.5: 逆翻訳完了監視
         update_translation_progress("reverse_translation", "completed", int(reverse_time * 1000), {
@@ -2391,6 +2395,9 @@ def reset_language():
             translation_uuid, "reverse", reverse, reverse_time,
             {"endpoint": "reverse_translation", "source_translation": translated}
         )
+        
+        # 🔧 Step 3 Follow-up: テンプレート変数の更新
+        reverse_translated_text = reverse
 
         # Gemini翻訳を取得
         # 🚀 Phase B-3.5: Gemini翻訳開始監視
@@ -2479,6 +2486,10 @@ def reset_language():
                 start_time = time.time()
                 gemini_reverse_translation = translation_service.reverse_translation(gemini_translation, target_lang, source_lang, current_lang)
                 gemini_reverse_time = time.time() - start_time
+                
+                # 🔧 Step 3 Follow-up: デバッグログ追加（後で削除予定）
+                print(f"[DEBUG Step 3] Gemini reverse after service call: {gemini_reverse_translation}")
+                app_logger.info(f"[DEBUG Step 3] Gemini reverse after service call: {gemini_reverse_translation}")
 
                 # 🔧 Phase A: 詳細ログ追加
                 app_logger.info(f"🔧 Phase A: Gemini逆翻訳完了")
