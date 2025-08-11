@@ -294,7 +294,6 @@ def translate_chatgpt():
         session["better_translation"] = better_translation
         # STEP3: より良い翻訳の逆翻訳は別APIで生成・保存するため、ここでは保存しない
         # session["reverse_better_translation"] = reverse_better
-        print("[STEP3-DGB2] skipped empty save for reverse_better_translation at /translate_chatgpt")
 
         session_id = getattr(session, 'session_id', None) or session.get("session_id") or session.get("csrf_token", "")[:16] or f"trans_{int(time.time())}"
 

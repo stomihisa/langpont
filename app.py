@@ -2913,9 +2913,6 @@ def reverse_better_translation():
 
         reverse_text = translation_service.reverse_translation(improved_text, target_lang, source_lang)
         
-        # 生成直後
-        print(f"[STEP3-DGB2] endpoint gen reverse_better: len={len(reverse_text)} sample={reverse_text[:60]!r}")
-
         # 保存（session/Redis）
         try:
             # session
@@ -2929,9 +2926,8 @@ def reverse_better_translation():
                     {"reverse_better_translation": reverse_text}
                 )
 
-            print(f"[STEP3-DGB2] endpoint save reverse_better: len={len(reverse_text)}")
         except Exception as e:
-            print(f"[STEP3-DGB2] endpoint save error reverse_better: {e!r}")
+            app_logger.error(f"Save reverse_better_translation error: {e!r}")
 
         log_access_event(f'Reverse better translation completed: {language_pair}')
 
