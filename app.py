@@ -2850,6 +2850,7 @@ def clear_session():
         })
 
 @app.route("/reverse_better_translation", methods=["POST"])
+@csrf_protect
 @require_rate_limit
 def reverse_better_translation():
     """改善された翻訳を逆翻訳するAPIエンドポイント（完全セキュリティ強化版）
@@ -2899,13 +2900,16 @@ def reverse_better_translation():
                 "error": "逆翻訳するテキストが見つかりません"
             })
 
-        reversed_text = f_reverse_translation(improved_text, target_lang, source_lang)
+        reverse_text = translation_service.reverse_translation(improved_text, target_lang, source_lang)
 
         log_access_event(f'Reverse better translation completed: {language_pair}')
 
+        # 正規化アダプタ: 内部キー + 後方互換キー併記
         return jsonify({
             "success": True,
-            "reversed_text": reversed_text
+            "reverse_text": reverse_text,           # 内部正規化キー
+            "reversed_text": reverse_text,          # 後方互換キー（既存）
+            "reverse_translated_text": reverse_text # UI統一互換キー
         })
 
     except Exception as e:
