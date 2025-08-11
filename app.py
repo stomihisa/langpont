@@ -2519,7 +2519,7 @@ def reset_language():
             )
 
             if better_translation and not better_translation.startswith("改善翻訳エラー"):
-                reverse_better = f_reverse_translation(better_translation, target_lang, source_lang, current_lang)
+                reverse_better = translation_service.reverse_translation(better_translation, target_lang, source_lang, current_lang)
 
         except Exception as better_error:
             better_translation = f"改善翻訳エラー: {str(better_error)}"
