@@ -14,10 +14,10 @@ BASE_URL = "http://localhost:8080"
 ENDPOINT = "/reverse_better_translation"
 TIMEOUT = 10
 
-def get_csrf_token():
-    """開発用CSRFトークン取得"""
+def get_csrf_token(session):
+    """セッション付きCSRFトークン取得"""
     try:
-        response = requests.get(f"{BASE_URL}/api/dev/csrf-token", timeout=TIMEOUT)
+        response = session.get(f"{BASE_URL}/api/dev/csrf-token", timeout=TIMEOUT)
         if response.status_code == 200:
             data = response.json()
             return data.get('csrf_token', 'dummy_token')
@@ -30,8 +30,11 @@ def test_response_keys():
     """Step3契約テスト: レスポンスキー存在確認"""
     print("🧪 test_response_keys: レスポンスキー存在確認")
     
-    # CSRFトークン取得
-    csrf_token = get_csrf_token()
+    # セッション作成
+    session = requests.Session()
+    
+    # CSRFトークン取得（セッション付き）
+    csrf_token = get_csrf_token(session)
     
     # テストペイロード
     payload = {
@@ -45,7 +48,7 @@ def test_response_keys():
     }
     
     try:
-        response = requests.post(
+        response = session.post(
             f"{BASE_URL}{ENDPOINT}",
             json=payload,
             headers=headers,
@@ -118,6 +121,9 @@ def test_error_response_format():
     """エラーレスポンス形式確認"""
     print("🧪 test_error_response_format: エラーレスポンス形式確認")
     
+    # セッション作成
+    session = requests.Session()
+    
     # 不正なペイロード（空文字列）
     payload = {
         "french_text": "",
@@ -126,11 +132,11 @@ def test_error_response_format():
     
     headers = {
         "Content-Type": "application/json",
-        "X-CSRFToken": get_csrf_token()
+        "X-CSRFToken": get_csrf_token(session)
     }
     
     try:
-        response = requests.post(
+        response = session.post(
             f"{BASE_URL}{ENDPOINT}",
             json=payload,
             headers=headers,
