@@ -2375,7 +2375,7 @@ def reset_language():
         update_translation_progress("reverse_translation", "in_progress", 0, {"step": 2, "provider": "OpenAI"})
 
         start_time = time.time()
-        reverse = f_reverse_translation(translated, target_lang, source_lang, current_lang)
+        reverse = translation_service.reverse_translation(translated, target_lang, source_lang, current_lang)
         reverse_time = time.time() - start_time
 
         # 🚀 Phase B-3.5: 逆翻訳完了監視
