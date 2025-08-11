@@ -2477,7 +2477,7 @@ def reset_language():
                 app_logger.info(f"🔧 Phase A Debug Result: {debug_result.get('problems_detected', [])}")
 
                 start_time = time.time()
-                gemini_reverse_translation = f_reverse_translation(gemini_translation, target_lang, source_lang, current_lang)
+                gemini_reverse_translation = translation_service.reverse_translation(gemini_translation, target_lang, source_lang, current_lang)
                 gemini_reverse_time = time.time() - start_time
 
                 # 🔧 Phase A: 詳細ログ追加
