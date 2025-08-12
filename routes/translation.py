@@ -8,8 +8,8 @@ Task #9 AP-1 Phase 1: ChatGPT翻訳エンドポイントの分離
 - 依存注入による疎結合設計
 """
 
-import time
 import os
+import time
 import hashlib
 import secrets
 import logging
@@ -294,6 +294,10 @@ def translate_chatgpt():
         session["better_translation"] = better_translation
         # STEP3: より良い翻訳の逆翻訳は別APIで生成・保存するため、ここでは保存しない
         # session["reverse_better_translation"] = reverse_better
+        
+        # 一時デバッグログ（環境変数ガード）
+        if os.getenv("DEBUG_STEP3_POST") == "1":
+            print("[STEP3-POST] skipped empty save at /translate_chatgpt (reverse_better_translation)")
 
         session_id = getattr(session, 'session_id', None) or session.get("session_id") or session.get("csrf_token", "")[:16] or f"trans_{int(time.time())}"
 

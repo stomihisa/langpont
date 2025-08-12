@@ -2925,6 +2925,13 @@ def reverse_better_translation():
                     session_id,
                     {"reverse_better_translation": reverse_text}
                 )
+            
+            # 一時デバッグログ（環境変数ガード）
+            if os.getenv("DEBUG_STEP3_POST") == "1":
+                try:
+                    print(f"[STEP3-POST] saved reverse_better_translation len={len(reverse_text)} sample={reverse_text[:60]!r}")
+                except Exception as e:
+                    print(f"[STEP3-POST] debug print failed: {e!r}")
 
         except Exception as e:
             app_logger.error(f"Save reverse_better_translation error: {e!r}")
