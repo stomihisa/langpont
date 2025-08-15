@@ -1944,6 +1944,18 @@ def debug_info():
 @csrf_protect
 @require_rate_limit
 def index():
+    # 🆕 Task#9-4 AP-1 Ph4 Step4（再挑戦）- OL-0: GET /ルート監視開始
+    data_flow_logger.log_data_flow(
+        "ROUTE",
+        "INDEX_START",
+        {
+            "method": request.method,
+            "logged_in": session.get("logged_in", False),
+            "session_keys": list(session.keys()),
+            "lang": session.get("lang", "jp")
+        }
+    )
+
     # 🆕 従来ユーザーの保存済み設定を復元
     restore_legacy_user_settings()
 
@@ -2003,6 +2015,16 @@ def index():
 
     if request.method == "POST":
         if request.form.get("reset") == "true":
+            # 🆕 Task#9-4 AP-1 Ph4 Step4（再挑戦）- OL-0: POST /reset 監視開始
+            data_flow_logger.log_data_flow(
+                "ROUTE",
+                "RESET_START",
+                {
+                    "session_keys_before": list(session.keys()),
+                    "session_id": session.get("session_id", "unknown")[:16] if session.get("session_id") else "unknown"
+                }
+            )
+            
             # 🆕 完全なセッションクリア
             translation_keys_to_clear = [
                 # 翻訳結果
@@ -2033,6 +2055,18 @@ def index():
                 translation_state_manager.clear_context_data(session_id)
 
             log_access_event('Complete form reset executed - all translation data cleared')
+
+            # 🆕 Task#9-4 AP-1 Ph4 Step4（再挑戦）- OL-0: POST /reset 監視終了
+            data_flow_logger.log_data_flow(
+                "ROUTE",
+                "RESET_COMPLETE",
+                {
+                    "keys_cleared": len(translation_keys_to_clear),
+                    "session_keys_after": list(session.keys()),
+                    "state_manager_cleared": translation_state_manager is not None,
+                    "ui_state": "clean"
+                }
+            )
 
             # 初期化
             japanese_text = ""
@@ -2094,6 +2128,19 @@ def index():
         source_lang=source_lang,
         target_lang=target_lang,
         version_info=VERSION_INFO
+    )
+
+    # 🆕 Task#9-4 AP-1 Ph4 Step4（再挑戦）- OL-0: GET /ルート監視終了
+    data_flow_logger.log_data_flow(
+        "ROUTE",
+        "INDEX_END",
+        {
+            "method": request.method,
+            "language_pair": language_pair,
+            "has_translation": bool(translated_text),
+            "ui_state": "clean" if request.method == "GET" else "working",
+            "response_size": len(str(japanese_text) + str(translated_text))
+        }
     )
 
 @app.route("/logout")

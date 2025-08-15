@@ -21,6 +21,9 @@ from security.security_logger import log_security_event, log_access_event
 from security.input_validation import EnhancedInputValidator
 from security.request_helpers import get_client_ip_safe
 
+# 🆕 Task#9-4 AP-1 Ph4 Step4（再挑戦）- OL-0: 監視レイヤー
+from utils.debug_logger import data_flow_logger
+
 
 # Blueprint 定義
 translation_bp = Blueprint('translation', __name__, url_prefix='')
@@ -96,6 +99,17 @@ def get_client_id():
 def translate_chatgpt():
     """ChatGPT翻訳エンドポイント"""
     global translation_service
+    
+    # 🆕 Task#9-4 AP-1 Ph4 Step4（再挑戦）- OL-0: POST /translate_chatgpt 監視開始
+    data_flow_logger.log_data_flow(
+        "ROUTE",
+        "TRANSLATE_CHATGPT_START",
+        {
+            "content_type": request.content_type,
+            "session_lang": session.get('lang', 'jp'),
+            "session_keys": list(session.keys())
+        }
+    )
     
     if translation_service is None:
         logger.error("TranslationService not initialized")
@@ -346,7 +360,7 @@ def translate_chatgpt():
 
         log_access_event(f'Translation completed successfully, usage: {new_usage_count}/{daily_limit}')
 
-        return jsonify({
+        response_data = {
             "success": True,
             "source_lang": source_lang,
             "target_lang": target_lang,  
@@ -363,7 +377,22 @@ def translate_chatgpt():
                 "remaining": remaining,
                 "can_use": remaining > 0
             }
-        })
+        }
+
+        # 🆕 Task#9-4 AP-1 Ph4 Step4（再挑戦）- OL-0: POST /translate_chatgpt 監視終了（成功）
+        data_flow_logger.log_data_flow(
+            "ROUTE",
+            "TRANSLATE_CHATGPT_SUCCESS",
+            {
+                "input_length": len(input_text),
+                "output_length": len(translated),
+                "redis_keys_saved": len(redis_data) if 'redis_data' in locals() else 0,
+                "usage_after": f"{new_usage_count}/{daily_limit}",
+                "session_id": session_id[:16] if 'session_id' in locals() else 'unknown'
+            }
+        )
+
+        return jsonify(response_data)
 
     except ValueError as ve:
         logger.error(f"Translation validation error: {str(ve)}")
