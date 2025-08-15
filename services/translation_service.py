@@ -16,6 +16,9 @@ from typing import Optional, Callable, Dict, Any
 from security.input_validation import EnhancedInputValidator
 from security.security_logger import log_security_event, log_access_event
 
+# 🆕 Task#9-4 AP-1 Ph4 Step4（再挑戦）- Level1: サービス層監視
+from utils.debug_logger import watch_io
+
 
 class TranslationService:
     """翻訳サービスの統合クラス
@@ -43,6 +46,7 @@ class TranslationService:
         self.usage_checker = usage_checker
         self.state_manager = translation_state_manager
     
+    @watch_io("TRANSLATION_SERVICE", "_CHATGPT")
     def translate_with_chatgpt(self, text: str, source_lang: str, target_lang: str, 
                               partner_message: str = "", context_info: str = "", 
                               current_lang: str = "jp") -> str:
@@ -125,6 +129,7 @@ Remember: The context above is crucial for determining the appropriate tone, for
 
         return self.safe_openai_request(prompt, current_lang=current_lang)
     
+    @watch_io("TRANSLATION_SERVICE", "_OPENAI_API")
     def safe_openai_request(self, prompt: str, max_tokens: int = 400, 
                            temperature: float = 0.1, current_lang: str = "jp") -> str:
         """
@@ -251,6 +256,7 @@ Remember: The context above is crucial for determining the appropriate tone, for
             self.logger.error(f"OpenAI API error: {str(e)}")
             raise ValueError(self.labels[current_lang]['api_error_general'])
     
+    @watch_io("TRANSLATION_SERVICE", "_GEMINI")
     def translate_with_gemini(self, text: str, source_lang: str, target_lang: str, 
                              partner_message: str = "", context_info: str = "", 
                              current_lang: str = "jp") -> str:
@@ -336,6 +342,7 @@ IMPORTANT: Respond ONLY with the {target_label} translation.
 
         return self.safe_gemini_request(prompt, current_lang=current_lang)
     
+    @watch_io("TRANSLATION_SERVICE", "_GEMINI_API")
     def safe_gemini_request(self, prompt: str, current_lang: str = "jp") -> str:
         """
         Gemini APIの安全なリクエスト実行

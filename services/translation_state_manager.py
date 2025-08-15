@@ -21,6 +21,9 @@ from datetime import datetime
 from services.session_redis_manager import get_session_redis_manager
 from config import REDIS_TTL  # Phase 3c-2: TTL設定外部化
 
+# 🆕 Task#9-4 AP-1 Ph4 Step4（再挑戦）- Level1: StateManager監視
+from utils.debug_logger import watch_io
+
 logger = logging.getLogger(__name__)
 
 
@@ -137,6 +140,7 @@ class TranslationStateManager:
             logger.error(f"❌ SL-3 Phase 1: Failed to set translation state {field_name}: {e}")
             return False
     
+    @watch_io("STATE_MANAGER", "_REDIS_GET")
     def get_translation_state(self, session_id: str, field_name: str, default_value: Any = None) -> Any:
         """
         翻訳状態をRedisから取得
@@ -463,6 +467,7 @@ class TranslationStateManager:
             logger.error(f"❌ SL-3 Phase 2: Failed to delete large data {key}: {e}")
             return False
     
+    @watch_io("STATE_MANAGER", "_REDIS_SAVE")
     def save_multiple_large_data(self, session_id: str, data_dict: Dict[str, str]) -> Dict[str, bool]:
         """
         複数の大容量データを一括保存
