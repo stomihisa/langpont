@@ -32,6 +32,9 @@ except ImportError as e:
 # Configuration import
 from config import VERSION, ENVIRONMENT, FEATURES, DEPLOYMENT, USAGE_LIMITS
 
+# 🆕 Task#9-4 AP-1 Ph4 Step4（再挑戦）- 監視レイヤー（OL-0＋Level1）
+from utils.debug_logger import data_flow_logger
+
 # 🆕 Task B2-8: 推奨抽出システム分離
 from analysis.recommendation import extract_recommendation_from_analysis
 
@@ -208,6 +211,9 @@ if not api_key:
 app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16MB制限
+
+# 🆕 Task#9-4 AP-1 Ph4 Step4（再挑戦）- 監視レイヤー初期化
+data_flow_logger.init_app(app)
 
 # 🆕 本番環境での詳細設定
 if ENVIRONMENT == "production":
@@ -3617,6 +3623,27 @@ try:
     app_logger.info("✅ Task #9-3 AP-1 Phase 3: Analysis Blueprint registered successfully")
 except ImportError as e:
     app_logger.error(f"❌ Task #9-3 AP-1 Phase 3: Analysis Blueprint registration failed: {e}")
+
+# 🆕 Task#9-4 AP-1 Ph4 Step4（再挑戦）- デバッグログ受信エンドポイント
+@app.route("/api/debug_log", methods=["POST"])
+def receive_debug_log():
+    """クライアントからのデバッグログを受信"""
+    try:
+        log_data = request.get_json() or {}
+        
+        # ログをサーバー側に記録
+        data_flow_logger.log_data_flow(
+            "CLIENT_LOG",
+            log_data.get('operation', 'UNKNOWN'),
+            log_data,
+            client_req_id=log_data.get('reqId', 'unknown')
+        )
+        
+        return jsonify({"success": True})
+        
+    except Exception as e:
+        app_logger.error(f"❌ Debug log reception failed: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == "__main__":
     # 🎯 Phase B1: 友人推奨のシンプル設定（8080ポート競合問題解決）
