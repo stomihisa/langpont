@@ -762,6 +762,13 @@ window.currentLabels = {
       reverseTranslatedText.innerText = data.reverse_translated_text || "";
       chatgptResult.classList.add("show");
       logOnce('chatgpt_display_complete', "✅ ChatGPT翻訳表示完了（軽量版）");
+      
+      // P6: ChatGPT翻訳表示完了ログ
+      window.debugLog.logRender('CHATGPT_RESULT', {
+        translatedLength: translatedText.innerText.length,
+        reverseLength: reverseTranslatedText.innerText.length,
+        timestamp: new Date().toISOString()
+      });
     } else {
       logOnce('chatgpt_elements_missing', "❌ ChatGPT表示用エレメントが見つかりません", 'error');
     }
@@ -778,6 +785,13 @@ window.currentLabels = {
       geminiTarget.innerText = data.gemini_reverse_translation || window.currentLabels.no_reverse_result || "(逆翻訳結果なし)";
       geminiResult.classList.add("show");
       logOnce('gemini_display_complete', "🔧 Phase A: Gemini翻訳表示完了（逆翻訳修正版）");
+      
+      // P6: Gemini翻訳表示完了ログ
+      window.debugLog.logRender('GEMINI_RESULT', {
+        translationLength: geminiSource.innerText.length,
+        reverseLength: geminiTarget.innerText.length,
+        timestamp: new Date().toISOString()
+      });
     }
   }
 
@@ -886,6 +900,13 @@ window.currentLabels = {
   }
 
   async function runFastTranslation() {
+    // P6: 翻訳開始ログ
+    window.debugLog.log('JS-TRANSLATE', 'START', {
+      inputText: document.getElementById('japanese_text').value?.substring(0, 50),
+      languagePair: getCurrentLanguagePair(),
+      timestamp: new Date().toISOString()
+    });
+    
     // 🔒 Phase 9c: Critical Security - 二重実行防止
     if (!startApiCall('translateChatGPT')) {
       console.warn('⚠️ Translation already in progress - preventing double execution');
@@ -1068,6 +1089,12 @@ window.currentLabels = {
       hideLoading();
       // 🔒 Phase 9c: API状態をクリア
       completeApiCall('translateChatGPT');
+      
+      // P6: 翻訳プロセス完了ログ
+      window.debugLog.log('JS-TRANSLATE', 'COMPLETE', {
+        timestamp: new Date().toISOString(),
+        processCompleted: true
+      });
     }
   }
 

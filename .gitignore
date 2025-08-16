@@ -86,3 +86,6 @@ debug_routes_new.txt
 *.backup*
 backups/2025-08-15-ol0-l1/
 backups/2025-08-15-ol0-l1-after/
+backups/_QUARANTINE_*/
+backups/pre_accept_*.tar.gz
+backups/*.zip

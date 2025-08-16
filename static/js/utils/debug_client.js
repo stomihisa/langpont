@@ -8,11 +8,35 @@ class ClientDebugLogger {
     constructor() {
         this.requestId = null;
         this.logs = [];
-        this.enabled = true; // 本番では false に設定
+        this.enabled = this.shouldEnableLogging(); // P5: 条件付きログ有効化
         this.debugEndpoint = '/api/debug_log';
+        this.samplingRate = 0.1; // P5: 10%サンプリング（本番）
         
         // サーバーからのRequest-IDを取得試行
         this.syncRequestIdFromServer();
+    }
+    
+    shouldEnableLogging() {
+        // P5: 条件付きログ有効化
+        // 1. 開発環境チェック
+        if (window.location.hostname === 'localhost' || 
+            window.location.hostname === '127.0.0.1' ||
+            window.location.port === '5000') {
+            return true; // 開発環境では常に有効
+        }
+        
+        // 2. 管理者権限チェック（sessionStorageベース）
+        if (sessionStorage.getItem('is_admin') === 'true') {
+            return true; // 管理者は常に有効
+        }
+        
+        // 3. 明示的有効化フラグ
+        if (localStorage.getItem('debug_logging_enabled') === 'true') {
+            return true; // 明示的に有効化された場合
+        }
+        
+        // 4. 本番環境ではデフォルト無効
+        return false;
     }
     
     syncRequestIdFromServer() {
@@ -67,6 +91,19 @@ class ClientDebugLogger {
     
     async sendLogToServer(logEntry) {
         if (!this.enabled) return;
+        
+        // P5: 条件付きサーバー送信
+        // 1. エラーログは常に送信
+        const isError = logEntry.level === 'error' || logEntry.category === 'error';
+        
+        // 2. 本番環境でのサンプリング制御
+        const isProduction = !this.shouldEnableLogging();
+        if (isProduction && !isError) {
+            // 本番環境では非エラーログのサンプリング適用
+            if (Math.random() > this.samplingRate) {
+                return; // サンプリングでスキップ
+            }
+        }
         
         try {
             const response = await fetch(this.debugEndpoint, {
