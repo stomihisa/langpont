@@ -2416,9 +2416,9 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
                 });
             }
             
-            const historyContainer = document.getElementById('history-container');
-            if (historyContainer) {
-                historyContainer.style.display = 'block';
+            const historyModal = document.getElementById('history-modal');
+            if (historyModal) {
+                historyModal.style.display = 'block';
                 renderHistoryList();
             }
         } catch (e) {
@@ -2429,9 +2429,9 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
     // 履歴表示の終了
     window.hideTranslationHistory = function() {
         try {
-            const historyContainer = document.getElementById('history-container');
-            if (historyContainer) {
-                historyContainer.style.display = 'none';
+            const historyModal = document.getElementById('history-modal');
+            if (historyModal) {
+                historyModal.style.display = 'none';
             }
             
             if (window.UIMonitor && window.UIMonitor.enable) {
@@ -2605,6 +2605,100 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
         };
         window.runFastTranslation.__history_hooked = true;
     }
+    
+    // closeHistory関数の実装（モーダル用）
+    window.closeHistory = function(event) {
+        try {
+            // イベントが渡された場合（背景クリック時）は、モーダル背景のクリックか確認
+            if (event && event.target !== event.currentTarget) {
+                return; // モーダル内容部分のクリックの場合は何もしない
+            }
+            
+            // ESCキー対応
+            if (event && event.type === 'keydown' && event.key !== 'Escape') {
+                return;
+            }
+            
+            window.hideTranslationHistory();
+        } catch (e) {
+            console.error('[History] Close error:', e);
+        }
+    };
+    
+    // ESCキーでモーダルを閉じる
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            const historyModal = document.getElementById('history-modal');
+            if (historyModal && historyModal.style.display === 'block') {
+                window.closeHistory(event);
+            }
+        }
+    });
+    
+    // デバッグ用関数（ブラウザコンソールから使用可能）
+    window.debugHistory = {
+        // 履歴データの確認
+        check: function() {
+            console.log('=== 履歴機能デバッグ ===');
+            console.log('1. localStorage確認:');
+            console.log(`  langpont_translation_history: ${localStorage.getItem(HISTORY_KEY) ? 'EXISTS' : 'EMPTY'}`);
+            
+            const history = getHistoryData();
+            console.log(`2. 履歴件数: ${history.length}件`);
+            console.log('3. 履歴データ:', history);
+            
+            console.log('4. DOM要素確認:');
+            console.log(`  history-modal: ${document.getElementById('history-modal') ? 'EXISTS' : 'MISSING'}`);
+            console.log(`  history-list: ${document.getElementById('history-list') ? 'EXISTS' : 'MISSING'}`);
+            console.log(`  history-btn: ${document.getElementById('history-btn') ? 'EXISTS' : 'MISSING'}`);
+            
+            console.log('5. 関数確認:');
+            console.log(`  showTranslationHistory: ${typeof window.showTranslationHistory}`);
+            console.log(`  closeHistory: ${typeof window.closeHistory}`);
+            console.log(`  restoreHistoryItem: ${typeof window.restoreHistoryItem}`);
+        },
+        
+        // テストデータの追加
+        addTest: function() {
+            const testItem = createHistoryItem(
+                'テストテキスト',
+                'ja-en',
+                'Test translation',
+                'Better test translation',
+                'Gemini test translation',
+                'テストコンテキスト',
+                'テストメッセージ'
+            );
+            saveToHistory(testItem);
+            console.log('テストデータを追加しました:', testItem);
+        },
+        
+        // 履歴のクリア
+        clear: function() {
+            localStorage.removeItem(HISTORY_KEY);
+            console.log('履歴をクリアしました');
+        },
+        
+        // 強制表示
+        show: function() {
+            window.showTranslationHistory();
+        },
+        
+        // DOM状態確認
+        checkDOM: function() {
+            console.log('=== DOM状態確認 ===');
+            const elements = [
+                'history-modal', 'history-list', 'history-btn',
+                'japanese_text', 'translated-text', 'better-translation', 'gemini-translation'
+            ];
+            elements.forEach(id => {
+                const element = document.getElementById(id);
+                console.log(`${id}: ${element ? 'EXISTS' : 'MISSING'}${element ? ` (${element.tagName})` : ''}`);
+            });
+        }
+    };
+    
+    console.log('履歴機能デバッグモード有効: window.debugHistory.check() で状態確認できます');
     
 })();
 </script>
