@@ -178,6 +178,22 @@ window.currentLabels = {
         <input type="hidden" id="analysis_engine" name="analysis_engine" value="">
     </div>
 
+    <!-- 📚 Translation History Section (Task #9-4 Step1) -->
+    <div class="history-section" id="history-container" style="display: none; margin-top: 24px;">
+        <div class="history-header">
+            <h4 class="history-title">📚 翻訳履歴</h4>
+            <button type="button" class="btn-close" onclick="hideTranslationHistory()">×</button>
+        </div>
+        <div class="history-content">
+            <div id="history-list" class="history-list">
+                <!-- 履歴項目がここに動的に追加されます -->
+                <div class="history-empty">
+                    履歴データがありません
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Interactive Question UI Components (H2-2 Stage 1 Phase 1) -->
     {% include 'components/interactive/question_interface.html' %}
 
@@ -2328,6 +2344,268 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
     });
     
     window.__mon_error_hooked = true;
+})();
+</script>
+
+<script>
+// === Task #9-4 Step1: Translation History Functions ===
+(function() {
+    'use strict';
+    
+    // 履歴データストレージ（localStorage使用）
+    const HISTORY_KEY = 'langpont_translation_history';
+    const MAX_HISTORY_ITEMS = 10; // 最大保存件数
+    
+    // 履歴データの構造
+    function createHistoryItem(inputText, languagePair, translatedText, betterTranslation, geminiTranslation, contextInfo, partnerMessage) {
+        return {
+            id: Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+            timestamp: new Date().toISOString(),
+            inputText: inputText || '',
+            languagePair: languagePair || 'ja-en',
+            translatedText: translatedText || '',
+            betterTranslation: betterTranslation || '',
+            geminiTranslation: geminiTranslation || '',
+            contextInfo: contextInfo || '',
+            partnerMessage: partnerMessage || ''
+        };
+    }
+    
+    // 履歴データの保存
+    function saveToHistory(historyItem) {
+        try {
+            let history = getHistoryData();
+            history.unshift(historyItem); // 最新を先頭に
+            
+            // 最大件数を超えた場合は古いものを削除
+            if (history.length > MAX_HISTORY_ITEMS) {
+                history = history.slice(0, MAX_HISTORY_ITEMS);
+            }
+            
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+            
+            if (window.UIMonitor && window.UIMonitor.enable) {
+                window.UIMonitor.log('history_save', {
+                    item_id: historyItem.id,
+                    total_items: history.length
+                });
+            }
+        } catch (e) {
+            console.error('[History] Save error:', e);
+        }
+    }
+    
+    // 履歴データの取得
+    function getHistoryData() {
+        try {
+            const stored = localStorage.getItem(HISTORY_KEY);
+            return stored ? JSON.parse(stored) : [];
+        } catch (e) {
+            console.error('[History] Load error:', e);
+            return [];
+        }
+    }
+    
+    // 履歴表示の開始
+    window.showTranslationHistory = function() {
+        try {
+            if (window.UIMonitor && window.UIMonitor.enable) {
+                window.UIMonitor.log('history_click', {
+                    action: 'open',
+                    timestamp: new Date().toISOString()
+                });
+            }
+            
+            const historyContainer = document.getElementById('history-container');
+            if (historyContainer) {
+                historyContainer.style.display = 'block';
+                renderHistoryList();
+            }
+        } catch (e) {
+            console.error('[History] Show error:', e);
+        }
+    };
+    
+    // 履歴表示の終了
+    window.hideTranslationHistory = function() {
+        try {
+            const historyContainer = document.getElementById('history-container');
+            if (historyContainer) {
+                historyContainer.style.display = 'none';
+            }
+            
+            if (window.UIMonitor && window.UIMonitor.enable) {
+                window.UIMonitor.log('history_click', {
+                    action: 'close'
+                });
+            }
+        } catch (e) {
+            console.error('[History] Hide error:', e);
+        }
+    };
+    
+    // 履歴リストの表示
+    function renderHistoryList() {
+        try {
+            const historyList = document.getElementById('history-list');
+            const historyData = getHistoryData();
+            
+            if (!historyList) return;
+            
+            if (historyData.length === 0) {
+                historyList.innerHTML = '<div class="history-empty">履歴データがありません</div>';
+                return;
+            }
+            
+            let html = '';
+            historyData.forEach((item, index) => {
+                const date = new Date(item.timestamp).toLocaleString('ja-JP');
+                const preview = item.inputText.length > 50 ? 
+                    item.inputText.substring(0, 50) + '...' : item.inputText;
+                
+                html += `
+                    <div class="history-item" onclick="restoreHistoryItem('${item.id}')">
+                        <div class="history-date">${date}</div>
+                        <div class="history-preview">${preview}</div>
+                        <div class="history-lang">${item.languagePair}</div>
+                    </div>
+                `;
+            });
+            
+            historyList.innerHTML = html;
+            
+            if (window.UIMonitor && window.UIMonitor.enable) {
+                window.UIMonitor.log('restore_show', {
+                    total_items: historyData.length,
+                    action: 'list_rendered'
+                });
+            }
+        } catch (e) {
+            console.error('[History] Render error:', e);
+        }
+    }
+    
+    // 履歴項目の復元
+    window.restoreHistoryItem = function(itemId) {
+        try {
+            if (window.UIMonitor && window.UIMonitor.enable) {
+                window.UIMonitor.log('restore_show', {
+                    item_id: itemId,
+                    status: 'loading'
+                });
+            }
+            
+            const historyData = getHistoryData();
+            const item = historyData.find(h => h.id === itemId);
+            
+            if (!item) {
+                console.error('[History] Item not found:', itemId);
+                return;
+            }
+            
+            // 入力フィールドに復元
+            const inputField = document.getElementById('japanese_text');
+            if (inputField) {
+                inputField.value = item.inputText;
+            }
+            
+            // コンテキスト情報の復元
+            const contextField = document.querySelector('[name="context_info"]');
+            if (contextField && item.contextInfo) {
+                contextField.value = item.contextInfo;
+            }
+            
+            // パートナーメッセージの復元
+            const partnerField = document.querySelector('[name="partner_message"]');
+            if (partnerField && item.partnerMessage) {
+                partnerField.value = item.partnerMessage;
+            }
+            
+            // 翻訳結果の復元
+            if (item.translatedText) {
+                const translatedField = document.getElementById('translated-text');
+                if (translatedField) {
+                    translatedField.textContent = item.translatedText;
+                }
+            }
+            
+            if (item.betterTranslation) {
+                const betterField = document.getElementById('better-translation');
+                if (betterField) {
+                    betterField.textContent = item.betterTranslation;
+                }
+            }
+            
+            if (item.geminiTranslation) {
+                const geminiField = document.getElementById('gemini-translation');
+                if (geminiField) {
+                    geminiField.textContent = item.geminiTranslation;
+                }
+            }
+            
+            // 履歴パネルを閉じる
+            hideTranslationHistory();
+            
+            if (window.UIMonitor && window.UIMonitor.enable) {
+                window.UIMonitor.log('restore_show', {
+                    item_id: itemId,
+                    status: 'success',
+                    has_data: true
+                });
+            }
+        } catch (e) {
+            console.error('[History] Restore error:', e);
+            if (window.UIMonitor && window.UIMonitor.enable) {
+                window.UIMonitor.log('restore_show', {
+                    item_id: itemId,
+                    status: 'error',
+                    error: e.message
+                });
+            }
+        }
+    };
+    
+    // 翻訳完了時に履歴に自動保存
+    function autoSaveToHistory() {
+        try {
+            const inputText = document.getElementById('japanese_text')?.value || '';
+            const translatedText = document.getElementById('translated-text')?.textContent || '';
+            const betterTranslation = document.getElementById('better-translation')?.textContent || '';
+            const geminiTranslation = document.getElementById('gemini-translation')?.textContent || '';
+            const contextInfo = document.querySelector('[name="context_info"]')?.value || '';
+            const partnerMessage = document.querySelector('[name="partner_message"]')?.value || '';
+            
+            // 入力テキストが存在し、何らかの翻訳結果がある場合のみ保存
+            if (inputText.trim() && (translatedText || betterTranslation || geminiTranslation)) {
+                const languagePair = typeof window.getCurrentLanguagePair === 'function' ? 
+                    window.getCurrentLanguagePair() : 'ja-en';
+                
+                const historyItem = createHistoryItem(
+                    inputText, languagePair, translatedText, betterTranslation, 
+                    geminiTranslation, contextInfo, partnerMessage
+                );
+                
+                saveToHistory(historyItem);
+            }
+        } catch (e) {
+            console.error('[History] Auto-save error:', e);
+        }
+    }
+    
+    // runFastTranslation完了後の自動保存フック
+    if (typeof window.runFastTranslation === 'function' && !window.runFastTranslation.__history_hooked) {
+        const originalRunFast = window.runFastTranslation;
+        window.runFastTranslation = async function() {
+            const result = await originalRunFast.apply(this, arguments);
+            
+            // 翻訳完了後に少し待ってから履歴保存
+            setTimeout(autoSaveToHistory, 1000);
+            
+            return result;
+        };
+        window.runFastTranslation.__history_hooked = true;
+    }
+    
 })();
 </script>
 

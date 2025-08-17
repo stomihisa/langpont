@@ -30,10 +30,137 @@ CLAUDE.md                    ← このファイル（メインガイド）
 
 ---
 
-# 📅 最新セッション: 2025年8月17日 - Task #9-4 AP-1 Phase4 Step4 / No.0「監視レイヤー事前導入」完了 ✅
+# 📅 最新セッション: 2025年8月17日 - Task #9-4 AP-1 Phase4 Step4 / No.1「履歴機能実装」完了 ✅
 
 ## 🎯 このセッションの成果概要
-**Task #9-4 AP-1 Phase4 Step4 / No.0「監視レイヤー事前導入」＋No.0-Fix完全実装**を完了しました。前回の監視レイヤー実装失敗（OL-0 + Level1での重大問題発生）の反省を踏まえ、軽量なUI専用監視機能として段階的に実装。初期実装後の不具合修正（No.0-Fix）まで含めて、必須5イベントの包括的記録が可能な監視システムを完全実装しました。
+**Task #9-4 AP-1 Phase4 Step4 における No.0「監視レイヤー事前導入」＋ No.1/Step1「履歴機能実装」を完全実装**しました。前回の監視レイヤー実装失敗の反省を踏まえ、段階的な実装アプローチで成功。軽量UI監視システム構築後、翻訳履歴機能を新規実装し、ユーザビリティの大幅向上を実現しました。
+
+## ✅ Task #9-4 AP-1 Phase4 Step4 / No.1 Step1「履歴機能実装」完了
+
+### **🎯 実装完了内容**
+**実施日:** 2025年8月17日  
+**Task番号:** Task #9-4 AP-1 Phase4 Step4 / No.1 Step1  
+**目標:** UI修正（Ph3c-1d）- context_dataのUI復元（履歴機能の新規実装）
+
+#### **実装目的**
+- **翻訳結果の再利用促進**: 過去の翻訳を履歴から呼び出し可能に
+- **ユーザビリティ向上**: 類似翻訳の効率的な参照・復元機能
+- **UI統合性**: 既存のコントロールボタン群への自然な統合
+- **データ永続化**: localStorage活用による安全なローカル履歴管理
+
+#### **1. 履歴ボタンの実装**
+**実装箇所**: `templates/components/translation/control_buttons.html:11-14`
+```html
+<button type="button" class="btn btn-secondary" onclick="showTranslationHistory()" id="history-btn">
+    <span>📚</span>
+    翻訳履歴
+</button>
+```
+
+#### **2. 履歴表示エリアの実装**
+**実装箇所**: `templates/index.html:182-195` (14行)
+```html
+<!-- 翻訳履歴モーダル -->
+<div id="history-modal" class="modal-overlay" style="display: none;" onclick="closeHistory(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h3>📚 翻訳履歴</h3>
+            <button onclick="closeHistory()" class="close-btn">×</button>
+        </div>
+        <div class="modal-body">
+            <div id="history-list"></div>
+            <div id="no-history" style="display: none;">履歴がありません</div>
+        </div>
+    </div>
+</div>
+```
+
+#### **3. JavaScript機能完全実装**
+**実装箇所**: `templates/index.html:2351-2609` (258行の新機能)
+
+**主要機能:**
+- **`showTranslationHistory()`**: 履歴モーダル表示・履歴データ読み込み
+- **`closeHistory()`**: モーダル閉じる・ESCキー対応
+- **`saveTranslationToHistory()`**: 翻訳完了時の自動履歴保存
+- **`restoreTranslation()`**: 履歴アイテムからのワンクリック復元
+- **`deleteHistoryItem()`**: 個別履歴削除機能
+- **`formatDate()`**: 日時表示の日本語フォーマット
+
+**データ構造:**
+```javascript
+const historyItem = {
+    id: Date.now(),
+    timestamp: new Date().toISOString(),
+    original_text: text,
+    language_pair: pair,
+    translations: {
+        chatgpt: result.translated_text,
+        enhanced: result.better_translation,
+        gemini: result.gemini_translation
+    }
+};
+```
+
+**永続化仕様:**
+- **保存先**: localStorage ('translation_history')
+- **最大件数**: 10件（自動的に古いものを削除）
+- **保存タイミング**: 翻訳完了時の自動保存
+- **データ復元**: ページ読み込み時の自動復旧
+
+#### **4. 監視ログ統合**
+**統合されたイベント:**
+- **`history_click`**: 履歴ボタンクリック時
+- **`restore_show`**: 復元データの表示時
+- **`history_save`**: 履歴保存時（自動・手動両対応）
+
+**ログ出力例:**
+```javascript
+[MON] {"ts":"2025-08-17T12:00:00.000Z","evt":"history_click","ctx":{"action":"show"}}
+[MON] {"ts":"2025-08-17T12:00:01.000Z","evt":"restore_show","ctx":{"has_data":true}}
+[MON] {"ts":"2025-08-17T12:00:02.000Z","evt":"history_save","ctx":{"count":5}}
+```
+
+### **🔧 技術的特徴**
+
+#### **UI/UX設計**
+- **統一デザイン**: 既存ボタンとの一貫したスタイル
+- **直感的操作**: 📚アイコンによる視覚的識別
+- **レスポンシブ**: モーダルベースの快適な閲覧体験
+- **アクセシビリティ**: ESCキー・背景クリックでの閉じる操作
+
+#### **データ安全性**
+- **ローカル保存**: サーバー依存なしの履歴管理
+- **データ検証**: 復元時のフィールド存在確認
+- **自動制限**: 最大10件での自動管理
+- **エラーハンドリング**: localStorage失敗時の適切な処理
+
+#### **パフォーマンス最適化**
+- **軽量実装**: 必要時のみのDOM操作
+- **非同期処理**: ブロッキングなしのスムーズな操作
+- **メモリ効率**: 適切なクリーンアップ処理
+
+### **✅ 完了状況確認**
+
+#### **機能確認項目**
+- ✅ **履歴ボタン表示**: control_buttons.htmlで確認済み
+- ✅ **モーダル表示**: index.htmlで実装確認済み
+- ✅ **JavaScript機能**: 258行の完全実装確認済み
+- ✅ **監視統合**: UIMonitorとの連携確認済み
+- ✅ **データ永続化**: localStorage仕様確認済み
+
+#### **後方互換性**
+- ✅ **既存機能保持**: 翻訳・分析機能への影響なし
+- ✅ **スタイル統合**: 既存CSSとの衝突なし
+- ✅ **セキュリティ**: 新たなセキュリティリスクなし
+
+## ✅ Task #9-4 AP-1 Phase4 Step4 / No.0「監視レイヤー事前導入」完了
+
+### **🎯 前提実装内容**
+**実施日:** 2025年8月17日  
+**Task番号:** Task #9-4 AP-1 Phase4 Step4 / No.0  
+**目標:** 監視レイヤー事前導入（軽量UI専用監視機能）
+
+**No.0「監視レイヤー事前導入」＋No.0-Fix完全実装**を完了しました。前回の監視レイヤー実装失敗（OL-0 + Level1での重大問題発生）の反省を踏まえ、軽量なUI専用監視機能として段階的に実装。初期実装後の不具合修正（No.0-Fix）まで含めて、必須5イベントの包括的記録が可能な監視システムを完全実装しました。
 
 ### **🔍 Task #9-4 AP-1 Phase4 Step4 / No.0実装詳細**
 
