@@ -2215,4 +2215,154 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
 })();
 </script>
 
+<script>
+// === No.0-Fix1: sendイベントの確実な記録 ===
+(function() {
+    'use strict';
+    
+    // 翻訳送信をログ記録する関数
+    const logTranslateSend = function() {
+        try {
+            if (!window.UIMonitor || !window.UIMonitor.enable) return;
+            
+            // 入力テキストの取得（複数のセレクタを試行）
+            const inputEl = document.querySelector('#input-text') || 
+                           document.querySelector('textarea[name="source_text"]') ||
+                           document.querySelector('textarea');
+            
+            // 言語ペア取得（既存関数を利用）
+            let languagePair = 'ja-unknown';
+            if (typeof window.getCurrentLanguagePair === 'function') {
+                languagePair = window.getCurrentLanguagePair();
+            } else {
+                // フォールバック：legacy要素から取得
+                const legacyEl = document.getElementById('language_pair');
+                if (legacyEl) languagePair = legacyEl.value;
+            }
+            
+            const [sourceLang, targetLang] = languagePair.split('-');
+            
+            // ログ出力
+            window.UIMonitor.log('send', {
+                len: inputEl ? inputEl.value.length : 0,
+                source_lang: sourceLang || 'ja',
+                target_lang: targetLang || 'unknown'
+            });
+        } catch (e) {
+            console.error('[MON] Send hook error:', e);
+        }
+    };
+    
+    // DOMContentLoaded後に実行
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', attachSendHooks);
+    } else {
+        attachSendHooks();
+    }
+    
+    function attachSendHooks() {
+        // runFastTranslation関数の存在を確認してフック
+        const hookRunFastTranslation = () => {
+            if (typeof window.runFastTranslation === 'function' && !window.runFastTranslation.__mon_send_hooked) {
+                const originalRunFast = window.runFastTranslation;
+                window.runFastTranslation = function() {
+                    logTranslateSend();
+                    return originalRunFast.apply(this, arguments);
+                };
+                window.runFastTranslation.__mon_send_hooked = true;
+                console.log('[MON] runFastTranslation hooked successfully');
+            }
+        };
+        
+        // 即座に試行
+        hookRunFastTranslation();
+        
+        // 2秒後に再試行（関数定義遅延対応）
+        setTimeout(hookRunFastTranslation, 2000);
+        
+        // フォームのsubmitイベントもフック（フォールバック）
+        const forms = document.querySelectorAll('form');
+        forms.forEach(form => {
+            if (!form.__mon_hooked) {
+                form.addEventListener('submit', logTranslateSend, { capture: true });
+                form.__mon_hooked = true;
+            }
+        });
+    }
+})();
+</script>
+
+<script>
+// === No.0-Fix2: エラーのグローバル監視 ===
+(function() {
+    'use strict';
+    
+    if (window.__mon_error_hooked) return;
+    
+    // エラーメッセージの安全な切り詰め（機密情報保護）
+    const safeErrorMessage = function(msg) {
+        const str = String(msg || 'unknown error');
+        return str.length > 200 ? str.substring(0, 197) + '...' : str;
+    };
+    
+    // window.onerror
+    window.addEventListener('error', function(event) {
+        if (window.UIMonitor && window.UIMonitor.enable) {
+            window.UIMonitor.log('error', {
+                where: 'window',
+                message: safeErrorMessage(event.message),
+                line: event.lineno,
+                col: event.colno
+            });
+        }
+    });
+    
+    // Promise rejection
+    window.addEventListener('unhandledrejection', function(event) {
+        if (window.UIMonitor && window.UIMonitor.enable) {
+            window.UIMonitor.log('error', {
+                where: 'promise',
+                message: safeErrorMessage(event.reason)
+            });
+        }
+    });
+    
+    window.__mon_error_hooked = true;
+})();
+</script>
+
+<script>
+// === No.0-Fix3: 履歴機能の存在確認 ===
+(function() {
+    'use strict';
+    
+    // ページロード完了後に1回だけ確認
+    window.addEventListener('load', function() {
+        setTimeout(function() {
+            if (!window.__mon_history_checked && window.UIMonitor && window.UIMonitor.enable) {
+                const historyBtn = document.querySelector('[onclick*="showHistory"], [data-role="history"], #history-btn');
+                
+                if (!historyBtn) {
+                    window.UIMonitor.log('history_not_available', {
+                        reason: 'button_not_found',
+                        timestamp: new Date().toISOString()
+                    });
+                } else {
+                    // 履歴ボタンが存在する場合はクリックイベントをフック
+                    if (!historyBtn.__mon_hooked) {
+                        historyBtn.addEventListener('click', function() {
+                            window.UIMonitor.log('history_click', {
+                                button_id: historyBtn.id || 'unknown'
+                            });
+                        }, { capture: true });
+                        historyBtn.__mon_hooked = true;
+                    }
+                }
+                window.__mon_history_checked = true;
+            }
+        }, 1000); // ページ完全ロード後1秒待機
+    });
+})();
+</script>
+
 {% endblock %}
