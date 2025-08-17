@@ -2408,39 +2408,74 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
     
     // 履歴表示の開始
     window.showTranslationHistory = function() {
-        try {
-            if (window.UIMonitor && window.UIMonitor.enable) {
-                window.UIMonitor.log('history_click', {
-                    action: 'open',
-                    timestamp: new Date().toISOString()
-                });
-            }
+        // 監視ログ
+        if (window.UIMonitor && window.UIMonitor.enable) {
+            window.UIMonitor.log('history_click', {action: 'open'});
+        }
+        
+        // 履歴データを正しいキー名で取得
+        const historyData = localStorage.getItem('langpont_translation_history');
+        const history = JSON.parse(historyData || '[]');
+        
+        // 履歴リストの取得
+        const historyList = document.getElementById('history-list');
+        
+        if (!historyList) {
+            console.error('history-list要素が見つかりません');
+            return;
+        }
+        
+        // 履歴データの表示
+        if (history.length > 0) {
+            let html = '<button onclick="hideTranslationHistory()" style="float:right">×</button>';
+            html += '<h4>📚 翻訳履歴</h4>';
             
-            const historyModal = document.getElementById('history-modal');
-            if (historyModal) {
-                historyModal.style.display = 'block';
-                renderHistoryList();
-            }
-        } catch (e) {
-            console.error('[History] Show error:', e);
+            history.forEach(item => {
+                const date = new Date(item.timestamp).toLocaleString('ja-JP');
+                html += `
+                    <div class="history-item" onclick="restoreHistoryItem('${item.id}')" style="padding: 10px; margin: 5px; border: 1px solid #ccc; cursor: pointer;">
+                        <div class="history-date">${date}</div>
+                        <div class="history-preview">${item.inputText || 'テキストなし'}</div>
+                        <div class="history-lang">${item.languagePair || '言語不明'}</div>
+                    </div>
+                `;
+            });
+            
+            historyList.innerHTML = html;
+        } else {
+            historyList.innerHTML = '<div class="history-empty">履歴データがありません</div>';
+        }
+        
+        // 履歴リストを表示（モーダル風に）
+        historyList.style.display = 'block';
+        historyList.style.position = 'fixed';
+        historyList.style.top = '50%';
+        historyList.style.left = '50%';
+        historyList.style.transform = 'translate(-50%, -50%)';
+        historyList.style.background = 'white';
+        historyList.style.border = '2px solid #333';
+        historyList.style.borderRadius = '8px';
+        historyList.style.padding = '20px';
+        historyList.style.zIndex = '9999';
+        historyList.style.maxHeight = '80vh';
+        historyList.style.overflowY = 'auto';
+        historyList.style.minWidth = '400px';
+        historyList.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+        
+        // 監視ログ
+        if (window.UIMonitor && window.UIMonitor.enable) {
+            window.UIMonitor.log('restore_show', {total_items: history.length, action: 'list_rendered'});
         }
     };
     
     // 履歴表示の終了
     window.hideTranslationHistory = function() {
-        try {
-            const historyModal = document.getElementById('history-modal');
-            if (historyModal) {
-                historyModal.style.display = 'none';
-            }
-            
+        const historyList = document.getElementById('history-list');
+        if (historyList) {
+            historyList.style.display = 'none';
             if (window.UIMonitor && window.UIMonitor.enable) {
-                window.UIMonitor.log('history_click', {
-                    action: 'close'
-                });
+                window.UIMonitor.log('history_click', {action: 'close'});
             }
-        } catch (e) {
-            console.error('[History] Hide error:', e);
         }
     };
     
@@ -2487,80 +2522,50 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
     
     // 履歴項目の復元
     window.restoreHistoryItem = function(itemId) {
-        try {
-            if (window.UIMonitor && window.UIMonitor.enable) {
-                window.UIMonitor.log('restore_show', {
-                    item_id: itemId,
-                    status: 'loading'
-                });
-            }
-            
-            const historyData = getHistoryData();
-            const item = historyData.find(h => h.id === itemId);
-            
-            if (!item) {
-                console.error('[History] Item not found:', itemId);
-                return;
-            }
-            
-            // 入力フィールドに復元
+        if (window.UIMonitor && window.UIMonitor.enable) {
+            window.UIMonitor.log('restore_show', {item_id: itemId, status: 'loading'});
+        }
+        
+        // 正しいキー名で履歴データを取得
+        const historyData = localStorage.getItem('langpont_translation_history');
+        const history = JSON.parse(historyData || '[]');
+        const item = history.find(h => h.id === itemId);
+        
+        if (item) {
+            // 入力欄に復元
             const inputField = document.getElementById('japanese_text');
-            if (inputField) {
-                inputField.value = item.inputText;
-            }
+            if (inputField) inputField.value = item.inputText || '';
             
-            // コンテキスト情報の復元
-            const contextField = document.querySelector('[name="context_info"]');
-            if (contextField && item.contextInfo) {
-                contextField.value = item.contextInfo;
-            }
+            // 言語設定を復元
+            const langSelect = document.getElementById('language_pair');
+            if (langSelect) langSelect.value = item.languagePair || 'ja-en';
             
-            // パートナーメッセージの復元
-            const partnerField = document.querySelector('[name="partner_message"]');
-            if (partnerField && item.partnerMessage) {
-                partnerField.value = item.partnerMessage;
-            }
-            
-            // 翻訳結果の復元
+            // 翻訳結果を復元（保存されている場合）
             if (item.translatedText) {
-                const translatedField = document.getElementById('translated-text');
-                if (translatedField) {
-                    translatedField.textContent = item.translatedText;
-                }
+                const transField = document.getElementById('translated-text');
+                if (transField) transField.textContent = item.translatedText;
             }
             
             if (item.betterTranslation) {
                 const betterField = document.getElementById('better-translation');
-                if (betterField) {
-                    betterField.textContent = item.betterTranslation;
-                }
+                if (betterField) betterField.textContent = item.betterTranslation;
             }
             
             if (item.geminiTranslation) {
                 const geminiField = document.getElementById('gemini-translation');
-                if (geminiField) {
-                    geminiField.textContent = item.geminiTranslation;
-                }
+                if (geminiField) geminiField.textContent = item.geminiTranslation;
             }
             
             // 履歴パネルを閉じる
             hideTranslationHistory();
             
             if (window.UIMonitor && window.UIMonitor.enable) {
-                window.UIMonitor.log('restore_show', {
-                    item_id: itemId,
-                    status: 'success',
-                    has_data: true
-                });
+                window.UIMonitor.log('restore_show', {item_id: itemId, status: 'success', has_data: true});
             }
-        } catch (e) {
-            console.error('[History] Restore error:', e);
+        } else {
+            console.error('履歴項目が見つかりません:', itemId);
             if (window.UIMonitor && window.UIMonitor.enable) {
-                window.UIMonitor.log('restore_show', {
-                    item_id: itemId,
-                    status: 'error',
-                    error: e.message
-                });
+                window.UIMonitor.log('restore_show', {item_id: itemId, status: 'error'});
             }
         }
     };
