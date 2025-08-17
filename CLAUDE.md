@@ -30,7 +30,118 @@ CLAUDE.md                    ← このファイル（メインガイド）
 
 ---
 
-# 📅 最新セッション: 2025年8月16日 - 監視レイヤー実装失敗とgit reset復旧セッション 🔄
+# 📅 最新セッション: 2025年8月17日 - Task #9-4 AP-1 Phase4 Step4 / No.0「監視レイヤー事前導入」完了 ✅
+
+## 🎯 このセッションの成果概要
+**Task #9-4 AP-1 Phase4 Step4 / No.0「監視レイヤー事前導入」を完了**しました。前回の監視レイヤー実装失敗（OL-0 + Level1での重大問題発生）の反省を踏まえ、軽量なUI専用監視機能として段階的に実装。追加・修正・削除の原則により、既存システムに影響を与えることなく、観察ツールとしてのUIMonitorを完全実装しました。
+
+### **🔍 Task #9-4 AP-1 Phase4 Step4 / No.0実装詳細**
+
+#### **実装方針**
+- **最小侵襲原則**: 既存システムへの影響を最小限に抑制
+- **観察器具コンセプト**: 監視レイヤーは構造変更ではなく観察器具として実装
+- **段階的導入**: 軽量なUIMonitorから開始し、問題発生時の即座観察を可能に
+
+#### **技術実装内容**
+
+**No.0-A: 二重バックアップ（ローカル + Git）**
+```bash
+# tarバックアップ（除外設定適用）
+tar --exclude-from=.backup-excludes -czf "backups/pre_No0_20250817_103315.tar.gz" .
+
+# Git タグバックアップ
+git tag NO0_BASELINE_20250817_103315
+```
+
+**No.0-1: 軽量モニタのindex.htmlへの追加**
+- **実装箇所**: templates/index.html:2100-2203 (105行)
+- **UIMonitorオブジェクト**:
+  ```javascript
+  window.UIMonitor = {
+      enable: true,
+      log: function(evt, ctx) {
+          if (!this.enable) return;
+          const logEntry = {
+              ts: new Date().toISOString(),
+              evt: evt,
+              ctx: ctx || {}
+          };
+          // センシティブ情報除去
+          if (logEntry.ctx.text) {
+              logEntry.ctx.len = logEntry.ctx.text.length;
+              delete logEntry.ctx.text;
+          }
+          console.log('[MON] ' + JSON.stringify(logEntry));
+      }
+  };
+  ```
+
+**No.0-2: フックポイントへのEventListener追加**
+- **翻訳実行時**: `UIMonitor.log('send', {engine: 'chatgpt', len: text.length})`
+- **翻訳完了時**: `UIMonitor.log('translate_done', {success: true})`
+- **履歴操作時**: `UIMonitor.log('history_click', {action: type})`
+- **復元表示時**: `UIMonitor.log('restore_show', {has_data: !!data})`
+- **エラー発生時**: `UIMonitor.log('error', {type: 'translation', msg: 'Error message'})`
+
+**No.0-4: 動作確認・受入テスト**
+- **Flask server**: http://127.0.0.1:8080 で正常起動確認
+- **UI監視機能**: DevTools Console で `[MON]` ログ出力確認
+- **エラーハンドリング**: センシティブ情報の適切なマスキング確認
+
+### **🛡️ セキュリティ・安全性対策**
+
+#### **センシティブ情報保護**
+- **テキスト内容**: 翻訳テキストは文字数のみ記録、内容は記録しない
+- **個人情報**: ユーザーIDやセッション情報は監視対象外
+- **API Key**: 一切のAPI認証情報は監視対象外
+
+#### **影響範囲の限定**
+- **サーバーサイド**: app.py、routes/、services/ への変更なし
+- **database**: データベーススキーマへの変更なし
+- **既存機能**: 全ての既存翻訳機能への影響なし
+
+### **📊 No.0完了状況**
+- ✅ **No.0-A**: 二重バックアップ（ローカル + Git）実施済み
+- ✅ **No.0-1**: UIMonitor実装完了（105行追加）
+- ✅ **No.0-2**: 5つのフックポイント実装完了
+- ✅ **No.0-4**: 動作確認・Flask起動テスト完了
+
+### **🔧 技術成果と学習効果**
+
+#### **反省メモの実践適用**
+前回の「反省メモTask#9-4AP-1Ph4Step4再挑戦.txt」で策定した安全運用ルールを完全適用：
+
+1. **バックアップ手順**: tar + 除外設定による安全なバックアップ
+2. **段階的実装**: 一度に全てを実装せず、観察器具から開始
+3. **存在証明**: 既存インポートやDOM要素への影響確認
+4. **起動維持**: 「起動できる状態」を絶対に壊さない実装
+
+#### **監視レイヤーの正しい導入順序**
+```
+Step0: 軽量UI監視（今回完了）
+    ↓
+Step1-6: UI復元機能の段階的実装
+    ↓  
+P1-P6: 本格的監視レイヤー機能追加
+```
+
+### **📋 次段階への準備状況**
+
+#### **Step1実装準備完了**
+- **DOM契約の安全性**: 既存DOM要素への影響なし確認済み
+- **監視基盤**: UIMonitorによる問題観察体制構築済み
+- **ロールバック準備**: git tag NO0_BASELINE_20250817_103315 で即座復旧可能
+
+#### **監視レイヤーの段階的拡張計画**
+1. **Step1**: UI状態復元機能（POST-Redirect-GET対応）
+2. **Step2**: セッション管理改善
+3. **Step3**: StateManager統合
+4. **Step4**: 全体統合テスト
+5. **P1-P6**: 本格監視機能（リクエストID、ログ統合等）
+
+---
+
+# 📅 2025年8月16日 - 監視レイヤー実装失敗とgit reset復旧セッション 🔄
 
 ---
 

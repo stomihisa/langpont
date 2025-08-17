@@ -964,7 +964,20 @@ window.currentLabels = {
       }
       {% endif %}
       
+      // No.0 UI監視: 翻訳完了フック
+      if (data.success && window.UIMonitor && window.UIMonitor.onTranslateDone) {
+        window.UIMonitor.onTranslateDone('chatgpt', apiResponseTime);
+      }
+      
       if (!data.success) {
+        // No.0 UI監視: 翻訳エラーフック
+        if (window.UIMonitor) {
+          window.UIMonitor.log('error', {
+            where: 'translation',
+            message: data.error ? data.error.substring(0, 100) : 'translation failed'
+          });
+        }
+        
         // 🚀 翻訳エラーを監視システムに記録
         {% if session.get('user_role') in ['admin', 'developer'] %}
         if (typeof onTranslationAPIError === 'function') {
@@ -2096,5 +2109,110 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
 
 <!-- TaskH2-2(B2-3) Stage 3 Phase 9a: 状態管理システム - Loading Control -->
 <script src="{{ url_for('static', filename='js/core/state_manager.js') }}"></script>
+
+<!-- Task #9-4 AP-1 Phase4 Step4 / No.0: 軽量UI監視レイヤー -->
+<script>
+(function() {
+  'use strict';
+  
+  // UI監視機能の初期化
+  window.UIMonitor = {
+    enable: true, // 将来の本番ではOFF前提
+    
+    log: function(evt, ctx) {
+      if (!this.enable) return;
+      
+      const logEntry = {
+        ts: new Date().toISOString(),
+        evt: evt,
+        ctx: ctx || {}
+      };
+      
+      // 機微情報の除去・マスキング
+      if (logEntry.ctx.text && typeof logEntry.ctx.text === 'string') {
+        logEntry.ctx.len = logEntry.ctx.text.length;
+        delete logEntry.ctx.text; // 原文削除
+      }
+      
+      // CSRFトークンなどの機密情報マスキング
+      if (logEntry.ctx.token) {
+        logEntry.ctx.tokenPresent = true;
+        delete logEntry.ctx.token;
+      }
+      
+      // PII/Secrets 伏字化
+      if (logEntry.ctx.email) {
+        logEntry.ctx.email = '****';
+      }
+      
+      console.log('[MON] ' + JSON.stringify(logEntry));
+    }
+  };
+  
+  // DOMContentLoaded後にイベントリスナーを設定
+  document.addEventListener('DOMContentLoaded', function() {
+    UIMonitor.log('monitor_init', { 
+      location: 'index.html',
+      timestamp: new Date().toISOString()
+    });
+    
+    // 送信ボタンの監視
+    const submitBtn = document.getElementById('submit-btn');
+    if (submitBtn) {
+      submitBtn.addEventListener('click', function() {
+        const inputText = document.getElementById('japanese_text');
+        const langPair = document.getElementById('language_pair');
+        
+        UIMonitor.log('send', {
+          lang: langPair ? langPair.value : 'unknown',
+          len: inputText ? inputText.value.length : 0
+        });
+      });
+    }
+    
+    // 履歴ボタンの監視
+    const historyBtns = document.querySelectorAll('[onclick*="loadTranslationHistory"]');
+    historyBtns.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        const itemId = btn.getAttribute('data-item-id') || 'unknown';
+        UIMonitor.log('history_click', {
+          itemId: itemId
+        });
+      });
+    });
+    
+    // エラー監視
+    window.addEventListener('error', function(event) {
+      UIMonitor.log('error', {
+        where: 'global',
+        message: event.message ? event.message.substring(0, 100) : 'unknown error'
+      });
+    });
+    
+    window.addEventListener('unhandledrejection', function(event) {
+      UIMonitor.log('error', {
+        where: 'promise',
+        message: event.reason ? String(event.reason).substring(0, 100) : 'promise rejection'
+      });
+    });
+  });
+  
+  // 翻訳完了フック（既存コードから呼び出し用）
+  window.UIMonitor.onTranslateDone = function(provider, duration) {
+    UIMonitor.log('translate_done', {
+      provider: provider || 'unknown',
+      ms: duration || 0
+    });
+  };
+  
+  // 復元表示フック（No.1実装時用）
+  window.UIMonitor.onRestoreShow = function(blockCount) {
+    UIMonitor.log('restore_show', {
+      blocks: blockCount || 0
+    });
+  };
+  
+})();
+</script>
 
 {% endblock %}
