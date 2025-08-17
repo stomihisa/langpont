@@ -2446,21 +2446,24 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
             historyList.innerHTML = '<div class="history-empty">履歴データがありません</div>';
         }
         
-        // 履歴リストを表示（モーダル風に）
-        historyList.style.display = 'block';
-        historyList.style.position = 'fixed';
-        historyList.style.top = '50%';
-        historyList.style.left = '50%';
-        historyList.style.transform = 'translate(-50%, -50%)';
-        historyList.style.background = 'white';
-        historyList.style.border = '2px solid #333';
-        historyList.style.borderRadius = '8px';
-        historyList.style.padding = '20px';
-        historyList.style.zIndex = '9999';
-        historyList.style.maxHeight = '80vh';
-        historyList.style.overflowY = 'auto';
-        historyList.style.minWidth = '400px';
-        historyList.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+        // 親要素のhistory-containerを表示する
+        const historyContainer = document.getElementById('history-container');
+        if (historyContainer) {
+            historyContainer.style.display = 'block';
+            historyContainer.style.position = 'fixed';
+            historyContainer.style.top = '50%';
+            historyContainer.style.left = '50%';
+            historyContainer.style.transform = 'translate(-50%, -50%)';
+            historyContainer.style.background = 'white';
+            historyContainer.style.border = '2px solid #333';
+            historyContainer.style.borderRadius = '8px';
+            historyContainer.style.padding = '20px';
+            historyContainer.style.zIndex = '9999';
+            historyContainer.style.maxHeight = '80vh';
+            historyContainer.style.overflowY = 'auto';
+            historyContainer.style.minWidth = '400px';
+            historyContainer.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+        }
         
         // 監視ログ
         if (window.UIMonitor && window.UIMonitor.enable) {
@@ -2470,9 +2473,9 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
     
     // 履歴表示の終了
     window.hideTranslationHistory = function() {
-        const historyList = document.getElementById('history-list');
-        if (historyList) {
-            historyList.style.display = 'none';
+        const historyContainer = document.getElementById('history-container');
+        if (historyContainer) {
+            historyContainer.style.display = 'none';
             if (window.UIMonitor && window.UIMonitor.enable) {
                 window.UIMonitor.log('history_click', {action: 'close'});
             }
