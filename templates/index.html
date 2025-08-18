@@ -2362,20 +2362,20 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
             id: Date.now() + '_' + Math.random().toString(36).substr(2, 9),
             timestamp: new Date().toISOString(),
             // 入力・文脈
-            inputText: inputText || '',
+            input_text: inputText || '',
             languagePair: languagePair || 'ja-en',
             contextInfo: contextInfo || '',
             partnerMessage: partnerMessage || '',
             
             // 基本翻訳（既存）
-            translatedText: translatedText || '',
-            betterTranslation: betterTranslation || '',
-            geminiTranslation: geminiTranslation || '',
+            translated_text: translatedText || '',
+            better_translation: betterTranslation || '',
+            gemini_translation: geminiTranslation || '',
             
             // 逆翻訳（新規）
-            reverseTranslation: '',
-            betterReverseTranslation: '',
-            geminiReverseTranslation: '',
+            reverse_translated_text: '',
+            reverse_better_translation: '',
+            gemini_reverse_translation: '',
             
             // ニュアンス分析（新規）
             nuanceAnalysis: null,
@@ -2420,11 +2420,11 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
             if (!partial.id) {
                 // 新規作成：IDがない場合
                 const newItem = createHistoryItem(
-                    partial.inputText || '',
+                    partial.input_text || '',
                     partial.languagePair || 'ja-en',
-                    partial.translatedText || '',
-                    partial.betterTranslation || '',
-                    partial.geminiTranslation || '',
+                    partial.translated_text || '',
+                    partial.better_translation || '',
+                    partial.gemini_translation || '',
                     partial.contextInfo || '',
                     partial.partnerMessage || ''
                 );
@@ -2496,7 +2496,7 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
         for (const selector of inputSelectors) {
             const elem = document.querySelector(selector);
             if (elem && elem.value) {
-                data.inputText = elem.value;
+                data.input_text = elem.value;
                 break;
             }
         }
@@ -2520,26 +2520,26 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
         
         // 基本翻訳
         const translatedElem = document.querySelector('#translated-text');
-        if (translatedElem) data.translatedText = translatedElem.textContent || '';
+        if (translatedElem) data.translated_text = translatedElem.innerText || '';
         
         const betterElem = document.querySelector('#better-translation');
-        if (betterElem) data.betterTranslation = betterElem.textContent || '';
+        if (betterElem) data.better_translation = betterElem.innerText || '';
         
         const geminiElem = document.querySelector('#gemini-translation');
-        if (geminiElem) data.geminiTranslation = geminiElem.textContent || '';
+        if (geminiElem) data.gemini_translation = geminiElem.innerText || '';
         
         // 逆翻訳
-        const reverseElem = document.querySelector('#reverse-translation');
-        if (reverseElem) data.reverseTranslation = reverseElem.textContent || '';
+        const reverseElem = document.querySelector('#reverse-translated-text');
+        if (reverseElem) data.reverse_translated_text = reverseElem.innerText || '';
         
         const betterReverseElem = document.querySelector('#reverse-better-translation');
-        if (betterReverseElem) data.betterReverseTranslation = betterReverseElem.textContent || '';
+        if (betterReverseElem) data.reverse_better_translation = betterReverseElem.innerText || '';
         
-        const geminiReverseElem = document.querySelector('#reverse-gemini-translation');
-        if (geminiReverseElem) data.geminiReverseTranslation = geminiReverseElem.textContent || '';
+        const geminiReverseElem = document.querySelector('#gemini-reverse-translation');
+        if (geminiReverseElem) data.gemini_reverse_translation = geminiReverseElem.innerText || '';
         
         // ニュアンス分析
-        const nuanceElem = document.querySelector('#nuance-analysis-result');
+        const nuanceElem = document.querySelector('#gemini-3way-analysis');
         if (nuanceElem && nuanceElem.innerHTML.trim()) {
             data.nuanceAnalysis = {
                 html: nuanceElem.innerHTML,
@@ -2548,13 +2548,13 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
         }
         
         // インタラクティブQA
-        const qaContainer = document.querySelector('#interactive-qa-container');
+        const qaContainer = document.querySelector('#chat-items');
         if (qaContainer) {
-            const qaItems = qaContainer.querySelectorAll('.qa-item');
+            const qaItems = qaContainer.querySelectorAll('.qa-item, .chat-item');
             data.interactiveQuestions = [];
             qaItems.forEach(item => {
-                const questionElem = item.querySelector('.qa-question');
-                const answerElem = item.querySelector('.qa-answer');
+                const questionElem = item.querySelector('.qa-question, .user-message');
+                const answerElem = item.querySelector('.qa-answer, .ai-message');
                 if (questionElem && answerElem) {
                     data.interactiveQuestions.push({
                         question: questionElem.textContent || '',
@@ -2597,7 +2597,7 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
                 html += `
                     <div class="history-item" onclick="restoreHistoryItem('${item.id}')" style="padding: 10px; margin: 5px; border: 1px solid #ccc; cursor: pointer;">
                         <div class="history-date">${date}</div>
-                        <div class="history-preview">${item.inputText || 'テキストなし'}</div>
+                        <div class="history-preview">${item.input_text || 'テキストなし'}</div>
                         <div class="history-lang">${item.languagePair || '言語不明'}</div>
                     </div>
                 `;
@@ -2660,8 +2660,8 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
             let html = '';
             historyData.forEach((item, index) => {
                 const date = new Date(item.timestamp).toLocaleString('ja-JP');
-                const preview = item.inputText.length > 50 ? 
-                    item.inputText.substring(0, 50) + '...' : item.inputText;
+                const preview = item.input_text.length > 50 ? 
+                    item.input_text.substring(0, 50) + '...' : item.input_text;
                 
                 html += `
                     <div class="history-item" onclick="restoreHistoryItem('${item.id}')">
@@ -2717,7 +2717,7 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
             for (const selector of inputSelectors) {
                 const elem = document.querySelector(selector);
                 if (elem) {
-                    elem.value = item.inputText || '';
+                    elem.value = item.input_text || '';
                     restoredBlocks++;
                     break;
                 }
@@ -2748,62 +2748,101 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
             }
             
             // 4. 基本翻訳復元
-            if (item.translatedText) {
+            if (item.translated_text) {
                 const elem = document.querySelector('#translated-text');
+                const cardElem = document.querySelector('#chatgpt-result');
                 if (elem) {
-                    elem.textContent = item.translatedText;
+                    elem.innerText = item.translated_text;
                     elem.style.display = 'block';
+                    // ChatGPT翻訳カードも表示
+                    if (cardElem) {
+                        cardElem.classList.add('show');
+                        cardElem.style.display = 'block';
+                    }
                     restored.translations++;
                     restoredBlocks++;
                 }
             }
             
-            if (item.betterTranslation) {
+            if (item.better_translation) {
                 const elem = document.querySelector('#better-translation');
+                const cardElem = document.querySelector('#better-translation-card');
                 if (elem) {
-                    elem.textContent = item.betterTranslation;
+                    elem.innerText = item.better_translation;
                     elem.style.display = 'block';
+                    // Better翻訳カードも表示
+                    if (cardElem) {
+                        cardElem.classList.add('show');
+                        cardElem.style.display = 'block';
+                    }
                     restored.translations++;
                     restoredBlocks++;
                 }
             }
             
-            if (item.geminiTranslation) {
+            if (item.gemini_translation) {
                 const elem = document.querySelector('#gemini-translation');
+                const cardElem = document.querySelector('#gemini-result');
                 if (elem) {
-                    elem.textContent = item.geminiTranslation;
+                    elem.innerText = item.gemini_translation;
                     elem.style.display = 'block';
+                    // Gemini翻訳カードも表示
+                    if (cardElem) {
+                        cardElem.classList.add('show');
+                        cardElem.style.display = 'block';
+                    }
                     restored.translations++;
                     restoredBlocks++;
                 }
             }
             
             // 5. 逆翻訳復元
-            if (item.reverseTranslation) {
-                const elem = document.querySelector('#reverse-translation');
+            if (item.reverse_translated_text) {
+                const elem = document.querySelector('#reverse-translated-text');
+                const cardElem = document.querySelector('#chatgpt-result');
                 if (elem) {
-                    elem.textContent = item.reverseTranslation;
+                    elem.innerText = item.reverse_translated_text;
                     elem.style.display = 'block';
+                    // ChatGPT逆翻訳カードも表示
+                    if (cardElem) {
+                        cardElem.classList.add('show');
+                        cardElem.style.display = 'block';
+                    }
                     restored.reverse++;
                     restoredBlocks++;
                 }
             }
             
-            if (item.betterReverseTranslation) {
+            if (item.reverse_better_translation) {
                 const elem = document.querySelector('#reverse-better-translation');
+                const cardElem = document.querySelector('#better-translation-card');
                 if (elem) {
-                    elem.textContent = item.betterReverseTranslation;
+                    // 「逆翻訳中...」状態をクリアして復元
+                    elem.innerText = item.reverse_better_translation;
                     elem.style.display = 'block';
+                    // ローディング状態のクラスも削除
+                    elem.classList.remove('loading', 'translating');
+                    // Better翻訳カードも表示
+                    if (cardElem) {
+                        cardElem.classList.add('show');
+                        cardElem.style.display = 'block';
+                    }
                     restored.reverse++;
                     restoredBlocks++;
                 }
             }
             
-            if (item.geminiReverseTranslation) {
-                const elem = document.querySelector('#reverse-gemini-translation');
+            if (item.gemini_reverse_translation) {
+                const elem = document.querySelector('#gemini-reverse-translation');
+                const cardElem = document.querySelector('#gemini-result');
                 if (elem) {
-                    elem.textContent = item.geminiReverseTranslation;
+                    elem.innerText = item.gemini_reverse_translation;
                     elem.style.display = 'block';
+                    // Gemini翻訳カードも表示
+                    if (cardElem) {
+                        cardElem.classList.add('show');
+                        cardElem.style.display = 'block';
+                    }
                     restored.reverse++;
                     restoredBlocks++;
                 }
@@ -2811,10 +2850,16 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
             
             // 6. ニュアンス分析復元
             if (item.nuanceAnalysis && item.nuanceAnalysis.html) {
-                const elem = document.querySelector('#nuance-analysis-result');
+                const elem = document.querySelector('#gemini-3way-analysis');
+                const cardElem = document.querySelector('#gemini-nuance-card');
                 if (elem) {
                     elem.innerHTML = item.nuanceAnalysis.html;
                     elem.style.display = 'block';
+                    // ニュアンス分析カードも表示
+                    if (cardElem) {
+                        cardElem.style.display = 'block';
+                        cardElem.classList.add('show');
+                    }
                     restored.nuance = true;
                     restoredBlocks++;
                 }
@@ -2822,19 +2867,32 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
             
             // 7. インタラクティブQA復元
             if (item.interactiveQuestions && item.interactiveQuestions.length > 0) {
-                const container = document.querySelector('#interactive-qa-container');
+                const container = document.querySelector('#chat-items');
+                const interactiveSection = document.querySelector('#interactive-section');
+                const chatHistory = document.querySelector('#chat-history');
+                
                 if (container) {
                     container.innerHTML = '';
                     item.interactiveQuestions.forEach(qa => {
                         const qaDiv = document.createElement('div');
-                        qaDiv.className = 'qa-item';
+                        qaDiv.className = 'chat-item';
                         qaDiv.innerHTML = `
-                            <div class="qa-question">${qa.question || ''}</div>
-                            <div class="qa-answer">${qa.answer || ''}</div>
+                            <div class="user-message">${qa.question || ''}</div>
+                            <div class="ai-message">${qa.answer || ''}</div>
                         `;
                         container.appendChild(qaDiv);
                     });
                     container.style.display = 'block';
+                    
+                    // インタラクティブセクションとチャット履歴を表示
+                    if (interactiveSection) {
+                        interactiveSection.classList.add('show');
+                        interactiveSection.style.display = 'block';
+                    }
+                    if (chatHistory) {
+                        chatHistory.style.display = 'block';
+                    }
+                    
                     restored.qa = item.interactiveQuestions.length;
                     restoredBlocks++;
                 }
@@ -2867,8 +2925,8 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
             const sessionData = collectCurrentSessionData();
             
             // 入力テキストが存在し、何らかの翻訳結果がある場合のみ保存
-            if (sessionData.inputText && sessionData.inputText.trim() && 
-                (sessionData.translatedText || sessionData.betterTranslation || sessionData.geminiTranslation)) {
+            if (sessionData.input_text && sessionData.input_text.trim() && 
+                (sessionData.translated_text || sessionData.better_translation || sessionData.gemini_translation)) {
                 
                 // upsertHistoryItem使用で新規作成
                 upsertHistoryItem(sessionData);
@@ -2898,9 +2956,9 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
             const sessionData = collectCurrentSessionData();
             const reverseData = {
                 id: latestId,
-                reverseTranslation: sessionData.reverseTranslation || '',
-                betterReverseTranslation: sessionData.betterReverseTranslation || '',
-                geminiReverseTranslation: sessionData.geminiReverseTranslation || ''
+                reverse_translated_text: sessionData.reverse_translated_text || '',
+                reverse_better_translation: sessionData.reverse_better_translation || '',
+                gemini_reverse_translation: sessionData.gemini_reverse_translation || ''
             };
             
             upsertHistoryItem(reverseData);
@@ -2967,9 +3025,9 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
     function initializeHistorySaveHooks() {
         // T2: 逆翻訳完了時の監視（MutationObserver使用）
         const reverseElements = [
-            document.querySelector('#reverse-translation'),
+            document.querySelector('#reverse-translated-text'),
             document.querySelector('#reverse-better-translation'),
-            document.querySelector('#reverse-gemini-translation')
+            document.querySelector('#gemini-reverse-translation')
         ].filter(Boolean);
         
         reverseElements.forEach(elem => {
@@ -2984,7 +3042,7 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
         });
         
         // T3: ニュアンス分析完了時の監視
-        const nuanceElement = document.querySelector('#nuance-analysis-result');
+        const nuanceElement = document.querySelector('#gemini-3way-analysis');
         if (nuanceElement) {
             const nuanceObserver = new MutationObserver(() => {
                 if (nuanceElement.innerHTML && nuanceElement.innerHTML.trim()) {
@@ -2995,10 +3053,10 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
         }
         
         // T4: インタラクティブQA更新時の監視
-        const qaContainer = document.querySelector('#interactive-qa-container');
+        const qaContainer = document.querySelector('#chat-items');
         if (qaContainer) {
             const qaObserver = new MutationObserver(() => {
-                const qaItems = qaContainer.querySelectorAll('.qa-item');
+                const qaItems = qaContainer.querySelectorAll('.chat-item, .qa-item');
                 if (qaItems.length > 0) {
                     setTimeout(saveInteractiveQAToHistory, 500);
                 }
@@ -3097,12 +3155,73 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
             console.log('=== DOM状態確認 ===');
             const elements = [
                 'history-modal', 'history-list', 'history-btn',
-                'japanese_text', 'translated-text', 'better-translation', 'gemini-translation'
+                'japanese_text', 'translated-text', 'better-translation', 'gemini-translation',
+                'reverse-translated-text', 'gemini-3way-analysis', 'chat-items'
             ];
             elements.forEach(id => {
                 const element = document.getElementById(id);
                 console.log(`${id}: ${element ? 'EXISTS' : 'MISSING'}${element ? ` (${element.tagName})` : ''}`);
             });
+        },
+        
+        // 修正後のDOM確認
+        checkFixedIDs: function() {
+            console.log('=== 修正済みDOM ID確認 ===');
+            const fixedElements = {
+                '逆翻訳表示': 'reverse-translated-text',
+                'ニュアンス分析': 'gemini-3way-analysis', 
+                'チャット履歴': 'chat-items',
+                'インタラクティブセクション': 'interactive-section'
+            };
+            Object.entries(fixedElements).forEach(([name, id]) => {
+                const element = document.getElementById(id);
+                console.log(`${name} (${id}): ${element ? '✅ EXISTS' : '❌ MISSING'}${element ? ` (${element.tagName})` : ''}`);
+            });
+        },
+        
+        // 完全テスト実行
+        runCompleteTest: function() {
+            console.log('🧪 === 完全履歴機能テスト開始 ===');
+            
+            // 1. DOM要素存在確認
+            this.checkFixedIDs();
+            
+            // 2. テストデータ作成
+            const testData = {
+                id: Date.now(),
+                timestamp: new Date().toISOString(),
+                inputText: 'テスト翻訳文章',
+                languagePair: 'ja-en',
+                translatedText: 'Test translation result',
+                betterTranslation: 'Better test translation',
+                geminiTranslation: 'Gemini test translation', 
+                reverseTranslation: 'テスト逆翻訳',
+                nuanceAnalysis: {
+                    html: '<div>テストニュアンス分析</div>',
+                    engine: 'gemini'
+                },
+                interactiveQuestions: [{
+                    question: 'テスト質問',
+                    answer: 'テスト回答',
+                    t: new Date().toISOString()
+                }]
+            };
+            
+            // 3. upsert機能テスト
+            console.log('💾 upsertHistoryItem テスト...');
+            upsertHistoryItem(testData);
+            
+            // 4. 履歴取得確認
+            const history = JSON.parse(localStorage.getItem('langpont_translation_history') || '[]');
+            console.log(`📚 履歴件数: ${history.length}`);
+            console.log('📋 最新履歴:', history[0]);
+            
+            // 5. 表示機能テスト
+            console.log('📺 表示機能テスト...');
+            window.showTranslationHistory();
+            
+            console.log('✅ 完全履歴機能テスト完了');
+            return { success: true, historyCount: history.length, testItem: testData };
         }
     };
     
