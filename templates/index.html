@@ -2348,13 +2348,115 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
 </script>
 
 <script>
-// === Task #9-4 Step1: Translation History Functions ===
+// === Task #9-4 Step1: Translation History Functions (No.1-Fix Enhanced) ===
 (function() {
     'use strict';
     
     // 履歴データストレージ（localStorage使用）
     const HISTORY_KEY = 'langpont_translation_history';
     const MAX_HISTORY_ITEMS = 10; // 最大保存件数
+    
+    // === No.1-Fix: Helper Functions ===
+    // 汎用テキスト設定関数（空でも必ず上書き）
+    function setText(el, value) {
+        if (!el) return false;
+        el.textContent = value || ''; // 空でも必ず上書き
+        el.style.display = 'block';
+        // ローディング状態のクラスを削除
+        el.classList.remove('loading', 'translating');
+        
+        // 親要素のカードも表示
+        const card = el.closest('.card, .reverse-result, .translation-result');
+        if (card) {
+            card.style.removeProperty('display');
+            card.classList.add('show');
+        }
+        return true;
+    }
+    
+    // HTMLサニタイズ（最小限）
+    function sanitizeHtml(html) {
+        if (!html) return '';
+        // scriptタグとon*属性を削除
+        return html
+            .replace(/<script[^>]*>.*?<\/script>/gi, '')
+            .replace(/\bon\w+\s*=\s*"[^"]*"/gi, '')
+            .replace(/\bon\w+\s*=\s*'[^']*'/gi, '')
+            .replace(/javascript:/gi, '');
+    }
+    
+    // === No.1-Fix: ID Management (Triple Storage) ===
+    function setCurrentHistoryId(id) {
+        window.__currentHistoryId = id;
+        document.body.dataset.historyId = id;
+        sessionStorage.setItem('langpont_current_history_id', id);
+        return id;
+    }
+    
+    function getCurrentHistoryId() {
+        // 三重保険でIDを取得
+        let id = window.__currentHistoryId ||
+                 document.body.dataset.historyId ||
+                 sessionStorage.getItem('langpont_current_history_id');
+        
+        // それでもなければ最新履歴のIDを使用
+        if (!id) {
+            const history = getHistoryData();
+            if (history.length > 0) {
+                id = history[0].id;
+            }
+        }
+        
+        return id;
+    }
+    
+    // === No.1-Fix: Save Coordinator (Debounced) ===
+    const saveCoordinator = (() => {
+        let timer = null;
+        let pending = {};
+        return {
+            queue(patch, source = 'unknown') {
+                Object.assign(pending, patch);
+                clearTimeout(timer);
+                timer = setTimeout(() => {
+                    const p = {...pending};
+                    pending = {};
+                    
+                    // 現在のIDを三重保険で取得
+                    const id = getCurrentHistoryId();
+                    if (!id) {
+                        console.error('[History] No current ID for update');
+                        return;
+                    }
+                    
+                    p.id = id;
+                    const action = upsertHistoryItem(p);
+                    
+                    // 監視ログ出力
+                    if (window.UIMonitor && window.UIMonitor.enable) {
+                        const fieldsUpdated = Object.keys(p).filter(k => k !== 'id' && p[k]);
+                        const history = getHistoryData();
+                        const item = history.find(h => h.id === id);
+                        
+                        window.UIMonitor.log('history_save', {
+                            action: action,
+                            item_id: id,
+                            id_source: window.__currentHistoryId ? 'window' :
+                                      document.body.dataset.historyId ? 'dataset' :
+                                      sessionStorage.getItem('langpont_current_history_id') ? 'storage' :
+                                      'fallback',
+                            fields_updated: fieldsUpdated,
+                            total_items: history.length,
+                            has_reverse: !!(item && (item.reverse_translated_text || item.reverse_better_translation || item.gemini_reverse_translation)),
+                            has_nuance: !!(item && item.nuanceAnalysis),
+                            qa_count: item && item.interactiveQuestions ? item.interactiveQuestions.length : 0,
+                            source: source
+                        });
+                    }
+                }, 500); // 500ms デバウンス
+            }
+        };
+    })()
     
     // 履歴データの構造（完全版）
     function createHistoryItem(inputText, languagePair, translatedText, betterTranslation, geminiTranslation, contextInfo, partnerMessage) {
@@ -2416,20 +2518,26 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
     function upsertHistoryItem(partial) {
         try {
             let history = getHistoryData();
+            let action = 'update';
             
             if (!partial.id) {
                 // 新規作成：IDがない場合
+                action = 'create';
                 const newItem = createHistoryItem(
                     partial.input_text || '',
-                    partial.languagePair || 'ja-en',
+                    partial.language_pair || partial.languagePair || 'ja-en',  // 両方に対応
                     partial.translated_text || '',
                     partial.better_translation || '',
                     partial.gemini_translation || '',
-                    partial.contextInfo || '',
-                    partial.partnerMessage || ''
+                    partial.context_info || partial.contextInfo || '',  // 両方に対応
+                    partial.partner_message || partial.partnerMessage || ''  // 両方に対応
                 );
-                // partialの他のフィールドもマージ
-                Object.assign(newItem, partial);
+                // partialの他のフィールドもマージ（空でないもののみ）
+                Object.keys(partial).forEach(key => {
+                    if (partial[key] !== undefined && partial[key] !== null && partial[key] !== '') {
+                        newItem[key] = partial[key];
+                    }
+                });
                 
                 history.unshift(newItem); // 最新を先頭に
                 
@@ -2444,20 +2552,13 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
                 // マージ更新：IDがある場合は既存アイテムを更新
                 const existingIndex = history.findIndex(item => item.id === partial.id);
                 if (existingIndex >= 0) {
-                    // 既存アイテムにマージ
-                    Object.assign(history[existingIndex], partial);
+                    // 既存アイテムにマージ（空でないフィールドのみ更新）
+                    Object.keys(partial).forEach(key => {
+                        if (key !== 'id' && partial[key] !== undefined && partial[key] !== null && partial[key] !== '') {
+                            history[existingIndex][key] = partial[key];
+                        }
+                    });
                     history[existingIndex].timestamp = new Date().toISOString(); // タイムスタンプ更新
-                    
-                    if (window.UIMonitor && window.UIMonitor.enable) {
-                        window.UIMonitor.log('history_save', {
-                            item_id: partial.id,
-                            total_items: history.length,
-                            action: 'update',
-                            has_reverse: !!(partial.reverseTranslation || partial.betterReverseTranslation || partial.geminiReverseTranslation),
-                            has_nuance: !!partial.nuanceAnalysis,
-                            qa_count: (partial.interactiveQuestions || []).length
-                        });
-                    }
                 } else {
                     console.warn('[History] Item ID not found for update:', partial.id);
                     return;
@@ -2470,9 +2571,11 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
             }
             
             localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+            return action;  // 'create' または 'update' を返す
             
         } catch (e) {
             console.error('[History] Upsert error:', e);
+            return null;
         }
     }
     
@@ -2506,17 +2609,17 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
         for (const selector of langSelectors) {
             const elem = document.querySelector(selector);
             if (elem && elem.value) {
-                data.languagePair = elem.value;
+                data.language_pair = elem.value;  // スネークケースに統一
                 break;
             }
         }
         
         // コンテキスト情報
         const contextElem = document.querySelector('[name="context_info"]');
-        if (contextElem) data.contextInfo = contextElem.value || '';
+        if (contextElem) data.context_info = contextElem.value || '';  // スネークケースに統一
         
         const partnerElem = document.querySelector('[name="partner_message"]');
-        if (partnerElem) data.partnerMessage = partnerElem.value || '';
+        if (partnerElem) data.partner_message = partnerElem.value || '';  // スネークケースに統一
         
         // 基本翻訳
         const translatedElem = document.querySelector('#translated-text');
@@ -2541,7 +2644,7 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
         // ニュアンス分析
         const nuanceElem = document.querySelector('#gemini-3way-analysis');
         if (nuanceElem && nuanceElem.innerHTML.trim()) {
-            data.nuanceAnalysis = {
+            data.nuance_analysis = {  // スネークケースに統一
                 html: nuanceElem.innerHTML,
                 engine: 'gemini' // デフォルト
             };
@@ -2551,12 +2654,12 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
         const qaContainer = document.querySelector('#chat-items');
         if (qaContainer) {
             const qaItems = qaContainer.querySelectorAll('.qa-item, .chat-item');
-            data.interactiveQuestions = [];
+            data.interactive_questions = [];  // スネークケースに統一
             qaItems.forEach(item => {
                 const questionElem = item.querySelector('.qa-question, .user-message');
                 const answerElem = item.querySelector('.qa-answer, .ai-message');
                 if (questionElem && answerElem) {
-                    data.interactiveQuestions.push({
+                    data.interactive_questions.push({
                         question: questionElem.textContent || '',
                         answer: answerElem.textContent || '',
                         t: new Date().toISOString()
@@ -2598,7 +2701,7 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
                     <div class="history-item" onclick="restoreHistoryItem('${item.id}')" style="padding: 10px; margin: 5px; border: 1px solid #ccc; cursor: pointer;">
                         <div class="history-date">${date}</div>
                         <div class="history-preview">${item.input_text || 'テキストなし'}</div>
-                        <div class="history-lang">${item.languagePair || '言語不明'}</div>
+                        <div class="history-lang">${item.language_pair || item.languagePair || '言語不明'}</div>
                     </div>
                 `;
             });
@@ -2704,6 +2807,12 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
                 return;
             }
             
+            // === No.1-Fix: 逆翻訳要素を先にクリア ===
+            // プレースホルダを確実に消すため、復元開始時にすべてクリア
+            setText(document.getElementById('reverse-translated-text'), '');
+            setText(document.getElementById('reverse-better-translation'), '');
+            setText(document.getElementById('gemini-reverse-translation'), '')
+            
             let restoredBlocks = 0;
             const restored = {
                 translations: 0,
@@ -2723,137 +2832,100 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
                 }
             }
             
-            // 2. 言語設定復元
+            // 2. 言語設定復元（スネークケース対応）
             const langSelectors = ['#language_pair', '#langSelect', 'select[name="lang"]', '#targetLang', 'select[name="targetLang"]'];
             for (const selector of langSelectors) {
                 const elem = document.querySelector(selector);
                 if (elem) {
-                    elem.value = item.languagePair || 'ja-en';
+                    elem.value = item.language_pair || item.languagePair || 'ja-en';  // 両方に対応
                     restoredBlocks++;
                     break;
                 }
             }
             
-            // 3. コンテキスト情報復元
+            // 3. コンテキスト情報復元（スネークケース対応）
             const contextElem = document.querySelector('[name="context_info"]');
             if (contextElem) {
-                contextElem.value = item.contextInfo || '';
+                contextElem.value = item.context_info || item.contextInfo || '';  // 両方に対応
                 restoredBlocks++;
             }
             
             const partnerElem = document.querySelector('[name="partner_message"]');
             if (partnerElem) {
-                partnerElem.value = item.partnerMessage || '';
+                partnerElem.value = item.partner_message || item.partnerMessage || '';  // 両方に対応
                 restoredBlocks++;
             }
             
-            // 4. 基本翻訳復元
-            if (item.translated_text) {
-                const elem = document.querySelector('#translated-text');
+            // 4. 基本翻訳復元（setText使用）
+            if (setText(document.querySelector('#translated-text'), item.translated_text || '')) {
                 const cardElem = document.querySelector('#chatgpt-result');
-                if (elem) {
-                    elem.innerText = item.translated_text;
-                    elem.style.display = 'block';
-                    // ChatGPT翻訳カードも表示
-                    if (cardElem) {
-                        cardElem.classList.add('show');
-                        cardElem.style.display = 'block';
-                    }
-                    restored.translations++;
-                    restoredBlocks++;
+                if (cardElem) {
+                    cardElem.classList.add('show');
+                    cardElem.style.display = 'block';
                 }
+                if (item.translated_text) restored.translations++;
+                restoredBlocks++;
             }
             
-            if (item.better_translation) {
-                const elem = document.querySelector('#better-translation');
+            if (setText(document.querySelector('#better-translation'), item.better_translation || '')) {
                 const cardElem = document.querySelector('#better-translation-card');
-                if (elem) {
-                    elem.innerText = item.better_translation;
-                    elem.style.display = 'block';
-                    // Better翻訳カードも表示
-                    if (cardElem) {
-                        cardElem.classList.add('show');
-                        cardElem.style.display = 'block';
-                    }
-                    restored.translations++;
-                    restoredBlocks++;
+                if (cardElem) {
+                    cardElem.classList.add('show');
+                    cardElem.style.display = 'block';
                 }
+                if (item.better_translation) restored.translations++;
+                restoredBlocks++;
             }
             
-            if (item.gemini_translation) {
-                const elem = document.querySelector('#gemini-translation');
+            if (setText(document.querySelector('#gemini-translation'), item.gemini_translation || '')) {
                 const cardElem = document.querySelector('#gemini-result');
-                if (elem) {
-                    elem.innerText = item.gemini_translation;
-                    elem.style.display = 'block';
-                    // Gemini翻訳カードも表示
-                    if (cardElem) {
-                        cardElem.classList.add('show');
-                        cardElem.style.display = 'block';
-                    }
-                    restored.translations++;
-                    restoredBlocks++;
+                if (cardElem) {
+                    cardElem.classList.add('show');
+                    cardElem.style.display = 'block';
                 }
+                if (item.gemini_translation) restored.translations++;
+                restoredBlocks++;
             }
             
-            // 5. 逆翻訳復元
-            if (item.reverse_translated_text) {
-                const elem = document.querySelector('#reverse-translated-text');
+            // 5. 逆翻訳復元（空でも上書き）
+            // === No.1-Fix: 確実に空でも上書きする ===
+            if (setText(document.querySelector('#reverse-translated-text'), item.reverse_translated_text || '')) {
                 const cardElem = document.querySelector('#chatgpt-result');
-                if (elem) {
-                    elem.innerText = item.reverse_translated_text;
-                    elem.style.display = 'block';
-                    // ChatGPT逆翻訳カードも表示
-                    if (cardElem) {
-                        cardElem.classList.add('show');
-                        cardElem.style.display = 'block';
-                    }
-                    restored.reverse++;
-                    restoredBlocks++;
+                if (cardElem) {
+                    cardElem.classList.add('show');
+                    cardElem.style.display = 'block';
                 }
+                if (item.reverse_translated_text) restored.reverse++;
+                restoredBlocks++;
             }
             
-            if (item.reverse_better_translation) {
-                const elem = document.querySelector('#reverse-better-translation');
+            if (setText(document.querySelector('#reverse-better-translation'), item.reverse_better_translation || '')) {
                 const cardElem = document.querySelector('#better-translation-card');
-                if (elem) {
-                    // 「逆翻訳中...」状態をクリアして復元
-                    elem.innerText = item.reverse_better_translation;
-                    elem.style.display = 'block';
-                    // ローディング状態のクラスも削除
-                    elem.classList.remove('loading', 'translating');
-                    // Better翻訳カードも表示
-                    if (cardElem) {
-                        cardElem.classList.add('show');
-                        cardElem.style.display = 'block';
-                    }
-                    restored.reverse++;
-                    restoredBlocks++;
+                if (cardElem) {
+                    cardElem.classList.add('show');
+                    cardElem.style.display = 'block';
                 }
+                if (item.reverse_better_translation) restored.reverse++;
+                restoredBlocks++;
             }
             
-            if (item.gemini_reverse_translation) {
-                const elem = document.querySelector('#gemini-reverse-translation');
+            if (setText(document.querySelector('#gemini-reverse-translation'), item.gemini_reverse_translation || '')) {
                 const cardElem = document.querySelector('#gemini-result');
-                if (elem) {
-                    elem.innerText = item.gemini_reverse_translation;
-                    elem.style.display = 'block';
-                    // Gemini翻訳カードも表示
-                    if (cardElem) {
-                        cardElem.classList.add('show');
-                        cardElem.style.display = 'block';
-                    }
-                    restored.reverse++;
-                    restoredBlocks++;
+                if (cardElem) {
+                    cardElem.classList.add('show');
+                    cardElem.style.display = 'block';
                 }
+                if (item.gemini_reverse_translation) restored.reverse++;
+                restoredBlocks++;
             }
             
-            // 6. ニュアンス分析復元
-            if (item.nuanceAnalysis && item.nuanceAnalysis.html) {
+            // 6. ニュアンス分析復元（スネークケース対応）
+            const nuanceData = item.nuance_analysis || item.nuanceAnalysis;  // 両方に対応
+            if (nuanceData && nuanceData.html) {
                 const elem = document.querySelector('#gemini-3way-analysis');
                 const cardElem = document.querySelector('#gemini-nuance-card');
                 if (elem) {
-                    elem.innerHTML = item.nuanceAnalysis.html;
+                    elem.innerHTML = sanitizeHtml(nuanceData.html);  // サニタイズ
                     elem.style.display = 'block';
                     // ニュアンス分析カードも表示
                     if (cardElem) {
@@ -2865,21 +2937,30 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
                 }
             }
             
-            // 7. インタラクティブQA復元
-            if (item.interactiveQuestions && item.interactiveQuestions.length > 0) {
+            // 7. インタラクティブQA復元（スネークケース対応）
+            const qaData = item.interactive_questions || item.interactiveQuestions;  // 両方に対応
+            if (qaData && qaData.length > 0) {
                 const container = document.querySelector('#chat-items');
                 const interactiveSection = document.querySelector('#interactive-section');
                 const chatHistory = document.querySelector('#chat-history');
                 
                 if (container) {
-                    container.innerHTML = '';
-                    item.interactiveQuestions.forEach(qa => {
+                    container.innerHTML = '';  // クリア
+                    qaData.forEach(qa => {
                         const qaDiv = document.createElement('div');
-                        qaDiv.className = 'chat-item';
-                        qaDiv.innerHTML = `
-                            <div class="user-message">${qa.question || ''}</div>
-                            <div class="ai-message">${qa.answer || ''}</div>
-                        `;
+                        qaDiv.className = 'qa-item';  // 統一クラス名
+                        
+                        // innerTextでセット（XSS対策）
+                        const questionDiv = document.createElement('div');
+                        questionDiv.className = 'user-message';
+                        questionDiv.textContent = qa.question || '';
+                        
+                        const answerDiv = document.createElement('div');
+                        answerDiv.className = 'ai-message';
+                        answerDiv.textContent = qa.answer || '';
+                        
+                        qaDiv.appendChild(questionDiv);
+                        qaDiv.appendChild(answerDiv);
                         container.appendChild(qaDiv);
                     });
                     container.style.display = 'block';
@@ -2893,7 +2974,7 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
                         chatHistory.style.display = 'block';
                     }
                     
-                    restored.qa = item.interactiveQuestions.length;
+                    restored.qa = qaData.length;  // 統一した変数を使用
                     restoredBlocks++;
                 }
             }
@@ -2919,7 +3000,7 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
         }
     };
     
-    // T1: 翻訳完了時に履歴に自動保存
+    // T1: 翻訳完了時に履歴に自動保存（ID三重保存付き）
     function autoSaveToHistory() {
         try {
             const sessionData = collectCurrentSessionData();
@@ -2928,8 +3009,20 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
             if (sessionData.input_text && sessionData.input_text.trim() && 
                 (sessionData.translated_text || sessionData.better_translation || sessionData.gemini_translation)) {
                 
-                // upsertHistoryItem使用で新規作成
-                upsertHistoryItem(sessionData);
+                // upsertHistoryItem使用で新規作成（IDは自動三重保存される）
+                const action = upsertHistoryItem(sessionData);
+                
+                if (window.UIMonitor && window.UIMonitor.enable && action === 'create') {
+                    const currentId = getCurrentHistoryId();
+                    window.UIMonitor.log('history_save', {
+                        action: 'create',
+                        item_id: currentId,
+                        id_source: 'triple_saved',
+                        fields_updated: ['input_text', 'translations'],
+                        total_items: getHistoryData().length,
+                        source: 'T1_autoSave'
+                    });
+                }
             }
         } catch (e) {
             console.error('[History] Auto-save error:', e);
@@ -2947,64 +3040,32 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
         }
     }
     
-    // T2: 逆翻訳完了時の保存
+    // T2: 逆翻訳完了時の保存（三重保険付き）
     function saveReverseTranslationToHistory() {
-        try {
-            const latestId = getLatestHistoryItemId();
-            if (!latestId) return;
-            
-            const sessionData = collectCurrentSessionData();
-            const reverseData = {
-                id: latestId,
-                reverse_translated_text: sessionData.reverse_translated_text || '',
-                reverse_better_translation: sessionData.reverse_better_translation || '',
-                gemini_reverse_translation: sessionData.gemini_reverse_translation || ''
-            };
-            
-            upsertHistoryItem(reverseData);
-        } catch (e) {
-            console.error('[History] Reverse translation save error:', e);
-        }
+        const reverseData = {
+            reverse_translated_text: '',
+            reverse_better_translation: '',
+            gemini_reverse_translation: ''
+        };
+        saveCoordinator.queue(reverseData, 'T2_reverse');
     }
     
-    // T3: ニュアンス分析完了時の保存
+    // T3: ニュアンス分析完了時の保存（コーディネータ経由）
     function saveNuanceAnalysisToHistory() {
-        try {
-            const latestId = getLatestHistoryItemId();
-            if (!latestId) return;
-            
-            const sessionData = collectCurrentSessionData();
-            if (sessionData.nuanceAnalysis) {
-                const nuanceData = {
-                    id: latestId,
-                    nuanceAnalysis: sessionData.nuanceAnalysis
-                };
-                
-                upsertHistoryItem(nuanceData);
-            }
-        } catch (e) {
-            console.error('[History] Nuance analysis save error:', e);
-        }
+        const sessionData = collectCurrentSessionData();
+        const nuanceData = {
+            nuance_analysis: sessionData.nuance_analysis || null  // スネークケース
+        };
+        saveCoordinator.queue(nuanceData, 'T3_nuance');
     }
     
-    // T4: インタラクティブQA更新時の保存
+    // T4: インタラクティブQA更新時の保存（コーディネータ経由）
     function saveInteractiveQAToHistory() {
-        try {
-            const latestId = getLatestHistoryItemId();
-            if (!latestId) return;
-            
-            const sessionData = collectCurrentSessionData();
-            if (sessionData.interactiveQuestions && sessionData.interactiveQuestions.length > 0) {
-                const qaData = {
-                    id: latestId,
-                    interactiveQuestions: sessionData.interactiveQuestions
-                };
-                
-                upsertHistoryItem(qaData);
-            }
-        } catch (e) {
-            console.error('[History] Interactive QA save error:', e);
-        }
+        const sessionData = collectCurrentSessionData();
+        const qaData = {
+            interactive_questions: sessionData.interactive_questions || []  // スネークケース
+        };
+        saveCoordinator.queue(qaData, 'T4_qa');
     }
     
     // runFastTranslation完了後の自動保存フック
@@ -3021,9 +3082,9 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
         window.runFastTranslation.__history_hooked = true;
     }
     
-    // T2-T4: 逆翻訳・分析・QA完了時の自動保存フック
+    // === No.1-Fix: 単一調停システムでMutationObserver統合 ===
     function initializeHistorySaveHooks() {
-        // T2: 逆翻訳完了時の監視（MutationObserver使用）
+        // T2: 逆翻訳完了時の監視（saveCoordinator経由）
         const reverseElements = [
             document.querySelector('#reverse-translated-text'),
             document.querySelector('#reverse-better-translation'),
@@ -3034,7 +3095,8 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
             if (elem) {
                 const observer = new MutationObserver(() => {
                     if (elem.textContent && elem.textContent.trim()) {
-                        setTimeout(saveReverseTranslationToHistory, 500);
+                        // 直接saveCoordinatorを呼び出すことでデバウンス処理
+                        saveReverseTranslationToHistory();
                     }
                 });
                 observer.observe(elem, { childList: true, subtree: true, characterData: true });
@@ -3046,7 +3108,7 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
         if (nuanceElement) {
             const nuanceObserver = new MutationObserver(() => {
                 if (nuanceElement.innerHTML && nuanceElement.innerHTML.trim()) {
-                    setTimeout(saveNuanceAnalysisToHistory, 500);
+                    saveNuanceAnalysisToHistory();
                 }
             });
             nuanceObserver.observe(nuanceElement, { childList: true, subtree: true });
@@ -3058,7 +3120,7 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
             const qaObserver = new MutationObserver(() => {
                 const qaItems = qaContainer.querySelectorAll('.chat-item, .qa-item');
                 if (qaItems.length > 0) {
-                    setTimeout(saveInteractiveQAToHistory, 500);
+                    saveInteractiveQAToHistory();
                 }
             });
             qaObserver.observe(qaContainer, { childList: true, subtree: true });
