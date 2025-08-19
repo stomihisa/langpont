@@ -2790,6 +2790,9 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
     
     // 履歴項目の完全復元
     window.restoreHistoryItem = function(itemId) {
+        // 最初にIDを確実に設定（三重保存）
+        setCurrentHistoryId(itemId);
+        
         if (window.UIMonitor && window.UIMonitor.enable) {
             window.UIMonitor.log('restore_show', {item_id: itemId, status: 'loading'});
         }
@@ -2807,11 +2810,23 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
                 return;
             }
             
-            // === No.1-Fix: 逆翻訳要素を先にクリア ===
-            // プレースホルダを確実に消すため、復元開始時にすべてクリア
+            // === No.1-Fix: 事前クリア処理 ===
+            // 逆翻訳要素をクリア（プレースホルダ撃滅）
             setText(document.getElementById('reverse-translated-text'), '');
             setText(document.getElementById('reverse-better-translation'), '');
-            setText(document.getElementById('gemini-reverse-translation'), '')
+            setText(document.getElementById('gemini-reverse-translation'), '');
+            
+            // QA履歴エリアをクリア
+            const chatItemsElem = document.getElementById('chat-items');
+            if (chatItemsElem) {
+                chatItemsElem.innerHTML = '';
+            }
+            
+            // ニュアンス分析エリアをクリア
+            const nuanceElem = document.getElementById('gemini-3way-analysis');
+            if (nuanceElem) {
+                nuanceElem.innerHTML = '';
+            }
             
             let restoredBlocks = 0;
             const restored = {
