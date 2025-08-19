@@ -2651,9 +2651,9 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
         }
         
         // インタラクティブQA
-        const qaContainer = document.querySelector('#chat-items');
+        const qaContainer = getQAContainer();
         if (qaContainer) {
-            const qaItems = qaContainer.querySelectorAll('.qa-item, .chat-item');
+            const qaItems = queryQAItems(qaContainer);
             data.interactive_questions = [];  // スネークケースに統一
             qaItems.forEach(item => {
                 const questionElem = item.querySelector('.qa-question, .user-message');
@@ -2786,6 +2786,20 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
         } catch (e) {
             console.error('[History] Render error:', e);
         }
+    }
+    
+    // QAコンテナのロバスト取得ヘルパ
+    function getQAContainer() {
+        // 既存想定: #chat-items
+        // 実UIの別IDにも対応: #interactive-qa-list, #interactive-chat-items, #qa-list
+        return document.querySelector('#chat-items, #interactive-qa-list, #interactive-chat-items, #qa-list');
+    }
+
+    function queryQAItems(container) {
+        // 既存想定: .qa-item / .chat-item
+        // 実UIの別クラスにも広げる: .qa-row / .chat-row
+        if (!container) return [];
+        return container.querySelectorAll('.qa-item, .chat-item, .qa-row, .chat-row');
     }
     
     // 履歴項目の完全復元
@@ -2952,46 +2966,47 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
                 }
             }
             
+            // 分析トリガの再表示判定
+            const trigger = document.getElementById('analysis-engine-trigger');
+            if (trigger) {
+                const hasNuance = !!item.nuance_analysis && (
+                    typeof item.nuance_analysis === 'string'
+                    || !!item.nuance_analysis.html
+                    || !!item.nuance_analysis.gemini
+                    || !!item.nuance_analysis.chatgpt
+                    || !!item.nuance_analysis.better
+                );
+                trigger.style.display = hasNuance ? 'none' : 'block';
+            }
+            
             // 7. インタラクティブQA復元（スネークケース対応）
             const qaData = item.interactive_questions || item.interactiveQuestions;  // 両方に対応
-            if (qaData && qaData.length > 0) {
-                const container = document.querySelector('#chat-items');
+            const container = getQAContainer();
+            if (container) {
+                container.innerHTML = '';
+                (qaData || []).forEach(qa => {
+                    const qaDiv = document.createElement('div');
+                    qaDiv.className = 'qa-item';
+                    const q = document.createElement('div'); q.className = 'user-message'; q.textContent = qa.question || '';
+                    const a = document.createElement('div'); a.className = 'ai-message';   a.textContent = qa.answer   || '';
+                    qaDiv.appendChild(q); qaDiv.appendChild(a);
+                    container.appendChild(qaDiv);
+                });
+                container.style.display = 'block';
+                
+                // インタラクティブセクションとチャット履歴を表示
                 const interactiveSection = document.querySelector('#interactive-section');
                 const chatHistory = document.querySelector('#chat-history');
-                
-                if (container) {
-                    container.innerHTML = '';  // クリア
-                    qaData.forEach(qa => {
-                        const qaDiv = document.createElement('div');
-                        qaDiv.className = 'qa-item';  // 統一クラス名
-                        
-                        // innerTextでセット（XSS対策）
-                        const questionDiv = document.createElement('div');
-                        questionDiv.className = 'user-message';
-                        questionDiv.textContent = qa.question || '';
-                        
-                        const answerDiv = document.createElement('div');
-                        answerDiv.className = 'ai-message';
-                        answerDiv.textContent = qa.answer || '';
-                        
-                        qaDiv.appendChild(questionDiv);
-                        qaDiv.appendChild(answerDiv);
-                        container.appendChild(qaDiv);
-                    });
-                    container.style.display = 'block';
-                    
-                    // インタラクティブセクションとチャット履歴を表示
-                    if (interactiveSection) {
-                        interactiveSection.classList.add('show');
-                        interactiveSection.style.display = 'block';
-                    }
-                    if (chatHistory) {
-                        chatHistory.style.display = 'block';
-                    }
-                    
-                    restored.qa = qaData.length;  // 統一した変数を使用
-                    restoredBlocks++;
+                if (interactiveSection) {
+                    interactiveSection.classList.add('show');
+                    interactiveSection.style.display = 'block';
                 }
+                if (chatHistory) {
+                    chatHistory.style.display = 'block';
+                }
+                
+                restored.qa = (qaData || []).length;  // 統一した変数を使用
+                restoredBlocks++;
             }
             
             // 履歴パネルを閉じる
@@ -3130,10 +3145,10 @@ TASK_2.9.2_PHASE_B-3.5_INITIALIZATION_COMPLETE:
         }
         
         // T4: インタラクティブQA更新時の監視
-        const qaContainer = document.querySelector('#chat-items');
+        const qaContainer = getQAContainer();
         if (qaContainer) {
             const qaObserver = new MutationObserver(() => {
-                const qaItems = qaContainer.querySelectorAll('.chat-item, .qa-item');
+                const qaItems = queryQAItems(qaContainer);
                 if (qaItems.length > 0) {
                     saveInteractiveQAToHistory();
                 }
