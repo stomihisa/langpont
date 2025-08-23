@@ -80,7 +80,52 @@ class DatabaseManager:
             if not BOTO3_AVAILABLE:
                 self.logger.info("ℹ️ boto3 not available - OK for development environment")
                 
+        # 初期化時にTLS設定を検証（Fail Fast）
+        self._validate_tls_configuration()
+        
         self.logger.info(f"🔧 DatabaseManager initialized for environment: {self.environment}")
+    
+    def _validate_tls_configuration(self):
+        """
+        TLS設定を初期化時に検証（Fail Fast）
+        本番・検証環境では必須、開発環境では警告のみ
+        
+        Raises:
+            RuntimeError: TLS設定が不正の場合
+        """
+        try:
+            # PostgreSQL TLS検証
+            database_url = os.getenv('DATABASE_URL')
+            if database_url:
+                if self.environment in ['staging', 'production']:
+                    if 'sslmode=require' not in database_url:
+                        raise RuntimeError(f"DATABASE_URL must include sslmode=require in {self.environment} environment")
+                    self.logger.info("✅ DATABASE_URL TLS configuration validated")
+                else:
+                    if 'sslmode=require' not in database_url:
+                        self.logger.warning("⚠️ Development: DATABASE_URL without sslmode=require (not recommended)")
+            
+            # Redis TLS検証
+            redis_url = os.getenv('REDIS_URL')
+            if redis_url:
+                if not redis_url.startswith('rediss://'):
+                    if self.environment in ['staging', 'production']:
+                        raise RuntimeError(f"REDIS_URL must use rediss:// scheme in {self.environment} environment, got: {redis_url.split('://')[0]}")
+                    else:
+                        self.logger.warning("⚠️ Development: REDIS_URL without TLS (not recommended)")
+                else:
+                    self.logger.info("✅ REDIS_URL TLS configuration validated")
+                    
+            # 個別パラメータのみの場合の警告
+            if not database_url and not redis_url:
+                if self.environment in ['staging', 'production']:
+                    self.logger.warning("⚠️ Using individual parameters instead of DSN URLs in production")
+                else:
+                    self.logger.info("ℹ️ Using individual parameters (DSN URLs recommended)")
+                    
+        except Exception as e:
+            self.logger.error(f"❌ TLS configuration validation failed: {e}")
+            raise
     
     def get_secret(self, secret_name: str, default: str = None) -> str:
         """
