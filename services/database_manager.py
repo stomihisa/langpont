@@ -380,7 +380,7 @@ class DatabaseManager:
     
     def get_sqlite_path(self, db_name: str) -> str:
         """
-        SQLite データベースファイルパスを取得（移行期間中の互換性維持）
+        SQLite データベースファイルパスを取得（絶対パス強制）
         
         Args:
             db_name: データベース名 (例: 'users', 'history', 'analytics')
@@ -389,19 +389,24 @@ class DatabaseManager:
             str: 絶対パス
             
         Note:
-            相対パス撤廃 - 環境変数SQLITE_BASE_PATHで基準ディレクトリ指定
+            相対パス完全撤廃 - 環境変数SQLITE_BASE_PATHで絶対パス指定必須
         """
         try:
-            # 基準ディレクトリを環境変数から取得
+            # 基準ディレクトリを環境変数から取得（絶対パス必須）
             base_path = os.getenv('SQLITE_BASE_PATH')
             
             if not base_path:
                 if self.environment == 'development':
-                    # 開発環境: プロジェクトルート/data
-                    base_path = os.path.join(os.path.dirname(__file__), '..', 'data')
+                    # 開発環境: 現在の作業ディレクトリ/.devdata (絶対パス)
+                    base_path = os.path.abspath(os.path.join(os.getcwd(), '.devdata'))
+                    self.logger.info(f"ℹ️ Development SQLite: using {base_path}")
                 else:
-                    # 本番環境: 専用ディレクトリ
+                    # 本番環境: 専用ディレクトリ（絶対パス）
                     base_path = '/opt/langpont/data'
+                    
+            # パスが絶対パスかチェック（相対パス禁止）
+            if not os.path.isabs(base_path):
+                raise RuntimeError(f"SQLite base path must be absolute, got relative path: {base_path}")
                     
             # ディレクトリ作成
             Path(base_path).mkdir(parents=True, exist_ok=True)
