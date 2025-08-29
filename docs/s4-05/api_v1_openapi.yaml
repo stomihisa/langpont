@@ -1,0 +1,432 @@
+openapi: 3.0.3
+info:
+  title: LangPont API v1 (Sessions & Translations)
+  description: |
+    **API契約 v1**: セッション・翻訳管理のREST API
+    
+    ## 重要な制約
+    
+    - **最新IDフォールバック禁止**: UIは勝手に"直近セッション"へ紐付けしない
+    - **冪等性必須**: 全てのPOST/PUT操作でIdempotency-Keyヘッダを要求
+    - **UNIQUE制約準拠**: DDL仕様 `UNIQUE(session_id, engine, version)` に従う
+    
+    ## 参考資料
+    - DDL設計: [S4-04a DDL v1](../s4-04a/ddl_v1.sql)
+    - UNIQUE制約検証: [S4-04a APPLY_DEV_REPORT](../s4-04a/APPLY_DEV_REPORT.md)
+    
+  version: "1.0.0-draft"
+  contact:
+    name: LangPont Development Team
+  
+servers:
+  - url: http://localhost:8080/api
+    description: Development server
+  - url: https://langpont.herokuapp.com/api  
+    description: Production server
+
+security:
+  - ApiKeyAuth: []
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      
+  schemas:
+    SessionId:
+      type: string
+      format: uuid
+      example: "123e4567-e89b-12d3-a456-426614174000"
+      
+    Timestamp:
+      type: string
+      format: date-time
+      example: "2025-08-29T12:00:00Z"
+      
+    SessionCreateRequest:
+      type: object
+      properties:
+        metadata:
+          type: object
+          additionalProperties: true
+          default: {}
+          example:
+            source_lang: "ja"
+            target_lang: "en"
+            context: "business"
+      required: []
+      
+    SessionResponse:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/SessionId'
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
+        updated_at:
+          $ref: '#/components/schemas/Timestamp'
+        deleted_at:
+          $ref: '#/components/schemas/Timestamp'
+          nullable: true
+        legacy_session_key:
+          type: string
+          nullable: true
+          example: "legacy_20250829_001"
+        metadata:
+          type: object
+          additionalProperties: true
+          example:
+            source_lang: "ja"
+            target_lang: "en"
+            context: "business"
+      required:
+        - id
+        - created_at
+        - updated_at
+        - metadata
+        
+    TranslationCreateRequest:
+      type: object
+      properties:
+        engine:
+          type: string
+          enum: ["openai", "gemini", "claude"]
+          example: "openai"
+        version:
+          type: string
+          example: "v1"
+        metadata:
+          type: object
+          additionalProperties: true
+          example:
+            input_text: "こんにちは世界"
+            translated_text: "Hello world"
+            confidence_score: 0.95
+      required:
+        - engine
+        - version
+        - metadata
+        
+    TranslationResponse:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/SessionId'
+        session_id:
+          $ref: '#/components/schemas/SessionId'
+        engine:
+          type: string
+          enum: ["openai", "gemini", "claude"]
+        version:
+          type: string
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
+        metadata:
+          type: object
+          additionalProperties: true
+      required:
+        - id
+        - session_id
+        - engine
+        - version
+        - created_at
+        - metadata
+        
+    SessionListResponse:
+      type: object
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionResponse'
+        pagination:
+          type: object
+          properties:
+            total:
+              type: integer
+              example: 150
+            limit:
+              type: integer
+              example: 20
+            offset:
+              type: integer
+              example: 0
+            next_cursor:
+              type: string
+              nullable: true
+              example: "cursor_abc123"
+      required:
+        - sessions
+        - pagination
+        
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: "VALIDATION_ERROR"
+            message:
+              type: string
+              example: "Required field is missing"
+            details:
+              type: object
+              additionalProperties: true
+              nullable: true
+      required:
+        - error
+
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        pattern: '^[a-zA-Z0-9\-_]{8,64}$'
+        example: "req_20250829_001_abc123"
+      description: |
+        冪等性キー。重複実行防止のために必須。
+        8-64文字の英数字、ハイフン、アンダースコアのみ許可。
+
+paths:
+  /sessions:
+    post:
+      summary: 新規セッション作成
+      description: |
+        空のセッションを作成し、UUIDを払い出します。
+        
+        **重要**: 最新IDフォールバック禁止 - UIは勝手に直近セッションへ紐付けしない
+        
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionCreateRequest'
+            examples:
+              minimal:
+                summary: 最小構成
+                value: {}
+              with_metadata:
+                summary: メタデータ付き
+                value:
+                  metadata:
+                    source_lang: "ja"
+                    target_lang: "en"
+                    context: "business_email"
+      responses:
+        '201':
+          description: セッション作成成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+              examples:
+                success:
+                  summary: 作成成功
+                  value:
+                    id: "123e4567-e89b-12d3-a456-426614174000"
+                    created_at: "2025-08-29T12:00:00Z"
+                    updated_at: "2025-08-29T12:00:00Z"
+                    deleted_at: null
+                    legacy_session_key: null
+                    metadata: {}
+        '400':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_idempotency:
+                  summary: 不正なIdempotency-Key
+                  value:
+                    error:
+                      code: "INVALID_IDEMPOTENCY_KEY"
+                      message: "Idempotency-Key must be 8-64 characters of alphanumeric, hyphen, underscore only"
+                      details:
+                        provided_key: "invalid key!"
+    
+    get:
+      summary: セッション一覧取得
+      description: |
+        セッション一覧をページング形式で取得。
+        既定ソート: created_at desc (最新が先頭)
+        
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          example: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          example: 0
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: 次ページ取得用カーソル
+          example: "cursor_abc123"
+      responses:
+        '200':
+          description: 一覧取得成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionListResponse'
+              examples:
+                success:
+                  summary: 一覧取得成功
+                  value:
+                    sessions:
+                      - id: "123e4567-e89b-12d3-a456-426614174000"
+                        created_at: "2025-08-29T12:00:00Z"
+                        updated_at: "2025-08-29T12:00:00Z"
+                        deleted_at: null
+                        legacy_session_key: null
+                        metadata:
+                          source_lang: "ja"
+                          target_lang: "en"
+                    pagination:
+                      total: 150
+                      limit: 20
+                      offset: 0
+                      next_cursor: "cursor_xyz789"
+        '400':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_limit:
+                  summary: 不正なlimit値
+                  value:
+                    error:
+                      code: "VALIDATION_ERROR" 
+                      message: "limit must be between 1 and 100"
+
+  /sessions/{sessionId}/translations:
+    post:
+      summary: セッションへ翻訳追加
+      description: |
+        指定セッションに翻訳結果を追加/更新 (UPSERT)。
+        
+        **UNIQUE制約**: `(session_id, engine, version)` の組み合わせは一意
+        重複時は409エラーを返す。
+        
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/SessionId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TranslationCreateRequest'
+            examples:
+              openai_translation:
+                summary: OpenAI翻訳結果
+                value:
+                  engine: "openai"
+                  version: "v1"
+                  metadata:
+                    input_text: "こんにちは世界"
+                    translated_text: "Hello world"
+                    confidence_score: 0.95
+              gemini_translation:
+                summary: Gemini翻訳結果
+                value:
+                  engine: "gemini"
+                  version: "v1"
+                  metadata:
+                    input_text: "おはようございます"
+                    translated_text: "Good morning"
+                    analysis: "formal greeting"
+      responses:
+        '201':
+          description: 翻訳追加成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TranslationResponse'
+              examples:
+                success:
+                  summary: 翻訳追加成功
+                  value:
+                    id: "456e7890-e89b-12d3-a456-426614174001"
+                    session_id: "123e4567-e89b-12d3-a456-426614174000"
+                    engine: "openai"
+                    version: "v1"
+                    created_at: "2025-08-29T12:05:00Z"
+                    metadata:
+                      input_text: "こんにちは世界"
+                      translated_text: "Hello world"
+                      confidence_score: 0.95
+        '400':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missing_engine:
+                  summary: engine必須エラー
+                  value:
+                    error:
+                      code: "VALIDATION_ERROR"
+                      message: "engine is required"
+                      details:
+                        field: "engine"
+        '404':
+          description: セッション不在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                session_not_found:
+                  summary: セッション不在
+                  value:
+                    error:
+                      code: "SESSION_NOT_FOUND"
+                      message: "Session with specified ID does not exist"
+                      details:
+                        session_id: "123e4567-e89b-12d3-a456-426614174000"
+        '409':
+          description: UNIQUE制約違反
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                duplicate_translation:
+                  summary: engine,version重複
+                  value:
+                    error:
+                      code: "TRANSLATION_DUPLICATE"
+                      message: "Translation with same session_id, engine, version already exists"
+                      details:
+                        session_id: "123e4567-e89b-12d3-a456-426614174000"
+                        engine: "openai"
+                        version: "v1"
+                        constraint: "uq_translations_session_engine_version"
