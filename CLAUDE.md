@@ -30,7 +30,106 @@ CLAUDE.md                    ← このファイル（メインガイド）
 
 ---
 
-# 📅 最新セッション: 2025年8月26日 - Git環境統合と開発環境完全整理
+# 📅 最新セッション: 2025年8月29日 - S4-04a-03 開発DB適用テスト完了
+
+## 🎯 このセッションの成果概要
+**Task#9-4 AP-1 Ph4 S4-04a-03**において、DDLスキーマの開発DB適用テストを完全実施しました。ドライラン→本適用→検証→ロールバック→再適用の全工程が成功し、UNIQUE制約の動作確認も期待通り完了。結果レポートをPR化し、実装準備が整いました。
+
+## ✅ S4-04a-03 開発DB適用テスト実施
+
+### **🔧 実施内容**
+**実施日:** 2025年8月29日  
+**Task番号:** Task#9-4 AP-1 Ph4 S4-04a-03  
+**目標:** ddl_v1.sqlの開発DB適用と動作検証
+
+#### **環境セットアップ**
+- **PostgreSQL@16:** Homebrew経由でインストール完了
+- **開発DB:** `langpont_dev` (localhost:5432)
+- **接続設定:** `postgresql://langpont_dev:***@localhost:5432/langpont_dev?sslmode=prefer`
+- **作業ブランチ:** `feature/s4-04a-apply-dev-report`
+
+#### **実施工程と結果**
+
+**1. ドライラン実行（ROLLBACK版）**
+```bash
+# COMMIT→ROLLBACK置換でテスト
+sed 's/COMMIT;/ROLLBACK;/' docs/s4-04a/ddl_v1.sql > /tmp/ddl_v1_dryrun.sql
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f /tmp/ddl_v1_dryrun.sql
+# 結果: 成功（ROLLBACKで実際の変更は未適用）
+```
+
+**2. 本適用実行**
+```bash
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f docs/s4-04a/ddl_v1.sql
+# 結果: 成功（translation_sessions, translations作成）
+```
+
+**3. 検証SQL実行**
+- **テーブル構造確認**: `\d+ translation_sessions`, `\d+ translations`
+- **UNIQUE制約テスト**: 同一(session_id, engine, version)での重複挿入
+- **結果**: 期待通りUNIQUE制約違反エラー発生を確認
+
+**4. ロールバック→再適用**
+```bash
+# テーブル削除
+DROP TABLE IF EXISTS translations CASCADE;
+DROP TABLE IF EXISTS translation_sessions CASCADE;
+# 再適用
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f docs/s4-04a/ddl_v1.sql
+# 結果: 両工程とも成功
+```
+
+#### **検証結果詳細**
+
+**作成されたテーブル構造:**
+- **translation_sessions**: UUID主キー、タイムスタンプ、JSONB metadata
+- **translations**: session_id外部キー、engine/version、UNIQUE制約
+- **インデックス**: legacy_session_key条件付き、created_at、UNIQUE制約
+- **制約**: FK CASCADE削除、UNIQUE(session_id, engine, version)
+
+**UNIQUE制約動作確認:**
+```sql
+-- 重複挿入テスト
+ERROR: duplicate key value violates unique constraint "uq_translations_session_engine_version"
+DETAIL: Key (session_id, engine, version)=(afeea5ec-5aae-4006-b0ea-d8815cab868f, openai, v1) already exists.
+```
+
+## ✅ 成果物とPR作成
+
+### **📄 APPLY_DEV_REPORT.md作成**
+- **場所**: `docs/s4-04a/APPLY_DEV_REPORT.md`
+- **内容**: 環境情報、実施結果、ログ抜粋、気づき
+- **レポート品質**: 再現可能な手順と詳細結果を記録
+
+### **🔗 PR作成完了**
+- **ブランチ**: `feature/s4-04a-apply-dev-report`
+- **コミット**: `651450b` - docs(s4-04a): add APPLY_DEV_REPORT (dev apply/verify/rollback)
+- **変更範囲**: docs/s4-04a/配下のみ（1ファイル追加、70行）
+- **PR URL**: https://github.com/stomihisa/langpont/pull/new/feature/s4-04a-apply-dev-report
+
+### **✅ 受入基準クリア**
+- ✅ ドライラン→本適用→検証→ロールバック→再適用が全て成功
+- ✅ UNIQUE重複テストでエラー発生を確認（期待どおり）
+- ✅ 変更は /docs/s4-04a/ 配下のみ
+- ✅ PRはDraft準備完了、コード変更なし
+
+## 📊 技術的知見
+
+### **DDLスキーマ品質**
+- **pgcrypto拡張**: 既存環境で利用可能（CREATE EXTENSION IF NOT EXISTS）
+- **UUID生成**: gen_random_uuid()が正常動作
+- **制約設計**: UNIQUE制約とFK制約の組み合わせが適切
+- **インデックス戦略**: 条件付きインデックス、パフォーマンス配慮
+
+### **PostgreSQL環境**
+- **バージョン**: PostgreSQL 16.10 (Homebrew)
+- **パス設定**: `/opt/homebrew/Cellar/postgresql@16/16.10/bin/psql`
+- **接続確認**: sslmode=prefer設定で開発環境接続成功
+- **権限**: CREATE TABLE, INDEX権限正常
+
+---
+
+# 📅 前回セッション: 2025年8月26日 - Git環境統合と開発環境完全整理
 
 ## 🎯 このセッションの成果概要
 Git mainブランチの分岐問題を解決し、開発環境の包括的な整理を実施しました。20コミット先行していたローカルmainと2コミット先行していたorigin/mainを安全に統合し、不要ブランチ11個削除、バックアップ309MB解放、未追跡ファイル100%解消を達成。完全にクリーンな開発環境を確立しました。
@@ -435,11 +534,24 @@ langpont/
 | **📊 高** | 返り値統一化 | 結果表示処理 |
 | **📊 高** | try-catch完全統合 | エラー処理全体 |
 
+## 🎯 S4-04a次ステップ
+
+### **実装フェーズ準備完了**
+- ✅ **DDL検証**: 開発DB適用テスト完全成功
+- ✅ **スキーマ品質**: UNIQUE制約、FK制約、インデックス動作確認
+- ✅ **レポート**: 再現可能な手順と結果をPR化
+- 🔄 **次段階**: 本格実装ブランチ作成準備
+
+### **推奨次アクション**
+1. **PR確認・マージ**: feature/s4-04a-apply-dev-report
+2. **実装ブランチ作成**: feature/s4-04a-core-implementation
+3. **アプリケーション統合**: Flask SQLAlchemyモデル作成
+
 ---
 
-**📅 CLAUDE.md最新更新**: 2025年8月26日  
-**🎯 記録完了**: S4-01/S4-02完全実装・DSN統一とTLS強制  
-**📊 進捗状況**: 本番環境セキュリティ基盤確立・PR準備完了  
-**🔄 次回作業**: feature/s4-02-dsn-clean-final PR提出またはユーザー指示事項
+**📅 CLAUDE.md最新更新**: 2025年8月29日  
+**🎯 記録完了**: S4-04a-03 開発DB適用テスト完了・PR作成  
+**📊 進捗状況**: DDLスキーマ検証完了・実装準備整備済み  
+**🔄 次回作業**: PR確認後の本格実装フェーズ着手
 
-**🌟 LangPont は本番環境対応のセキュアなデータベース管理基盤を獲得し、エンタープライズレベルのセキュリティ要件を完全に満たしました！**
+**🌟 LangPont のデータベース基盤設計が開発環境で完全検証され、本格実装への道筋が確立されました！**
